@@ -1,0 +1,153 @@
+import 'package:flutter/material.dart';
+import '../models/product_model.dart';
+
+class CartItem {
+  final Product product;
+  final String size;
+  int quantity;
+
+  CartItem({
+    required this.product,
+    required this.size,
+    this.quantity = 1,
+  });
+}
+
+class AppState extends ChangeNotifier {
+  int _currentTabIndex = 0;
+  int get currentTabIndex => _currentTabIndex;
+
+  final List<Product> _products = List.from(dummyProducts);
+  List<Product> get products => _products;
+
+  final List<CartItem> _cart = [];
+  List<CartItem> get cart => _cart;
+
+  late Product _selectedTryOnProduct;
+  Product get selectedTryOnProduct => _selectedTryOnProduct;
+
+  late AvatarModel _selectedAvatar;
+  AvatarModel get selectedAvatar => _selectedAvatar;
+
+  String _fitMode = 'True-to-Size';
+  String get fitMode => _fitMode;
+
+  String _selectedSize = 'M';
+  String get selectedSize => _selectedSize;
+
+  bool _isSimulatingTryOn = false;
+  bool get isSimulatingTryOn => _isSimulatingTryOn;
+
+  UserProfile _userProfile = dummyUserProfile;
+  UserProfile get userProfile => _userProfile;
+
+  AppState() {
+    _selectedTryOnProduct = _products[0];
+    _selectedAvatar = dummyAvatars[0];
+  }
+
+  void setTabIndex(int index) {
+    _currentTabIndex = index;
+    notifyListeners();
+  }
+
+  int get totalCartCount => _cart.fold(0, (sum, item) => sum + item.quantity);
+
+  double get cartSubtotal => _cart.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity));
+
+  void addToCart(Product product, String size) {
+    final existingIndex = _cart.indexWhere(
+      (item) => item.product.id == product.id && item.size == size,
+    );
+
+    if (existingIndex >= 0) {
+      _cart[existingIndex].quantity += 1;
+    } else {
+      _cart.add(CartItem(product: product, size: size, quantity: 1));
+    }
+    notifyListeners();
+  }
+
+  void removeFromCart(int index) {
+    if (index >= 0 && index < _cart.length) {
+      _cart.removeAt(index);
+      notifyListeners();
+    }
+  }
+
+  void updateCartQuantity(int index, int delta) {
+    if (index >= 0 && index < _cart.length) {
+      final newQty = _cart[index].quantity + delta;
+      if (newQty <= 0) {
+        _cart.removeAt(index);
+      } else {
+        _cart[index].quantity = newQty;
+      }
+      notifyListeners();
+    }
+  }
+
+  void clearCart() {
+    _cart.clear();
+    notifyListeners();
+  }
+
+  void selectTryOnProduct(Product product) {
+    _selectedTryOnProduct = product;
+    _selectedSize = product.sizes.isNotEmpty ? product.sizes[0] : 'M';
+    runSimulation();
+    notifyListeners();
+  }
+
+  void selectAvatar(AvatarModel avatar) {
+    _selectedAvatar = avatar;
+    runSimulation();
+    notifyListeners();
+  }
+
+  void setFitMode(String mode) {
+    _fitMode = mode;
+    runSimulation();
+    notifyListeners();
+  }
+
+  void setSelectedSize(String size) {
+    _selectedSize = size;
+    notifyListeners();
+  }
+
+  void runSimulation() {
+    _isSimulatingTryOn = true;
+    notifyListeners();
+    Future.delayed(const Duration(milliseconds: 650), () {
+      _isSimulatingTryOn = false;
+      notifyListeners();
+    });
+  }
+
+  void saveLookToProfile() {
+    final newLook = OutfitLook(
+      id: 'look-${DateTime.now().millisecondsSinceEpoch}',
+      title: 'LOOK - ${_selectedTryOnProduct.name.toUpperCase()}',
+      subtitle: '${_selectedTryOnProduct.category} ($_fitMode fit)',
+      imageUrl: _selectedTryOnProduct.imageUrl,
+      items: [_selectedTryOnProduct.name],
+      palette: [_selectedTryOnProduct.colorHex, '#171612', '#DDD9D8'],
+    );
+
+    final updatedOutfits = [newLook, ..._userProfile.savedOutfits];
+    _userProfile = _userProfile.copyWith(savedOutfits: updatedOutfits);
+    notifyListeners();
+  }
+
+  void updateMeasurements(int height, int chest, int waist, int inseam) {
+    final newMeasurements = Measurements(
+      height: height,
+      chest: chest,
+      waist: waist,
+      inseam: inseam,
+    );
+    _userProfile = _userProfile.copyWith(measurements: newMeasurements);
+    notifyListeners();
+  }
+}
