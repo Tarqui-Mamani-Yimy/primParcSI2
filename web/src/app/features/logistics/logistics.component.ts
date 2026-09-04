@@ -16,10 +16,10 @@ import { DispatchOrder } from '../../core/models';
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Global Fulfillment</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Dispatches & Logistics Operations</h1>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Cumplimiento global</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Despachos y Operaciones Logísticas</h1>
           <p class="text-xs text-gray-500 mt-1">
-            High-value secured transit and regional boutique transfers.
+            Tránsito asegurado de alto valor y traspasos entre boutiques regionales.
           </p>
         </div>
 
@@ -29,7 +29,7 @@ import { DispatchOrder } from '../../core/models';
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add_box</span>
-            <span>Book Dispatch</span>
+            <span>Registrar despacho</span>
           </button>
         </div>
       </div>
@@ -77,19 +77,19 @@ import { DispatchOrder } from '../../core/models';
           <!-- Middle Row: Route & Details -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Recipient</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Destinatario</p>
               <p class="text-sm font-bold text-gray-900 mt-0.5">{{ order.cliente }}</p>
             </div>
 
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Route</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ruta</p>
               <p class="text-xs font-semibold text-gray-900 mt-0.5">
                 {{ getLocationName(order.origen_id) }} → {{ getLocationName(order.destino_id) }}
               </p>
             </div>
 
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Product & Quantity</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Producto y cantidad</p>
               <p class="text-xs font-semibold text-gray-900 mt-0.5">
                 {{ getProductName(order.producto_id) }} × {{ order.cantidad }}
               </p>
@@ -115,20 +115,20 @@ import { DispatchOrder } from '../../core/models';
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Secured Fulfillment</span>
-          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Book Dispatch</h2>
-          <p class="text-xs text-gray-500">Register a new dispatch between locations.</p>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Cumplimiento asegurado</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Registrar despacho</h2>
+          <p class="text-xs text-gray-500">Registra un despacho nuevo entre ubicaciones.</p>
         </div>
 
         <form (ngSubmit)="submitNewDispatch()" class="space-y-4">
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Recipient / Organization</label>
-            <input type="text" [(ngModel)]="newClientName" name="client" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Royal Academy of Arts" />
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Destinatario / organización</label>
+            <input type="text" [(ngModel)]="newClientName" name="client" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. Real Academia de Artes" />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Origin Location</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Ubicación de origen</label>
               <select [(ngModel)]="newOriginId" name="origin" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
                   {{ loc.nombre }}
@@ -136,7 +136,7 @@ import { DispatchOrder } from '../../core/models';
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Destination Location</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Ubicación de destino</label>
               <select [(ngModel)]="newDestId" name="dest" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
                   {{ loc.nombre }}
@@ -146,7 +146,7 @@ import { DispatchOrder } from '../../core/models';
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Product to Dispatch</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Producto a despachar</label>
             <select [(ngModel)]="newProductId" name="product" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
               <option *ngFor="let p of archiveService.products()" [value]="p.id">
                 {{ p.sku }} — {{ p.nombre }} ({{ p.precio }} Bs)
@@ -155,12 +155,12 @@ import { DispatchOrder } from '../../core/models';
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Quantity</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Cantidad</label>
             <input type="number" min="1" [(ngModel)]="newQuantity" name="qty" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
           </div>
 
           <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
-            Book Dispatch
+            Registrar despacho
           </button>
         </form>
       </div>

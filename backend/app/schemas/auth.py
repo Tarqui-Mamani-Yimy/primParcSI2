@@ -111,5 +111,32 @@ class PasswordChangedResponse(BaseModel):
     message: str
 
 
+class PasswordPolicyRule(BaseModel):
+    codigo: str
+    descripcion: str
+    patron: str
+
+
+class PasswordPolicyResponse(BaseModel):
+    """Politica de contrasenas que web y mobile deben replicar en sus formularios."""
+
+    min_length: int
+    reglas: list[PasswordPolicyRule]
+    max_intentos_login: int
+
+
+class CuentaEstadoResponse(BaseModel):
+    idUser: int
+    correo: str
+    bloqueado: bool
+    intentos_fallidos: int
+    fecha_bloqueo: datetime | None = None
+
+
+class UnlockResponse(BaseModel):
+    message: str
+    usuario: CuentaEstadoResponse
+
+
 LoginRequest.model_rebuild()
 TokenResponse.model_rebuild()

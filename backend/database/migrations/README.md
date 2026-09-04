@@ -31,6 +31,13 @@ docker exec -i ropaDocker \
   -v ON_ERROR_STOP=1 \
   -f /dev/stdin \
   < database/migrations/002_add_imagenes_producto.sql
+
+# 4) Aplicar la migracion 003 (bloqueo de cuenta por intentos fallidos)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/003_add_bloqueo_cuenta.sql
 ```
 
 Usar `ADD COLUMN IF NOT EXISTS` para que sean idempotentes (se pueden
@@ -41,4 +48,5 @@ re-ejecutar sin error).
 ```bash
 docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "Movimiento"'
 docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "producto"'
+docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "Usuario"'
 ```

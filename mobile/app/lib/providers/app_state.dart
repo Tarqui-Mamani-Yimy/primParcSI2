@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
+import '../services/auth_service.dart';
 
 class CartItem {
   final Product product;
@@ -29,7 +30,7 @@ class AppState extends ChangeNotifier {
   late AvatarModel _selectedAvatar;
   AvatarModel get selectedAvatar => _selectedAvatar;
 
-  String _fitMode = 'True-to-Size';
+  String _fitMode = 'A tu talla';
   String get fitMode => _fitMode;
 
   String _selectedSize = 'M';
@@ -41,9 +42,134 @@ class AppState extends ChangeNotifier {
   UserProfile _userProfile = dummyUserProfile;
   UserProfile get userProfile => _userProfile;
 
-  AppState() {
+  // ---------------------------------------------------------------------------
+  // Sesion / autenticacion contra el backend
+  // ---------------------------------------------------------------------------
+
+  final AuthService _authService;
+
+  AuthUser? _usuario;
+  AuthUser? get usuario => _usuario;
+
+  String? _accessToken;
+  String? get accessToken => _accessToken;
+
+  bool get estaAutenticado => _usuario != null;
+
+  bool _esInvitado = false;
+  bool get esInvitado => _esInvitado;
+
+  bool _authCargando = false;
+  bool get authCargando => _authCargando;
+
+  /// Mensaje del ultimo error de autenticacion, listo para mostrarse.
+  String? _authError;
+  String? get authError => _authError;
+
+  /// Intentos que le quedan al usuario antes de que se bloquee la cuenta.
+  int? _intentosRestantes;
+  int? get intentosRestantes => _intentosRestantes;
+
+  bool _cuentaBloqueada = false;
+  bool get cuentaBloqueada => _cuentaBloqueada;
+
+  AppState({AuthService? authService})
+      : _authService = authService ?? AuthService() {
     _selectedTryOnProduct = _products[0];
     _selectedAvatar = dummyAvatars[0];
+  }
+
+  void limpiarAuthError() {
+    if (_authError == null) return;
+    _authError = null;
+    notifyListeners();
+  }
+
+  /// Inicia sesion contra `POST /api/auth/login`.
+  /// Devuelve `true` si la sesion se abrio correctamente.
+  Future<bool> login(String correo, String password) async {
+    _authCargando = true;
+    _authError = null;
+    notifyListeners();
+
+    try {
+      final sesion = await _authService.login(correo: correo, password: password);
+      _aplicarSesion(sesion);
+      return true;
+    } on AuthException catch (e) {
+      _authError = e.message;
+      _intentosRestantes = e.intentosRestantes;
+      _cuentaBloqueada = e.cuentaBloqueada;
+      return false;
+    } finally {
+      _authCargando = false;
+      notifyListeners();
+    }
+  }
+
+  /// Registra un usuario nuevo con `POST /api/auth/register`.
+  /// El backend valida la politica de contrasenas y devuelve 422 si no se cumple.
+  Future<bool> registrar({
+    required String nombre,
+    required String correo,
+    required String password,
+  }) async {
+    _authCargando = true;
+    _authError = null;
+    notifyListeners();
+
+    try {
+      final sesion = await _authService.register(
+        nombre: nombre,
+        correo: correo,
+        password: password,
+      );
+      _aplicarSesion(sesion);
+      return true;
+    } on AuthException catch (e) {
+      _authError = e.message;
+      return false;
+    } finally {
+      _authCargando = false;
+      notifyListeners();
+    }
+  }
+
+  /// Entra al catalogo sin iniciar sesion (modo demo / invitado).
+  void continuarComoInvitado() {
+    _esInvitado = true;
+    _authError = null;
+    notifyListeners();
+  }
+
+  void cerrarSesion() {
+    _usuario = null;
+    _accessToken = null;
+    _esInvitado = false;
+    _authError = null;
+    _intentosRestantes = null;
+    _cuentaBloqueada = false;
+    _currentTabIndex = 0;
+    notifyListeners();
+  }
+
+  void _aplicarSesion(AuthSession sesion) {
+    _usuario = sesion.usuario;
+    _accessToken = sesion.accessToken;
+    _esInvitado = false;
+    _authError = null;
+    _intentosRestantes = null;
+    _cuentaBloqueada = false;
+    _userProfile = _userProfile.copyWith(
+      name: sesion.usuario.nombre,
+      email: sesion.usuario.correo,
+    );
+  }
+
+  @override
+  void dispose() {
+    _authService.dispose();
+    super.dispose();
   }
 
   void setTabIndex(int index) {
@@ -129,7 +255,7 @@ class AppState extends ChangeNotifier {
     final newLook = OutfitLook(
       id: 'look-${DateTime.now().millisecondsSinceEpoch}',
       title: 'LOOK - ${_selectedTryOnProduct.name.toUpperCase()}',
-      subtitle: '${_selectedTryOnProduct.category} ($_fitMode fit)',
+      subtitle: '${_selectedTryOnProduct.category} · corte $_fitMode',
       imageUrl: _selectedTryOnProduct.imageUrl,
       items: [_selectedTryOnProduct.name],
       palette: [_selectedTryOnProduct.colorHex, '#171612', '#DDD9D8'],

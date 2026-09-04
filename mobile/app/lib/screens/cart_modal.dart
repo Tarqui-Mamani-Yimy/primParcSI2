@@ -125,7 +125,7 @@ class CartModal extends StatelessWidget {
                       onPressed: () {
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Procesando orden con AETHER Luxury Checkout...')),
+                          const SnackBar(content: Text('Procesando tu pedido en AETHER…')),
                         );
                       },
                       child: Text('FINALIZAR COMPRA', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),

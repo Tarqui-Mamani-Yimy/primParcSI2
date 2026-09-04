@@ -25,14 +25,14 @@ class TryOnScreen extends StatelessWidget {
               const Icon(Icons.auto_awesome, size: 16, color: AetherTheme.bronze),
               const SizedBox(width: 6),
               Text(
-                'AI NEURAL FITTING ENGINE',
+                'MOTOR NEURONAL DE AJUSTE CON IA',
                 style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.8, color: AetherTheme.bronze),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            'Virtual Try-On',
+            'Probador Virtual',
             style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark),
           ),
           Text(
@@ -93,7 +93,7 @@ class TryOnScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '• Drape Tension: 94%',
+                                '• Tensión de caída: 94%',
                                 style: GoogleFonts.outfit(color: AetherTheme.mutedGold, fontSize: 9.5, fontWeight: FontWeight.w600),
                               ),
                               Text(
@@ -212,10 +212,10 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 4. Fit Mode
-          Text('SILUETA Y CAÍDA (FIT)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('SILUETA Y CAÍDA', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
           const SizedBox(height: 8),
           Row(
-            children: ['Relaxed', 'True-to-Size', 'Oversized'].map((mode) {
+            children: ['Suelto', 'A tu talla', 'Amplio'].map((mode) {
               final isSel = appState.fitMode == mode;
               return Expanded(
                 child: Padding(
@@ -318,7 +318,7 @@ class TryOnScreen extends StatelessWidget {
               onPressed: () {
                 appState.saveLookToProfile();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Look guardado en tu Style Profile.')),
+                  const SnackBar(content: Text('Look guardado en tu perfil de estilo.')),
                 );
               },
             ),

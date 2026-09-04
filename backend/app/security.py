@@ -16,6 +16,38 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # Duracion del token de recuperacion de contrasena (15 minutos)
 PWD_RESET_TOKEN_EXPIRE_MINUTES = 15
 
+# Longitud minima exigida a una contrasena nueva
+PASSWORD_MIN_LENGTH = 12
+
+# Reglas de la politica de contrasenas. Cada entrada es
+# (codigo, descripcion en espanol, patron regex que debe cumplirse).
+# El mismo listado se expone en GET /api/auth/password-policy para que web y
+# mobile validen exactamente lo mismo que el backend.
+PASSWORD_RULES: list[tuple[str, str, str]] = [
+    ("longitud", f"Al menos {PASSWORD_MIN_LENGTH} caracteres", rf".{{{PASSWORD_MIN_LENGTH},}}"),
+    ("minuscula", "Al menos una letra minuscula", r"[a-z]"),
+    ("mayuscula", "Al menos una letra mayuscula", r"[A-Z]"),
+    ("numero", "Al menos un numero", r"\d"),
+    ("especial", "Al menos un caracter especial", r"[^A-Za-z0-9]"),
+]
+
+
+def password_policy() -> list[dict]:
+    """Devuelve la politica de contrasenas en un formato consumible por los frontends."""
+    return [
+        {"codigo": codigo, "descripcion": descripcion, "patron": patron}
+        for codigo, descripcion, patron in PASSWORD_RULES
+    ]
+
+
+def password_rules_faltantes(password: str) -> list[str]:
+    """Devuelve las descripciones de las reglas que la contrasena NO cumple."""
+    return [
+        descripcion
+        for _, descripcion, patron in PASSWORD_RULES
+        if not re.search(patron, password)
+    ]
+
 
 def validate_password_strength(password: str) -> None:
     """Valida la fortaleza de una contrasena y lanza ValueError con los requisitos faltantes.
@@ -26,21 +58,10 @@ def validate_password_strength(password: str) -> None:
     if not isinstance(password, str):
         raise ValueError("La contrasena debe ser una cadena de texto")
 
-    faltantes = []
-    if len(password) < 12:
-        faltantes.append("al menos 12 caracteres")
-    if not re.search(r"[a-z]", password):
-        faltantes.append("una letra minuscula")
-    if not re.search(r"[A-Z]", password):
-        faltantes.append("una letra mayuscula")
-    if not re.search(r"\d", password):
-        faltantes.append("un numero")
-    if not re.search(r"[^A-Za-z0-9]", password):
-        faltantes.append("un caracter especial")
-
+    faltantes = password_rules_faltantes(password)
     if faltantes:
         raise ValueError(
-            "La contrasena debe tener " + ", ".join(faltantes)
+            "La contrasena no cumple la politica: " + "; ".join(faltantes).lower()
         )
 
 

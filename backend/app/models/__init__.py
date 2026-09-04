@@ -70,6 +70,12 @@ class Usuario(Base):
     contraseña: Mapped[str] = mapped_column(String(255), nullable=False)
     codigoRol: Mapped[int] = mapped_column(ForeignKey("rol.codigoRol", onupdate="CASCADE"), nullable=False)
 
+    # Bloqueo de cuenta por intentos fallidos (migracion 003)
+    intentos_fallidos: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    bloqueado: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    fecha_bloqueo: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    ultimo_intento: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+
     rol: Mapped["Rol"] = relationship()
 
 

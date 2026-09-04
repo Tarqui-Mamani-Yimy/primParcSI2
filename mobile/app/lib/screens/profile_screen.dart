@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
+import 'welcome_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -51,6 +52,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  void _cerrarSesion(BuildContext context, AppState appState) {
+    appState.cerrarSesion();
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -69,13 +78,35 @@ class ProfileScreen extends StatelessWidget {
                 backgroundImage: NetworkImage(profile.avatarUrl),
               ),
               const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(profile.name, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: AetherTheme.charcoalDark)),
-                  Text(profile.email, style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E))),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(profile.name, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: AetherTheme.charcoalDark)),
+                    Text(profile.email, style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E))),
+                    const SizedBox(height: 4),
+                    Text(
+                      appState.estaAutenticado
+                          ? 'Sesión iniciada · ${appState.usuario!.rol}'
+                          : 'Navegando como invitado',
+                      style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.bold,
+                        color: appState.estaAutenticado
+                            ? const Color(0xFF3F7D58)
+                            : const Color(0xFF7B776E),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              if (appState.estaAutenticado)
+                IconButton(
+                  tooltip: 'Cerrar sesión',
+                  icon: const Icon(Icons.logout, size: 20, color: AetherTheme.charcoalDark),
+                  onPressed: () => _cerrarSesion(context, appState),
+                ),
             ],
           ),
 
@@ -114,10 +145,10 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _measureItem('HEIGHT', '${profile.measurements.height} cm'),
-                    _measureItem('CHEST', '${profile.measurements.chest} cm'),
-                    _measureItem('WAIST', '${profile.measurements.waist} cm'),
-                    _measureItem('INSEAM', '${profile.measurements.inseam} cm'),
+                    _measureItem('ALTURA', '${profile.measurements.height} cm'),
+                    _measureItem('PECHO', '${profile.measurements.chest} cm'),
+                    _measureItem('CINTURA', '${profile.measurements.waist} cm'),
+                    _measureItem('TIRO', '${profile.measurements.inseam} cm'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -156,7 +187,7 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     const Icon(Icons.auto_awesome, size: 16, color: AetherTheme.bronze),
                     const SizedBox(width: 6),
-                    Text('AI Style Insights', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text('Análisis de Estilo con IA', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 6),

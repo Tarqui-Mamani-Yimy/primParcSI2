@@ -16,9 +16,9 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
           <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Multi-Boutique Network</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Global Stock Allocation Matrix</h1>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Matriz de Asignación Global de Stock</h1>
           <p class="text-xs text-gray-500 mt-1">
-            Live inventory counts across all registered boutiques and vaults.
+            Conteo de inventario en vivo de todas las boutiques y bóvedas registradas.
           </p>
         </div>
 
@@ -28,14 +28,14 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
-            <span>Boutique Transfer</span>
+            <span>Traspaso entre boutiques</span>
           </button>
         </div>
       </div>
 
       <!-- Quick Location Filter Chips -->
       <div class="flex flex-wrap items-center gap-2 bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs">
-        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-1">Filter by Node:</span>
+        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-1">Filtrar por nodo:</span>
         <button
           (click)="selectedLocation.set('ALL')"
           [class.bg-indigo-600]="selectedLocation() === 'ALL'"
@@ -63,12 +63,12 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-gray-50 border-b border-gray-200 text-gray-500 text-[11px] font-bold uppercase tracking-wider">
-                <th class="p-3.5 pl-6">Garment & SKU</th>
-                <th class="p-3.5">Boutique Node</th>
-                <th class="p-3.5 text-center">Size</th>
-                <th class="p-3.5 text-center">Available Stock</th>
-                <th class="p-3.5">Health Status</th>
-                <th class="p-3.5 text-right pr-6">Quick Adjust</th>
+                <th class="p-3.5 pl-6">Prenda y SKU</th>
+                <th class="p-3.5">Nodo de boutique</th>
+                <th class="p-3.5 text-center">Talla</th>
+                <th class="p-3.5 text-center">Stock disponible</th>
+                <th class="p-3.5">Estado</th>
+                <th class="p-3.5 text-right pr-6">Ajuste rápido</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-xs">
@@ -109,14 +109,14 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
                     class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold uppercase"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                    <span>Low Stock</span>
+                    <span>Stock bajo</span>
                   </span>
                   <span
                     *ngIf="item.cantidad > (item.minimo || 0)"
                     class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    <span>Optimal</span>
+                    <span>Óptimo</span>
                   </span>
                 </td>
 
@@ -152,14 +152,14 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Internal Logistics</span>
-          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Boutique Rebalance Transfer</h2>
-          <p class="text-xs text-gray-500">Transfer physical inventory pieces between regional boutiques or central vault.</p>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Logística interna</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Traspaso de reposición entre boutiques</h2>
+          <p class="text-xs text-gray-500">Traspasa piezas de inventario físico entre boutiques regionales o la bóveda central.</p>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Select Garment</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Seleccionar prenda</label>
             <select [(ngModel)]="transferProductId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
               <option *ngFor="let p of archiveService.products()" [value]="p.id">
                 {{ p.sku }} — {{ p.nombre }}
@@ -169,7 +169,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Source Origin</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Origen</label>
               <select [(ngModel)]="transferFromLoc" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
                   {{ loc.nombre }}
@@ -177,7 +177,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Destination Node</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nodo de destino</label>
               <select [(ngModel)]="transferToLoc" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
                   {{ loc.nombre }}
@@ -188,16 +188,16 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Size Code</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Talla</label>
               <select [(ngModel)]="transferSize" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="S">S (Small)</option>
-                <option value="M">M (Medium)</option>
-                <option value="L">L (Large)</option>
-                <option value="XL">XL (Extra Large)</option>
+                <option value="S">S (pequeña)</option>
+                <option value="M">M (mediana)</option>
+                <option value="L">L (grande)</option>
+                <option value="XL">XL (extra grande)</option>
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Quantity (Pcs)</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Cantidad (piezas)</label>
               <input type="number" min="1" [(ngModel)]="transferQty" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
           </div>
@@ -206,7 +206,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
             (click)="executeTransfer()"
             class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
           >
-            Authorize & Schedule Transit
+            Autorizar y programar el tránsito
           </button>
         </div>
       </div>

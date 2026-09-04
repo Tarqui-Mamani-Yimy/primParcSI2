@@ -9,12 +9,12 @@ import { AuthService } from '../../core/services/auth.service';
   template: `
     <header class="h-16 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
 
-      <!-- Left: Mobile Menu Toggle & Breadcrumb -->
+      <!-- Izquierda: menu movil y ruta de navegacion -->
       <div class="flex items-center space-x-3">
         <button
           (click)="toggleMobileMenu.emit()"
           class="md:hidden text-gray-600 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          aria-label="Toggle Navigation"
+          aria-label="Abrir o cerrar la navegación"
         >
           <span class="material-symbols-outlined text-[20px]">menu</span>
         </button>
@@ -22,22 +22,22 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="flex items-center space-x-2 text-sm">
           <span class="font-bold text-gray-900 tracking-tight">AETHER</span>
           <span class="text-gray-300">/</span>
-          <span class="text-gray-400 hidden sm:inline">Operations</span>
+          <span class="text-gray-400 hidden sm:inline">Operaciones</span>
           <span class="text-gray-300 hidden sm:inline">/</span>
           <span class="font-medium text-gray-900">{{ activeViewTitle }}</span>
         </div>
       </div>
 
-      <!-- Right: Live Status & User Identity -->
+      <!-- Derecha: estado del sistema e identidad del usuario -->
       <div class="flex items-center space-x-3">
 
-        <!-- Live System Status Indicator -->
+        <!-- Indicador de estado del sistema -->
         <div class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-tight">Vault Sync Active</span>
+          <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-tight">Bóveda sincronizada</span>
         </div>
 
-        <!-- User Menu -->
+        <!-- Menu de usuario -->
         <div class="relative" *ngIf="authService.currentUser() as user">
           <button
             (click)="showUserDropdown.update(v => !v)"
@@ -53,7 +53,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span class="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
           </button>
 
-          <!-- Dropdown -->
+          <!-- Desplegable -->
           <div
             *ngIf="showUserDropdown()"
             class="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150"
@@ -67,7 +67,7 @@ import { AuthService } from '../../core/services/auth.service';
             </div>
 
             <div class="py-1">
-              <p class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Permissions:</p>
+              <p class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Permisos activos:</p>
               <div class="px-3 py-1 flex flex-wrap gap-1">
                 <span *ngFor="let perm of user.permisos" class="px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 text-gray-600 text-[9px] font-medium">
                   {{ perm.replace('_', ' ') }}
@@ -81,7 +81,7 @@ import { AuthService } from '../../core/services/auth.service';
                 class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-rose-50 text-xs font-semibold text-rose-600 flex items-center space-x-2"
               >
                 <span class="material-symbols-outlined text-[16px]">logout</span>
-                <span>Sign Out</span>
+                <span>Cerrar sesión</span>
               </button>
             </div>
           </div>
@@ -91,7 +91,7 @@ import { AuthService } from '../../core/services/auth.service';
   `
 })
 export class HeaderComponent {
-  @Input() activeViewTitle = 'Dashboard Overview';
+  @Input() activeViewTitle = 'Centro de Operaciones';
   @Output() toggleMobileMenu = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
 

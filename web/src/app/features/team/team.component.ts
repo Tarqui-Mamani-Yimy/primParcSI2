@@ -14,10 +14,10 @@ import { TeamMember } from '../../core/models';
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Security Governance & RBAC</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Personnel Directory & Access Nodes</h1>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Gobernanza de seguridad y RBAC</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Directorio de Personal y Nodos de Acceso</h1>
           <p class="text-xs text-gray-500 mt-1">
-            Role-based permissions, activity logs, and administrative node authorization.
+            Permisos basados en roles, registros de actividad y autorización de nodos administrativos.
           </p>
         </div>
 
@@ -58,7 +58,7 @@ import { TeamMember } from '../../core/models';
             </div>
 
             <div class="mt-3.5 pt-3 border-t border-gray-100">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Active Privileges:</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Privilegios activos:</p>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   *ngFor="let perm of member.permisos"
@@ -76,10 +76,10 @@ import { TeamMember } from '../../core/models';
       <div class="bg-white rounded-xl border border-gray-200 p-5 lg:p-6 shadow-xs">
         <div class="flex items-center justify-between pb-3.5 border-b border-gray-100">
           <div>
-            <h2 class="text-sm font-bold text-gray-900">Security Audit & Activity Ledger</h2>
-            <p class="text-xs text-gray-500">Immutable register of inventory alterations, dispatches, and access events</p>
+            <h2 class="text-sm font-bold text-gray-900">Auditoría de seguridad y bitácora de actividad</h2>
+            <p class="text-xs text-gray-500">Registro inmutable de cambios de inventario, despachos y eventos de acceso</p>
           </div>
-          <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider">Live Stream</span>
+          <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider">En vivo</span>
         </div>
 
         <div class="divide-y divide-gray-100 mt-1">

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
 import '../theme/aether_theme.dart';
 
 class AppointmentsScreen extends StatefulWidget {
@@ -12,20 +14,29 @@ class AppointmentsScreen extends StatefulWidget {
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
   int selectedService = 0;
   int selectedDateIndex = 0;
-  String selectedTime = '10:00 AM';
+  String selectedTime = '10:00';
 
-  final _nameController = TextEditingController(text: 'Jane Doe');
-  final _emailController = TextEditingController(text: 'jane@example.com');
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _notesController = TextEditingController();
 
   final List<Map<String, String>> dates = [
-    {'month': 'OCT', 'day': '12', 'dow': 'THU'},
-    {'month': 'OCT', 'day': '13', 'dow': 'FRI'},
-    {'month': 'OCT', 'day': '14', 'dow': 'SAT'},
-    {'month': 'OCT', 'day': '15', 'dow': 'SUN'},
+    {'month': 'OCT', 'day': '12', 'dow': 'JUE'},
+    {'month': 'OCT', 'day': '13', 'dow': 'VIE'},
+    {'month': 'OCT', 'day': '14', 'dow': 'SÁB'},
+    {'month': 'OCT', 'day': '15', 'dow': 'DOM'},
   ];
 
-  final List<String> times = ['10:00 AM', '11:30 AM', '02:30 PM', '04:00 PM', '05:30 PM'];
+  final List<String> times = ['10:00', '11:30', '14:30', '16:00', '17:30'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Se precargan los datos de la sesion (o del perfil de invitado).
+    final perfil = context.read<AppState>().userProfile;
+    _nameController.text = perfil.name;
+    _emailController.text = perfil.email;
+  }
 
   @override
   void dispose() {
@@ -42,7 +53,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         backgroundColor: AetherTheme.sandLight,
         title: Text('Cita Confirmada', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         content: Text(
-          'Tu cita para ${selectedService == 0 ? "Personal Shopping" : "Probador Privado"} el ${dates[selectedDateIndex]['day']} de ${dates[selectedDateIndex]['month']} a las $selectedTime ha sido agendada.',
+          'Tu cita de ${selectedService == 0 ? "Asesoría de Imagen" : "Probador Privado"} para el ${dates[selectedDateIndex]['day']} de ${dates[selectedDateIndex]['month']} a las $selectedTime ha sido agendada.',
           style: GoogleFonts.sourceSerif4(fontSize: 13),
         ),
         actions: [
@@ -62,7 +73,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bespoke Atelier Appointments', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark)),
+          Text('Citas en el Atelier', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark)),
           const SizedBox(height: 4),
           Text(
             'Reserva una sesión con un estilista personal en nuestra suite privada.',
@@ -73,7 +84,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           // 1. Service Selection
           Text('1. SELECCIONAR SERVICIO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
           const SizedBox(height: 8),
-          _serviceOption(0, 'In-store Personal Shopping', 'Sesión personalizada de 60 minutos con un estilista exclusivo.'),
+          _serviceOption(0, 'Asesoría de Imagen en Tienda', 'Sesión personalizada de 60 minutos con un estilista exclusivo.'),
           const SizedBox(height: 8),
           _serviceOption(1, 'Reserva de Probador & Prendas', 'Tus prendas y tallas seleccionadas preparadas con antelación.'),
 

@@ -5,58 +5,66 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../theme/aether_theme.dart';
 import '../utils/password_policy.dart';
+import '../widgets/password_requirements.dart';
 import 'main_navigation_shell.dart';
-import 'register_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _nombreController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmarController = TextEditingController();
 
   bool _ocultarPassword = true;
+  bool _ocultarConfirmar = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Repinta la lista de requisitos en cada tecla.
+    _passwordController.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
+    _nombreController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmarController.dispose();
     super.dispose();
   }
 
-  void _irAlCatalogo() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainNavigationShell()),
-    );
-  }
-
-  Future<void> _iniciarSesion() async {
+  Future<void> _registrar() async {
     if (!_formKey.currentState!.validate()) return;
 
     final appState = context.read<AppState>();
-    final ok = await appState.login(
-      _emailController.text.trim(),
-      _passwordController.text,
+    final ok = await appState.registrar(
+      nombre: _nombreController.text.trim(),
+      correo: _emailController.text.trim(),
+      password: _passwordController.text,
     );
 
     if (!mounted) return;
-    if (ok) _irAlCatalogo();
-  }
-
-  void _continuarComoInvitado() {
-    context.read<AppState>().continuarComoInvitado();
-    _irAlCatalogo();
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cuenta creada correctamente. ¡Bienvenido a AETHER!')),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final bloqueada = appState.cuentaBloqueada;
 
     return Scaffold(
       backgroundColor: AetherTheme.sandLight,
@@ -65,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AetherTheme.charcoalDark),
-          onPressed: _continuarComoInvitado,
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: SafeArea(
@@ -77,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bienvenido.',
+                  'Crear cuenta.',
                   style: GoogleFonts.outfit(
                     fontSize: 30,
                     fontWeight: FontWeight.w500,
@@ -86,35 +94,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Accede a tu perfil biométrico y colecciones exclusivas.',
+                  'Regístrate para guardar tus medidas, tus looks y tus citas.',
                   style: GoogleFonts.sourceSerif4(
                     fontSize: 14,
                     color: const Color(0xFF4A463F),
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
                 if (appState.authError != null) ...[
-                  _AvisoLogin(
-                    mensaje: appState.authError!,
-                    bloqueada: bloqueada,
-                    intentosRestantes: appState.intentosRestantes,
-                  ),
-                  const SizedBox(height: 20),
+                  _BannerError(mensaje: appState.authError!),
+                  const SizedBox(height: 16),
                 ],
 
-                Text(
-                  'CORREO ELECTRÓNICO',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF7B776E),
-                  ),
+                _Etiqueta('NOMBRE COMPLETO'),
+                TextFormField(
+                  controller: _nombreController,
+                  textInputAction: TextInputAction.next,
+                  style: GoogleFonts.sourceSerif4(fontSize: 14),
+                  decoration: _decoracion('Ada Lovelace'),
+                  validator: (v) {
+                    final valor = (v ?? '').trim();
+                    if (valor.isEmpty) return 'Ingresa tu nombre';
+                    if (valor.length < 3) return 'El nombre debe tener al menos 3 caracteres';
+                    return null;
+                  },
                 ),
+                const SizedBox(height: 22),
+
+                _Etiqueta('CORREO ELECTRÓNICO'),
                 TextFormField(
                   controller: _emailController,
-                  enabled: !bloqueada,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autocorrect: false,
@@ -128,25 +138,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 22),
 
-                Text(
-                  'CONTRASEÑA',
-                  style: GoogleFonts.outfit(
-                    fontSize: 10,
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF7B776E),
-                  ),
-                ),
+                _Etiqueta('CONTRASEÑA'),
                 TextFormField(
                   controller: _passwordController,
-                  enabled: !bloqueada,
                   obscureText: _ocultarPassword,
-                  textInputAction: TextInputAction.done,
+                  textInputAction: TextInputAction.next,
                   style: GoogleFonts.sourceSerif4(fontSize: 14),
                   decoration: _decoracion(
-                    'Tu contraseña',
+                    'Mínimo ${PasswordPolicy.minLength} caracteres',
                     sufijo: IconButton(
                       icon: Icon(
                         _ocultarPassword ? Icons.visibility_off : Icons.visibility,
@@ -156,27 +157,43 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
                     ),
                   ),
-                  validator: (v) =>
-                      (v ?? '').isEmpty ? 'Ingresa tu contraseña' : null,
-                  onFieldSubmitted: (_) => _iniciarSesion(),
+                  validator: PasswordPolicy.validar,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Tras ${PasswordPolicy.maxIntentosLogin} intentos fallidos la cuenta '
-                  'se bloquea por seguridad.',
-                  style: GoogleFonts.sourceSerif4(
-                    fontSize: 11,
-                    color: const Color(0xFF7B776E),
+                const SizedBox(height: 12),
+                PasswordRequirements(password: _passwordController.text),
+                const SizedBox(height: 22),
+
+                _Etiqueta('CONFIRMAR CONTRASEÑA'),
+                TextFormField(
+                  controller: _confirmarController,
+                  obscureText: _ocultarConfirmar,
+                  textInputAction: TextInputAction.done,
+                  style: GoogleFonts.sourceSerif4(fontSize: 14),
+                  decoration: _decoracion(
+                    'Repite tu contraseña',
+                    sufijo: IconButton(
+                      icon: Icon(
+                        _ocultarConfirmar ? Icons.visibility_off : Icons.visibility,
+                        size: 18,
+                        color: const Color(0xFF7B776E),
+                      ),
+                      onPressed: () => setState(() => _ocultarConfirmar = !_ocultarConfirmar),
+                    ),
                   ),
+                  validator: (v) {
+                    if ((v ?? '').isEmpty) return 'Confirma tu contraseña';
+                    if (v != _passwordController.text) return 'Las contraseñas no coinciden';
+                    return null;
+                  },
+                  onFieldSubmitted: (_) => _registrar(),
                 ),
-                const SizedBox(height: 26),
+                const SizedBox(height: 28),
 
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed:
-                        (appState.authCargando || bloqueada) ? null : _iniciarSesion,
+                    onPressed: appState.authCargando ? null : _registrar,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AetherTheme.charcoalDark,
                       foregroundColor: AetherTheme.sandLight,
@@ -193,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : Text(
-                            bloqueada ? 'CUENTA BLOQUEADA' : 'INICIAR SESIÓN',
+                            'CREAR CUENTA',
                             style: GoogleFonts.outfit(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -202,41 +219,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      context.read<AppState>().limpiarAuthError();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AetherTheme.charcoalDark,
-                      side: const BorderSide(color: AetherTheme.charcoalDark),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                    ),
-                    child: Text(
-                      'CREAR UNA CUENTA',
-                      style: GoogleFonts.outfit(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1.6,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
+                const SizedBox(height: 14),
+                Center(
                   child: TextButton(
-                    onPressed: _continuarComoInvitado,
+                    onPressed: () => Navigator.of(context).pop(),
                     child: Text(
-                      'Continuar como Invitado',
+                      '¿Ya tienes cuenta? Inicia sesión',
                       style: GoogleFonts.outfit(
                         fontSize: 12,
                         color: const Color(0xFF7B776E),
@@ -268,65 +256,51 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 }
 
-/// Aviso de credenciales incorrectas o de cuenta bloqueada.
-class _AvisoLogin extends StatelessWidget {
-  final String mensaje;
-  final bool bloqueada;
-  final int? intentosRestantes;
+class _Etiqueta extends StatelessWidget {
+  final String texto;
+  const _Etiqueta(this.texto);
 
-  const _AvisoLogin({
-    required this.mensaje,
-    required this.bloqueada,
-    this.intentosRestantes,
-  });
+  @override
+  Widget build(BuildContext context) => Text(
+        texto,
+        style: GoogleFonts.outfit(
+          fontSize: 10,
+          letterSpacing: 1.8,
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF7B776E),
+        ),
+      );
+}
+
+class _BannerError extends StatelessWidget {
+  final String mensaje;
+  const _BannerError({required this.mensaje});
 
   @override
   Widget build(BuildContext context) {
-    final color = bloqueada ? const Color(0xFF8A2F2B) : const Color(0xFFB4413C);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        border: Border.all(color: color.withOpacity(0.5)),
+        color: const Color(0xFFB4413C).withOpacity(0.08),
+        border: Border.all(color: const Color(0xFFB4413C).withOpacity(0.5)),
         borderRadius: BorderRadius.circular(2),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(bloqueada ? Icons.lock : Icons.error_outline, size: 16, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  mensaje,
-                  style: GoogleFonts.sourceSerif4(
-                    fontSize: 12,
-                    height: 1.4,
-                    color: color,
-                  ),
-                ),
+          const Icon(Icons.error_outline, size: 16, color: Color(0xFFB4413C)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              mensaje,
+              style: GoogleFonts.sourceSerif4(
+                fontSize: 12,
+                height: 1.4,
+                color: const Color(0xFF8A2F2B),
               ),
-            ],
-          ),
-          if (!bloqueada && intentosRestantes != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: List.generate(PasswordPolicy.maxIntentosLogin, (i) {
-                final consumido = i < PasswordPolicy.maxIntentosLogin - intentosRestantes!;
-                return Expanded(
-                  child: Container(
-                    height: 3,
-                    margin: const EdgeInsets.only(right: 4),
-                    color: consumido ? color : const Color(0xFFE3DED4),
-                  ),
-                );
-              }),
             ),
-          ],
+          ),
         ],
       ),
     );

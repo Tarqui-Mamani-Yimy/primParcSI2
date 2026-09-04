@@ -14,9 +14,9 @@ import { ProductItem } from '../../core/models';
       <!-- Top Title & Action Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Curated Garment Architecture</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">AETHER Archive & Essential Catalog</h1>
-          <p class="text-xs text-gray-500 mt-1">Official register of permanent essential wear, certified yarn specifications, and seasonal releases.</p>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Arquitectura de prendas curada</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Archivo AETHER y Catálogo Esencial</h1>
+          <p class="text-xs text-gray-500 mt-1">Registro oficial de prendas esenciales permanentes, especificaciones de hilo certificadas y lanzamientos de temporada.</p>
         </div>
 
         <div class="flex items-center space-x-3">
@@ -25,7 +25,7 @@ import { ProductItem } from '../../core/models';
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
-            <span>Curate New Garment</span>
+            <span>Registrar prenda</span>
           </button>
         </div>
       </div>
@@ -39,28 +39,28 @@ import { ProductItem } from '../../core/models';
             [class.text-white]="selectedCollection() === 'ALL'"
             [class.text-gray-600]="selectedCollection() !== 'ALL'"
             class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >All Collections</button>
+          >Todas las colecciones</button>
           <button
             (click)="selectedCollection.set('ESSENTIAL_PERMANENT')"
             [class.bg-indigo-600]="selectedCollection() === 'ESSENTIAL_PERMANENT'"
             [class.text-white]="selectedCollection() === 'ESSENTIAL_PERMANENT'"
             [class.text-gray-600]="selectedCollection() !== 'ESSENTIAL_PERMANENT'"
             class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >Essential Permanent</button>
+          >Esenciales permanentes</button>
           <button
             (click)="selectedCollection.set('ARCHIVE_AW25')"
             [class.bg-indigo-600]="selectedCollection() === 'ARCHIVE_AW25'"
             [class.text-white]="selectedCollection() === 'ARCHIVE_AW25'"
             [class.text-gray-600]="selectedCollection() !== 'ARCHIVE_AW25'"
             class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >Archive AW25</button>
+          >Archivo OI25</button>
           <button
             (click)="selectedCollection.set('ATELIER_SS26')"
             [class.bg-indigo-600]="selectedCollection() === 'ATELIER_SS26'"
             [class.text-white]="selectedCollection() === 'ATELIER_SS26'"
             [class.text-gray-600]="selectedCollection() !== 'ATELIER_SS26'"
             class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >SS26 Atelier</button>
+          >Atelier PV26</button>
         </div>
 
         <div class="relative min-w-[240px]">
@@ -68,7 +68,7 @@ import { ProductItem } from '../../core/models';
           <input
             type="text"
             [(ngModel)]="searchQuery"
-            placeholder="Search SKU, fabric, title..."
+            placeholder="Buscar por SKU, tejido o título..."
             class="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
           />
         </div>
@@ -93,7 +93,7 @@ import { ProductItem } from '../../core/models';
               <span
                 *ngIf="item.estado === 'agotado'"
                 class="px-2 py-0.5 bg-amber-500 text-white rounded text-[9px] font-bold uppercase shadow-xs"
-              >Out of Stock</span>
+              >Sin stock</span>
             </div>
 
             <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-gray-200/80 shadow-xs text-right">
@@ -122,7 +122,7 @@ import { ProductItem } from '../../core/models';
               <button
                 (click)="inspectProduct(item)"
                 class="px-3 py-1.5 bg-gray-900 text-white hover:bg-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
-              >Inspect Specs</button>
+              >Ver ficha técnica</button>
             </div>
           </div>
         </div>
@@ -156,14 +156,14 @@ import { ProductItem } from '../../core/models';
                 </div>
 
                 <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 my-3">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Retail Price</p>
+                  <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Precio de venta</p>
                   <p class="text-xl font-bold text-gray-900 mt-0.5">{{ p.precio.toLocaleString() }} Bs</p>
                 </div>
               </div>
             </div>
 
             <div class="mt-6 pt-6 border-t border-gray-100 space-y-3">
-              <h3 class="text-sm font-bold text-gray-900">Color & Season</h3>
+              <h3 class="text-sm font-bold text-gray-900">Color y temporada</h3>
               <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-200">
                 <div class="flex justify-between items-center">
                   <span class="font-bold text-gray-900 text-xs">{{ p.color }}</span>
@@ -173,14 +173,14 @@ import { ProductItem } from '../../core/models';
             </div>
 
             <div *ngIf="p.notas_diseno" class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-2">Designer Notes</h3>
+              <h3 class="text-sm font-bold text-gray-900 mb-2">Notas de diseño</h3>
               <p class="text-xs text-gray-600 leading-relaxed p-4 rounded-xl bg-gray-50 border border-gray-200 italic">
                 "{{ p.notas_diseno }}"
               </p>
             </div>
 
             <div class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-3">Size Network Matrix</h3>
+              <h3 class="text-sm font-bold text-gray-900 mb-3">Matriz de tallas por nodo</h3>
               <div class="grid grid-cols-5 gap-2 text-center">
                 <div *ngFor="let key of getKeys(p.tallas)" class="p-3 bg-gray-50 rounded-xl border border-gray-200">
                   <p class="text-xs font-bold text-gray-500">Size {{ key }}</p>
@@ -190,7 +190,7 @@ import { ProductItem } from '../../core/models';
             </div>
 
             <div *ngIf="p.imagenes_secundarias && p.imagenes_secundarias.length > 0" class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-3">Additional Images</h3>
+              <h3 class="text-sm font-bold text-gray-900 mb-3">Imágenes adicionales</h3>
               <div class="grid grid-cols-3 gap-2">
                 <img *ngFor="let img of p.imagenes_secundarias" [src]="img" class="w-full h-24 object-cover rounded-lg border border-gray-200" />
               </div>
@@ -200,7 +200,7 @@ import { ProductItem } from '../../core/models';
 
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
           <button (click)="inspectingItem.set(null)" class="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors">
-            Close Dossier
+            Cerrar ficha
           </button>
         </div>
       </div>
@@ -214,49 +214,49 @@ import { ProductItem } from '../../core/models';
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Atelier Curation</span>
-          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Register Archive Garment</h2>
-          <p class="text-xs text-gray-500">Add a new essential piece to the master catalog.</p>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Curaduría de atelier</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Registrar prenda en el archivo</h2>
+          <p class="text-xs text-gray-500">Añade una pieza esencial nueva al catálogo maestro.</p>
         </div>
 
         <form (ngSubmit)="saveNewGarment()" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Garment Name</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre de la prenda</label>
               <input type="text" [(ngModel)]="newGarment.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">SKU Code</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Código SKU</label>
               <input type="text" [(ngModel)]="newGarment.sku" name="sku" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Description</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Descripción</label>
             <input type="text" [(ngModel)]="newGarment.descripcion" name="descripcion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
           </div>
 
           <div class="grid grid-cols-3 gap-3">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Category</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Categoría</label>
               <select [(ngModel)]="newGarment.categoria" name="categoria" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="OUTERWEAR">Outerwear</option>
-                <option value="TAILORING">Tailoring</option>
-                <option value="KNITWEAR">Knitwear</option>
-                <option value="TROUSERS">Trousers</option>
-                <option value="FOOTWEAR">Footwear</option>
+                <option value="OUTERWEAR">Abrigos</option>
+                <option value="TAILORING">Sastrería</option>
+                <option value="KNITWEAR">Punto</option>
+                <option value="TROUSERS">Pantalones</option>
+                <option value="FOOTWEAR">Calzado</option>
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Collection</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Colección</label>
               <select [(ngModel)]="newGarment.coleccion" name="coleccion" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="ESSENTIAL_PERMANENT">Essential Permanent</option>
-                <option value="ARCHIVE_AW25">Archive AW25</option>
-                <option value="ATELIER_SS26">Atelier SS26</option>
+                <option value="ESSENTIAL_PERMANENT">Esenciales permanentes</option>
+                <option value="ARCHIVE_AW25">Archivo OI25</option>
+                <option value="ATELIER_SS26">Atelier PV26</option>
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Price (Bs)</label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Precio (Bs)</label>
               <input type="number" [(ngModel)]="newGarment.precio" name="precio" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
           </div>
@@ -267,12 +267,12 @@ import { ProductItem } from '../../core/models';
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Designer Notes</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Notas de diseño</label>
             <textarea [(ngModel)]="newGarment.notas_diseno" name="notas" rows="2" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
           </div>
 
           <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
-            Curate & Commit to Archive
+            Guardar en el archivo
           </button>
         </form>
       </div>

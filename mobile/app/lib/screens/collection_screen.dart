@@ -15,7 +15,8 @@ class CollectionScreen extends StatefulWidget {
 
 class _CollectionScreenState extends State<CollectionScreen> {
   String selectedFilter = 'Todos';
-  final List<String> filters = ['Todos', 'Oversized', 'Regular', 'Tailoring', 'Outerwear'];
+  // Deben coincidir con `Product.category` en models/product_model.dart.
+  final List<String> filters = ['Todos', 'Holgado', 'Regular', 'Sastrería', 'Abrigos'];
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +125,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                       height: 30,
                       child: OutlinedButton.icon(
                         icon: const Icon(Icons.face_retouching_natural, size: 13, color: AetherTheme.bronze),
-                        label: Text('PROBAR IA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold)),
+                        label: Text('PROBAR CON IA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AetherTheme.charcoalDark,
                           side: const BorderSide(color: Color(0xFFCCC6BC)),

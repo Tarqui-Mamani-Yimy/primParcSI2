@@ -115,7 +115,7 @@ class MainNavigationShell extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.auto_awesome_outlined),
               activeIcon: Icon(Icons.auto_awesome),
-              label: 'Try-On',
+              label: 'Probador',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_month_outlined),

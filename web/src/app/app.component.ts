@@ -27,16 +27,16 @@ import { TeamComponent } from './features/team/team.component';
     TeamComponent
   ],
   template: `
-    <!-- Top Level Screen Router: Show Login or Authenticated Portal -->
+    <!-- Enrutador principal: muestra el login o el portal autenticado -->
     <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else portalLayout">
       <app-login (loggedIn)="onLoginSuccess()"></app-login>
     </ng-container>
 
-    <!-- Main Operational Workspace Shell -->
+    <!-- Contenedor principal del area de trabajo -->
     <ng-template #portalLayout>
       <div class="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
         
-        <!-- Desktop Sidebar Navigation -->
+        <!-- Navegacion lateral (escritorio) -->
         <div class="hidden md:block h-full shrink-0">
           <app-sidebar
             [currentView]="activeView()"
@@ -45,7 +45,7 @@ import { TeamComponent } from './features/team/team.component';
           ></app-sidebar>
         </div>
 
-        <!-- Mobile Drawer Navigation -->
+        <!-- Navegacion lateral desplegable (movil) -->
         <div
           *ngIf="mobileMenuOpen()"
           class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-xs md:hidden animate-in fade-in"
@@ -63,17 +63,17 @@ import { TeamComponent } from './features/team/team.component';
           </div>
         </div>
 
-        <!-- Main Content Area -->
+        <!-- Area de contenido principal -->
         <div class="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
           
-          <!-- Shared Header -->
+          <!-- Cabecera compartida -->
           <app-header
             [activeViewTitle]="getViewTitle(activeView())"
             (toggleMobileMenu)="mobileMenuOpen.set(true)"
             (logout)="onLogout()"
           ></app-header>
 
-          <!-- Scrollable View Container -->
+          <!-- Contenedor de vistas con scroll -->
           <main class="flex-1 overflow-y-auto bg-gray-50">
             <app-dashboard
               *ngIf="activeView() === 'dashboard'"
@@ -100,7 +100,7 @@ import { TeamComponent } from './features/team/team.component';
       </div>
     </ng-template>
 
-    <!-- Global Toast Alert Messages -->
+    <!-- Notificaciones globales -->
     <app-toast-container></app-toast-container>
   `
 })
@@ -131,17 +131,17 @@ export class AppComponent {
   getViewTitle(view: AppView): string {
     switch (view) {
       case 'dashboard':
-        return 'Operations Center';
+        return 'Centro de Operaciones';
       case 'archive':
-        return 'Garment Archive & Catalog';
+        return 'Archivo y Catálogo de Prendas';
       case 'inventory':
-        return 'Global Stock Allocation';
+        return 'Asignación Global de Stock';
       case 'logistics':
-        return 'Dispatches & Secured Transit';
+        return 'Despachos y Tránsito Seguro';
       case 'team':
-        return 'Personnel & Node Access';
+        return 'Personal y Accesos';
       default:
-        return 'Operations';
+        return 'Operaciones';
     }
   }
 }

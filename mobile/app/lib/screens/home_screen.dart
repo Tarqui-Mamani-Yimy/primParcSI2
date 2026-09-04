@@ -55,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'FALL / WINTER EDIT',
+                          'EDICIÓN OTOÑO / INVIERNO',
                           style: GoogleFonts.outfit(
                             fontSize: 10,
                             letterSpacing: 2.0,
