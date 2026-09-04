@@ -77,7 +77,6 @@ CREATE TABLE "Colecciones" (
 );
 CREATE INDEX "idx_coleccion_temporada" ON "Colecciones" ("idTemporada");
 
--- 3. TABLAS DEPENDIENTES NIVEL 2
 CREATE TABLE "Cliente" (
     "idCliente" INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     "nombre" VARCHAR(100) NOT NULL,
@@ -203,3 +202,115 @@ CREATE TABLE "historial" (
     CONSTRAINT "fk_historial_venta" FOREIGN KEY ("idVenta") REFERENCES "Venta"("idVenta") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE INDEX "idx_historial_busqueda" ON "historial" ("idCliente", "idProducto");
+
+INSERT INTO "permiso" ("nombrePermiso") VALUES
+('GESTION_GLOBAL_SISTEMA'),     
+('GESTION_INVENTARIO_SUCURSAL'),
+('OPERAR_PUNTO_VENTA_POS'),  
+('PROVEER_MERCANCIA'),       
+('ACCESO_CLIENTE_OMNICANAL');
+
+INSERT INTO "rol" ("nombreRol") VALUES
+('Administrador'),
+('Encargado de Sucursal'),
+('Cajero'),
+('Proveedor'),
+('Cliente');
+
+INSERT INTO "asignacion_permiso" ("codigoRol", "idPermiso", "estado") VALUES
+(1, 1, 'Activo'), 
+(2, 2, 'Activo'), 
+(3, 3, 'Activo'), 
+(4, 4, 'Activo'), 
+(5, 5, 'Activo'); 
+
+INSERT INTO "Usuario" ("nombre", "correo", "contraseña", "codigoRol") VALUES
+('Revollo Admin', 'nicolasrevolloroman@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 1),
+('Yimysit Admin', 'tarquipatus@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 1),
+('Roberto Encargado', 'encargado.central@tienda.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 2),
+('Lucía Cajera', 'cajero.central@tienda.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 3),
+('Textiles B2B', 'proveedor@textiles.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 4),
+('Juan Pérez Cliente', 'juan.perez@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 5),
+('Maria Gomez Cliente', 'maria.gomez@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 5);
+
+INSERT INTO "Ciudad" ("nombCiudad") VALUES
+('Santa Cruz de la Sierra'),
+('La Paz');
+
+INSERT INTO "Sucursal" ("nombre", "direccion", "idCiudad") VALUES
+('Sucursal Central Equipetrol', 'Av. San Martín #123, Z/Equipetrol', 1),
+('Sucursal El Prado', 'Av. 16 de Julio #456, Z/Centro', 2);
+
+INSERT INTO "Cliente" ("nombre", "telefono", "direccion", "idUser") VALUES
+('Juan Pérez Cliente', '+591 71012345', 'Av. Bush #500', 5),
+('Maria Gomez Cliente', '+591 72067890', 'Calle Comercio #80', 6);
+
+INSERT INTO "Bitacora" ("accion", "hora", "fecha", "ip", "idUser") VALUES
+('Autenticar e Iniciar Sesión (JWT Generado)', '08:00:00', '2026-09-01', '192.168.1.10', 1),
+('Autenticar e Iniciar Sesión (JWT Generado)', '08:15:00', '2026-09-01', '192.168.1.22', 2),
+('Consulta de Catálogo desde App Móvil', '09:30:12', '2026-09-01', '186.87.12.44', 5);
+
+
+INSERT INTO "Proveedor" ("nombre", "telefono", "correo") VALUES
+('Textiles Andinos S.A.', '+591 33445566', 'contacto@textilesandinos.com'),
+('Importadora Moda Global', '+591 22114455', 'ventas@modaglobal.bo');
+
+INSERT INTO "Temporada" ("nombreTemporada", "fecha_ini", "fecha_fin") VALUES
+('Primavera - Verano 2026', '2026-09-01', '2027-02-28'),
+('Otoño - Invierno 2026', '2026-03-01', '2026-08-31');
+
+INSERT INTO "Colecciones" ("nombre_coleccion", "idTemporada") VALUES
+('Colección Urbana Casual', 1),
+('Colección Formal / Ejecutiva', 2);
+
+INSERT INTO "producto" ("nombre", "descripcion", "costo", "venta", "tipo", "talla", "color", "idProveedor", "idColeccion") VALUES
+('Polera Oversize Cotton', 'Polera ligera apta para vestidor virtual (RA)', 50.00, 120.00, 'Polera', 'L', 'Negro', 1, 1),
+('Jeans Slim Fit Denim', 'Pantalón mezclilla azul clásico', 90.00, 210.00, 'Pantalón', '32', 'Azul', 2, 1),
+('Saco Blazer Ejecutivo', 'Saco elegante de corte italiano', 200.00, 450.00, 'Chaqueta', 'M', 'Gris', 1, 2);
+
+INSERT INTO "Inventario" ("cantidad_actual", "cantidad_reservada", "codigoSucursal", "idProducto") VALUES
+(100, 1, 1, 1),
+(50, 0, 1, 2),
+(30, 1, 2, 3);
+
+INSERT INTO "Movimiento" ("tipo", "cantidad", "motivo", "idInv") VALUES
+('Entrada', 100, 'Lote inicial suministrado por proveedor', 1),
+('Entrada', 50, 'Lote inicial suministrado por proveedor', 2),
+('Transferencia', 30, 'Transferencia de stock entre sucursales', 3);
+
+INSERT INTO "Reserva" ("fecha", "horario", "estado", "idCliente", "codigoSucursal", "idProducto") VALUES
+('2026-09-02', '15:30:00', 'Preparada en Sucursal', 1, 1, 1), 
+('2026-09-03', '11:00:00', 'Pendiente', 2, 2, 3);               
+
+INSERT INTO "metodo_pago" ("tipo", "estado", "fecha", "monto") VALUES
+('Efectivo', 'Activo', '2026-09-02 16:00:00', 120.00),
+('QR / Transferencia', 'Activo', '2026-09-02 17:15:00', 330.00);
+
+INSERT INTO "Venta" ("fecha", "total", "idCliente", "idMetPago") VALUES
+('2026-09-02 16:00:00', 120.00, 1, 1);
+
+INSERT INTO "detalle_venta" ("cantidad", "precio_unitario", "idProducto", "idVenta", "codigoReserva") VALUES
+(1, 120.00, 1, 1, 1);
+
+INSERT INTO "Venta" ("fecha", "total", "idCliente", "idMetPago") VALUES
+('2026-09-02 17:15:00', 330.00, 2, 2);
+
+INSERT INTO "detalle_venta" ("cantidad", "precio_unitario", "idProducto", "idVenta", "codigoReserva") VALUES
+(1, 120.00, 1, 2, NULL),
+(1, 210.00, 2, 2, NULL);
+
+INSERT INTO "historial" ("fecha", "idProducto", "idCliente", "idVenta") VALUES
+('2026-09-02 16:00:00', 1, 1, 1),
+('2026-09-02 17:15:00', 1, 2, 2),
+('2026-09-02 17:15:00', 2, 2, 2);
+
+INSERT INTO "Recomendaciones" ("nombre", "importancia", "idCliente") VALUES
+('Recomendación IA: Combinación con Jeans Slim Fit', 'Alta', 1),
+('Sugerencia Vestidor Virtual: Talla L adecuada según perfil', 'Media', 2);
+
+ALTER TABLE "Movimiento"
+    ADD COLUMN IF NOT EXISTS "referencia" VARCHAR(50) NULL;
+
+ALTER TABLE "producto"
+    ADD COLUMN IF NOT EXISTS "imagen_url" TEXT NULL,
+    ADD COLUMN IF NOT EXISTS "imagenes_secundarias" TEXT[] NULL DEFAULT '{}';

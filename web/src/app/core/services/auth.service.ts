@@ -1,92 +1,127 @@
 import { Injectable, signal } from '@angular/core';
-import { AdminUser, UserRole } from '../models';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { AuthUser, LoginResponse } from '../models';
 import { NotificationService } from './notification.service';
+import { environment } from '../../../environments/environment';
 
-const DEMO_USERS: AdminUser[] = [
-  {
-    id: 'usr_01',
-    name: 'Helena Vance',
-    email: 'manager@aether.com',
-    role: 'DIRECTOR',
-    roleTitle: 'Global Operations Director',
-    location: 'Paris 8e (Place Vendôme)',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
-    lastActive: 'Just now',
-    permissions: ['ALL_ACCESS', 'INVENTORY_ADJUST', 'DISPATCH_APPROVE', 'CATALOG_PUBLISH', 'SECURITY_AUDIT']
-  },
-  {
-    id: 'usr_02',
-    name: 'Kenji Takahashi',
-    email: 'curator@aether.com',
-    role: 'CURATOR',
-    roleTitle: 'Chief Archive Curator & Garment Lead',
-    location: 'Tokyo (Ginza Atelier)',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
-    lastActive: '12m ago',
-    permissions: ['CATALOG_EDIT', 'ARCHIVE_SPEC_WRITE', 'INVENTORY_VIEW']
-  },
-  {
-    id: 'usr_03',
-    name: 'Astrid Lindholm',
-    email: 'logistics@aether.com',
-    role: 'SUPPLY_CHAIN',
-    roleTitle: 'Global Supply & Vault Manager',
-    location: 'Milan / Zurich Vault',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
-    lastActive: '1h ago',
-    permissions: ['INVENTORY_ADJUST', 'DISPATCH_CREATE', 'DISPATCH_APPROVE', 'TRANSFER_EXECUTE']
-  }
-];
+const API_URL = environment.apiUrl;
+
+interface LoginBackendResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: {
+    idUser: string;
+    nombre: string;
+    correo: string;
+    rol: string;
+    permisos: string[];
+  };
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private currentUserSignal = signal<AdminUser | null>(DEMO_USERS[0]); // Default logged in for interactive exploration or login screen toggling
-  private isAuthenticatedSignal = signal<boolean>(true);
+  private currentUserSignal = signal<AuthUser | null>(null);
+  private isAuthenticatedSignal = signal<boolean>(false);
+  private accessTokenSignal = signal<string | null>(null);
 
   public currentUser = this.currentUserSignal.asReadonly();
   public isAuthenticated = this.isAuthenticatedSignal.asReadonly();
 
-  constructor(private notificationService: NotificationService) {}
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+  ) {
+    this.loadTokenFromStorage();
+  }
 
-  login(email: string, pass: string): boolean {
-    if (!email) {
-      this.notificationService.error('Authentication Error', 'Please enter a valid email address.');
-      return false;
+  private loadTokenFromStorage() {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      this.accessTokenSignal.set(token);
+      this.isAuthenticatedSignal.set(true);
+      this.fetchCurrentUser();
     }
-
-    const matchedUser = DEMO_USERS.find(u => u.email.toLowerCase() === email.trim().toLowerCase()) || DEMO_USERS[0];
-    this.currentUserSignal.set(matchedUser);
-    this.isAuthenticatedSignal.set(true);
-    this.notificationService.success('Access Granted', `Welcome back, ${matchedUser.name} (${matchedUser.roleTitle})`);
-    return true;
   }
 
-  quickSwitchUser(role: UserRole) {
-    const user = DEMO_USERS.find(u => u.role === role) || DEMO_USERS[0];
-    this.currentUserSignal.set(user);
-    this.isAuthenticatedSignal.set(true);
-    this.notificationService.info('Session Switched', `Active identity: ${user.name} — ${user.roleTitle}`);
+  private mapBackendUser(u: LoginBackendResponse['user']): AuthUser {
+    return {
+      id: u.idUser,
+      nombre: u.nombre,
+      email: u.correo,
+      rol: u.rol as AuthUser['rol'],
+      permisos: u.permisos,
+    };
   }
 
-  logout() {
+  login(email: string, password: string): Promise<boolean> {
+    return firstValueFrom(
+      this.http.post<LoginBackendResponse>(`${API_URL}/api/auth/login`, { email, password })
+    ).then((res) => {
+      this.accessTokenSignal.set(res.access_token);
+      localStorage.setItem('access_token', res.access_token);
+      localStorage.setItem('refresh_token', res.refresh_token);
+      this.currentUserSignal.set(this.mapBackendUser(res.user));
+      this.isAuthenticatedSignal.set(true);
+      this.notificationService.success('Acceso concedido', `Bienvenido, ${res.user.nombre}`);
+      return true;
+    }).catch((err) => {
+      const msg = err.error?.detail || 'Credenciales inválidas';
+      this.notificationService.error('Error de autenticación', msg);
+      return false;
+    });
+  }
+
+  fetchCurrentUser(): Promise<void> {
+    return firstValueFrom(
+      this.http.get<{ idUser: string; nombre: string; correo: string; rol: string; permisos: string[] }>(`${API_URL}/api/auth/me`)
+    ).then((u) => {
+      this.currentUserSignal.set({
+        id: u.idUser,
+        nombre: u.nombre,
+        email: u.correo,
+        rol: u.rol as AuthUser['rol'],
+        permisos: u.permisos,
+      });
+      this.isAuthenticatedSignal.set(true);
+    }).catch(() => {
+      this.logout();
+    });
+  }
+
+  resetPassword(email: string): void {
+    firstValueFrom(
+      this.http.post(`${API_URL}/api/auth/forgot-password`, { email })
+    ).then(() => {
+      this.notificationService.info('Enlace de recuperación enviado', `Instrucciones enviadas a ${email}.`);
+    }).catch(() => {
+      this.notificationService.info('Enlace de recuperación enviado', `Instrucciones enviadas a ${email}.`);
+    });
+  }
+
+  requestAccess(email: string, fullName: string, department: string, justification: string): void {
+    firstValueFrom(
+      this.http.post(`${API_URL}/api/auth/request-access`, { email, nombre: fullName, department, justification })
+    ).then(() => {
+      this.notificationService.success('Solicitud enviada', `Solicitud de acceso para ${email} registrada.`);
+    }).catch(() => {
+      this.notificationService.success('Solicitud enviada', `Solicitud de acceso para ${email} registrada.`);
+    });
+  }
+
+  logout(): void {
     this.currentUserSignal.set(null);
     this.isAuthenticatedSignal.set(false);
-    this.notificationService.info('Logged Out', 'Your administrative session has ended securely.');
+    this.accessTokenSignal.set(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    this.notificationService.info('Sesión cerrada', 'Tu sesión administrativa ha terminado de forma segura.');
   }
 
-  requestAccess(email: string, fullName: string, department: string, justification: string) {
-    this.notificationService.success(
-      'Request Submitted',
-      `Access request for ${email} has been logged with Master Operations. Verification token sent.`
-    );
-  }
-
-  resetPassword(email: string) {
-    this.notificationService.info(
-      'Recovery Link Dispatched',
-      `Instructions for MFA credential reset dispatched to ${email || 'manager@aether.com'}.`
-    );
+  getToken(): string | null {
+    return this.accessTokenSignal();
   }
 }

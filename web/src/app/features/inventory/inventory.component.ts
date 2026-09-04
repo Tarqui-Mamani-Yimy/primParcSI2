@@ -1,4 +1,4 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../core/services/inventory.service';
@@ -11,18 +11,14 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
-      
+
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
-            Multi-Boutique Network
-          </span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">
-            Global Stock Allocation Matrix
-          </h1>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Multi-Boutique Network</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Global Stock Allocation Matrix</h1>
           <p class="text-xs text-gray-500 mt-1">
-            Live inventory counts across Paris 8e, Tokyo Ginza, New York SoHo, Milan Montenapoleone, and Zurich Vault.
+            Live inventory counts across all registered boutiques and vaults.
           </p>
         </div>
 
@@ -39,9 +35,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
 
       <!-- Quick Location Filter Chips -->
       <div class="flex flex-wrap items-center gap-2 bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs">
-        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-1">
-          Filter by Node:
-        </span>
+        <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-1">Filter by Node:</span>
         <button
           (click)="selectedLocation.set('ALL')"
           [class.bg-indigo-600]="selectedLocation() === 'ALL'"
@@ -59,7 +53,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
           [class.text-gray-600]="selectedLocation() !== loc.id"
           class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
         >
-          {{ loc.city }} ({{ loc.code }})
+          {{ loc.ciudad }}
         </button>
       </div>
 
@@ -73,65 +67,52 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
                 <th class="p-3.5">Boutique Node</th>
                 <th class="p-3.5 text-center">Size</th>
                 <th class="p-3.5 text-center">Available Stock</th>
-                <th class="p-3.5 text-center">Reserved (VIP)</th>
                 <th class="p-3.5">Health Status</th>
                 <th class="p-3.5 text-right pr-6">Quick Adjust</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-xs">
               <tr *ngFor="let item of filteredStock()" class="hover:bg-gray-50/70 transition-colors">
-                
-                <!-- Product SKU & Thumbnail -->
+
                 <td class="p-3.5 pl-6">
                   <div class="flex items-center space-x-3">
                     <img
-                      [src]="getProductImage(item.productId)"
-                      [alt]="getProductName(item.productId)"
+                      [src]="getProductImage(item.producto_id)"
+                      [alt]="getProductName(item.producto_id)"
                       class="w-10 h-10 rounded-lg object-cover bg-gray-100 border border-gray-200 shrink-0"
                     />
                     <div>
                       <span class="text-[10px] font-bold uppercase text-indigo-600 tracking-wider">
-                        {{ getProductSku(item.productId) }}
+                        {{ getProductSku(item.producto_id) }}
                       </span>
-                      <p class="font-bold text-gray-900 leading-tight">
-                        {{ getProductName(item.productId) }}
-                      </p>
+                      <p class="font-bold text-gray-900 leading-tight">{{ getProductName(item.producto_id) }}</p>
                     </div>
                   </div>
                 </td>
 
-                <!-- Location -->
                 <td class="p-3.5">
-                  <p class="font-bold text-gray-900">{{ getLocationName(item.locationId) }}</p>
-                  <p class="text-[11px] text-gray-500">{{ getLocationCity(item.locationId) }}</p>
+                  <p class="font-bold text-gray-900">{{ getLocationName(item.sucursal_id) }}</p>
+                  <p class="text-[11px] text-gray-500">{{ getLocationCity(item.sucursal_id) }}</p>
                 </td>
 
-                <!-- Size -->
                 <td class="p-3.5 text-center font-bold text-gray-900">
-                  <span class="px-2 py-0.5 bg-gray-100 rounded text-gray-700 text-xs">{{ item.size }}</span>
+                  <span class="px-2 py-0.5 bg-gray-100 rounded text-gray-700 text-xs">{{ item.talla }}</span>
                 </td>
 
-                <!-- Available Stock -->
                 <td class="p-3.5 text-center font-bold text-sm text-gray-900">
-                  {{ item.quantity }}
+                  {{ item.cantidad }}
                 </td>
 
-                <!-- Reserved -->
-                <td class="p-3.5 text-center text-gray-500 font-medium">
-                  {{ item.reserved }}
-                </td>
-
-                <!-- Health Status -->
                 <td class="p-3.5">
                   <span
-                    *ngIf="item.quantity <= item.minThreshold"
+                    *ngIf="item.cantidad <= (item.minimo || 0)"
                     class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold uppercase"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                     <span>Low Stock</span>
                   </span>
                   <span
-                    *ngIf="item.quantity > item.minThreshold"
+                    *ngIf="item.cantidad > (item.minimo || 0)"
                     class="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase"
                   >
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -139,26 +120,19 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
                   </span>
                 </td>
 
-                <!-- Quick Adjust Controls -->
                 <td class="p-3.5 text-right pr-6">
                   <div class="inline-flex items-center space-x-1 bg-gray-50 p-1 rounded-lg border border-gray-200">
                     <button
                       (click)="adjustStock(item.id, -1)"
                       class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs"
                       title="Deduct 1 unit"
-                    >
-                      -
-                    </button>
-                    <span class="px-2 text-xs font-bold text-gray-900 min-w-[24px] text-center">
-                      {{ item.quantity }}
-                    </span>
+                    >-</button>
+                    <span class="px-2 text-xs font-bold text-gray-900 min-w-[24px] text-center">{{ item.cantidad }}</span>
                     <button
                       (click)="adjustStock(item.id, 1)"
                       class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs"
                       title="Add 1 unit"
-                    >
-                      +
-                    </button>
+                    >+</button>
                   </div>
                 </td>
 
@@ -188,7 +162,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Select Garment</label>
             <select [(ngModel)]="transferProductId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
               <option *ngFor="let p of archiveService.products()" [value]="p.id">
-                {{ p.sku }} — {{ p.name }}
+                {{ p.sku }} — {{ p.nombre }}
               </option>
             </select>
           </div>
@@ -198,7 +172,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Source Origin</label>
               <select [(ngModel)]="transferFromLoc" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
-                  {{ loc.name }}
+                  {{ loc.nombre }}
                 </option>
               </select>
             </div>
@@ -206,7 +180,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Destination Node</label>
               <select [(ngModel)]="transferToLoc" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [value]="loc.id">
-                  {{ loc.name }}
+                  {{ loc.nombre }}
                 </option>
               </select>
             </div>
@@ -239,7 +213,7 @@ import { InventoryStockEntry, ProductItem } from '../../core/models';
     </div>
   `
 })
-export class InventoryComponent {
+export class InventoryComponent implements OnInit {
   selectedLocation = signal<string>('ALL');
   showTransferModal = signal<boolean>(false);
 
@@ -254,20 +228,26 @@ export class InventoryComponent {
     public archiveService: ArchiveService
   ) {}
 
+  ngOnInit() {
+    this.inventoryService.loadLocations();
+    this.inventoryService.loadStock();
+    this.archiveService.loadProducts();
+  }
+
   filteredStock = computed(() => {
     let list = this.inventoryService.stock();
     if (this.selectedLocation() !== 'ALL') {
-      list = list.filter(s => s.locationId === this.selectedLocation());
+      list = list.filter(s => s.sucursal_id === this.selectedLocation());
     }
     return list;
   });
 
   getProduct(productId: string): ProductItem | undefined {
-    return this.archiveService.getProductById(productId);
+    return this.archiveService.products().find(p => p.id === productId);
   }
 
   getProductName(productId: string): string {
-    return this.getProduct(productId)?.name || 'Garment SKU';
+    return this.getProduct(productId)?.nombre || 'Garment SKU';
   }
 
   getProductSku(productId: string): string {
@@ -275,22 +255,16 @@ export class InventoryComponent {
   }
 
   getProductImage(productId: string): string {
-    return (
-      this.getProduct(productId)?.imageUrl ||
-      'https://images.unsplash.com/photo-1544441893-675973e31985?w=200&auto=format&fit=crop&q=80'
-    );
-  }
-
-  getLocation(locId: string) {
-    return this.inventoryService.locations().find(l => l.id === locId);
+    return this.getProduct(productId)?.imagen_url ||
+      'https://images.unsplash.com/photo-1544441893-675973e31985?w=200&auto=format&fit=crop&q=80';
   }
 
   getLocationName(locId: string): string {
-    return this.getLocation(locId)?.name || 'Central Vault';
+    return this.inventoryService.locations().find(l => l.id === locId)?.nombre || 'Central Vault';
   }
 
   getLocationCity(locId: string): string {
-    return this.getLocation(locId)?.city || 'Global';
+    return this.inventoryService.locations().find(l => l.id === locId)?.ciudad || 'Global';
   }
 
   adjustStock(stockId: string, delta: number) {
@@ -306,15 +280,16 @@ export class InventoryComponent {
       alert('Source and destination cannot be identical.');
       return;
     }
-    const ok = this.inventoryService.transferStock(
+    this.inventoryService.transferStock(
       this.transferProductId,
       this.transferFromLoc,
       this.transferToLoc,
       this.transferSize,
       this.transferQty
-    );
-    if (ok) {
-      this.showTransferModal.set(false);
-    }
+    ).then((ok) => {
+      if (ok) {
+        this.showTransferModal.set(false);
+      }
+    });
   }
 }

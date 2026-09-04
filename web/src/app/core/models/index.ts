@@ -1,98 +1,132 @@
-export type UserRole = 'DIRECTOR' | 'CURATOR' | 'SUPPLY_CHAIN' | 'ADMIN';
+// ─────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────
 
-export interface AdminUser {
-  id: string;
-  name: string;
+export type UserRole = 'admin' | 'vendedor';
+
+export interface LoginRequest {
   email: string;
-  role: UserRole;
-  roleTitle: string;
-  location: string;
-  avatarUrl?: string;
-  lastActive: string;
-  permissions: string[];
+  password: string;
 }
 
-export interface InventoryLocation {
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+}
+
+export interface AuthUser {
   id: string;
-  name: string;
-  city: string;
-  country: string;
-  type: 'FLAGSHIP' | 'BOUTIQUE' | 'CENTRAL_VAULT' | 'STUDIO';
-  code: string;
-  address: string;
-  manager: string;
+  nombre: string;
+  email: string;
+  rol: UserRole;
+  permisos: string[];
 }
 
-export interface GarmentMaterial {
-  name: string;
-  percentage: number;
-  origin: string;
-  certifications?: string[];
-}
+// ─────────────────────────────────────────────
+// PRODUCTS (Catálogo / Archive)
+// ─────────────────────────────────────────────
 
 export interface ProductItem {
   id: string;
   sku: string;
-  name: string;
-  subtitle: string;
-  collection: 'ESSENTIAL_PERMANENT' | 'ARCHIVE_AW25' | 'ATELIER_SS26' | 'PROTOTYPE';
-  category: 'OUTERWEAR' | 'TAILORING' | 'KNITWEAR' | 'TROUSERS' | 'FOOTWEAR' | 'OBJECTS';
-  priceEUR: number;
-  priceUSD: number;
-  priceJPY: number;
-  status: 'IN_PRODUCTION' | 'AVAILABLE' | 'VAULT_ONLY' | 'RESERVED';
-  imageUrl: string;
-  secondaryImages: string[];
-  materials: GarmentMaterial[];
-  sizes: { [size: string]: number }; // size -> total across network
-  colorway: string;
-  colorHex: string;
-  seasonYear: string;
-  designerNotes: string;
+  nombre: string;
+  descripcion: string;
+  coleccion: string;
+  categoria: string;
+  precio: number;
+  imagen_url: string;
+  imagenes_secundarias: string[];
+  tallas: { [size: string]: number };
+  color: string;
+  temporada: string;
+  notas_diseno?: string;
+  estado: 'disponible' | 'agotado' | 'descontinuado';
+}
+
+// ─────────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────────
+
+export interface InventoryLocation {
+  id: string;
+  nombre: string;
+  ciudad: string;
+  direccion?: string;
+  responsable?: string;
 }
 
 export interface InventoryStockEntry {
   id: string;
-  productId: string;
-  locationId: string;
-  size: string;
-  quantity: number;
-  reserved: number;
-  minThreshold: number;
-  lastAudited: string;
+  producto_id: string;
+  sucursal_id: string;
+  talla: string;
+  cantidad: number;
+  minimo?: number;
 }
+
+export interface StockAdjustRequest {
+  delta: number;
+  reason: string;
+}
+
+export interface TransferRequest {
+  producto_id: string;
+  origen_id: string;
+  destino_id: string;
+  talla: string;
+  cantidad: number;
+}
+
+// ─────────────────────────────────────────────
+// DISPATCHES
+// ─────────────────────────────────────────────
+
+export type DispatchStatus = 'preparacion' | 'despachado' | 'en_transito' | 'entregado';
 
 export interface DispatchOrder {
   id: string;
-  referenceNumber: string;
-  clientName: string;
-  clientType: 'VIP_PRIVATE' | 'BOUTIQUE_TRANSFER' | 'EDITORIAL_LOAN' | 'ARCHIVE_ACQUISITION';
-  originLocationId: string;
-  destinationHub: string;
-  courier: 'DHL Express Global' | 'Ferrari Luxury Secured' | 'Tokyo Express VIP' | 'Direct Courier';
-  trackingCode: string;
-  status: 'PREPARATION' | 'DISPATCHED' | 'IN_TRANSIT' | 'CUSTOMS_CLEARANCE' | 'DELIVERED';
-  items: {
-    productName: string;
-    sku: string;
-    size: string;
-    quantity: number;
-    valueEUR: number;
-  }[];
-  totalValueEUR: number;
-  createdAt: string;
-  estimatedDelivery: string;
-  notes?: string;
+  referencia: string;
+  cliente: string;
+  origen_id: string;
+  destino_id: string;
+  producto_id: string;
+  cantidad: number;
+  estado: DispatchStatus;
+  creado_en: string;
+}
+
+export interface DispatchCreateRequest {
+  origen_id: string;
+  destino_id: string;
+  producto_id: string;
+  cantidad: number;
+  cliente?: string;
+}
+
+// ─────────────────────────────────────────────
+// TEAM
+// ─────────────────────────────────────────────
+
+export interface TeamMember {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: UserRole;
+  permisos: string[];
 }
 
 export interface AuditLogEntry {
   id: string;
   timestamp: string;
-  user: string;
-  action: string;
-  details: string;
-  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  usuario: string;
+  accion: string;
+  detalles: string;
 }
+
+// ─────────────────────────────────────────────
+// UI (no necesita backend)
+// ─────────────────────────────────────────────
 
 export interface ToastMessage {
   id: string;

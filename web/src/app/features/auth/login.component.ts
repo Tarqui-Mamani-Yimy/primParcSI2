@@ -10,10 +10,9 @@ import { UserRole } from '../../core/models';
   imports: [CommonModule, FormsModule],
   template: `
     <main class="flex w-full h-screen overflow-hidden bg-gray-50 text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      
+
       <!-- Left Panel: Brand Introduction (Hidden on Mobile) -->
       <section class="hidden md:flex md:w-5/12 lg:w-1/2 bg-gray-900 relative flex-col justify-between p-10 lg:p-14 overflow-hidden">
-        <!-- Architectural Image Background Overlay -->
         <div class="absolute inset-0 z-0 pointer-events-none">
           <img
             alt="AETHER Operations Architecture"
@@ -23,24 +22,18 @@ import { UserRole } from '../../core/models';
           <div class="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-900/80 to-gray-900/95"></div>
         </div>
 
-        <!-- Top Logo -->
         <div class="relative z-10">
           <div class="flex items-center space-x-3">
             <div class="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md">
               A
             </div>
             <div>
-              <span class="text-2xl font-bold text-white tracking-tight block">
-                AETHER
-              </span>
-              <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">
-                Operations Node
-              </span>
+              <span class="text-2xl font-bold text-white tracking-tight block">AETHER</span>
+              <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">Operations Node</span>
             </div>
           </div>
         </div>
 
-        <!-- Bottom Content -->
         <div class="relative z-10 max-w-md">
           <div class="inline-block px-3 py-1 mb-4 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-200 text-xs font-bold tracking-wide uppercase">
             Release 2026.4
@@ -52,31 +45,28 @@ import { UserRole } from '../../core/models';
             Secure administrative access to the AETHER archive, operations platform, and global boutique inventory network.
           </p>
 
-          <!-- Quick Persona Switcher for Seamless Testing -->
           <div class="mt-8 pt-6 border-t border-gray-800">
-            <p class="text-xs uppercase tracking-widest text-gray-400 font-bold mb-3">
-              Fast Demo Identities:
-            </p>
+            <p class="text-xs uppercase tracking-widest text-gray-400 font-bold mb-3">Fast Demo Identities:</p>
             <div class="flex flex-wrap gap-2">
               <button
                 type="button"
-                (click)="selectDemoPersona('manager@aether.com', 'DIRECTOR')"
+                (click)="selectDemoPersona('manager@aether.com', 'admin')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span>Director (Helena)</span>
+                <span>Admin (Helena)</span>
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('curator@aether.com', 'CURATOR')"
+                (click)="selectDemoPersona('curator@aether.com', 'vendedor')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                <span>Curator (Kenji)</span>
+                <span>Vendedor (Kenji)</span>
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('logistics@aether.com', 'SUPPLY_CHAIN')"
+                (click)="selectDemoPersona('logistics@aether.com', 'admin')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-sky-400"></span>
@@ -89,40 +79,22 @@ import { UserRole } from '../../core/models';
 
       <!-- Right Panel: Login Interface -->
       <section class="w-full md:w-7/12 lg:w-1/2 flex items-center justify-center p-6 md:p-12 lg:p-16 bg-gray-50 relative">
-        <!-- Login Card -->
         <div class="w-full max-w-md bg-white p-8 md:p-10 rounded-2xl border border-gray-200 shadow-sm relative z-10">
-          
-          <!-- Mobile Logo -->
+
           <div class="md:hidden flex flex-col items-center justify-center mb-6">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">
-              A
-            </div>
-            <span class="text-xl font-bold text-gray-900 tracking-tight">
-              AETHER
-            </span>
-            <span class="text-xs tracking-wider text-gray-500 uppercase">
-              Operations & Archive Node
-            </span>
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">A</div>
+            <span class="text-xl font-bold text-gray-900 tracking-tight">AETHER</span>
+            <span class="text-xs tracking-wider text-gray-500 uppercase">Operations & Archive Node</span>
           </div>
 
-          <!-- Header -->
           <div class="text-center mb-8">
-            <h2 class="text-xl font-bold text-gray-900">
-              Admin Access
-            </h2>
-            <p class="text-xs text-gray-500 mt-1">
-              Authenticate with your corporate credentials
-            </p>
+            <h2 class="text-xl font-bold text-gray-900">Admin Access</h2>
+            <p class="text-xs text-gray-500 mt-1">Authenticate with your corporate credentials</p>
           </div>
 
-          <!-- Login Form -->
           <form (ngSubmit)="onSubmit()" class="flex flex-col space-y-5">
-            
-            <!-- Email Field -->
             <div class="flex flex-col space-y-1.5">
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="email">
-                Email Address
-              </label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="email">Email Address</label>
               <input
                 id="email"
                 name="email"
@@ -134,11 +106,8 @@ import { UserRole } from '../../core/models';
               />
             </div>
 
-            <!-- Password Field -->
             <div class="flex flex-col space-y-1.5">
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="password">
-                Password
-              </label>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="password">Password</label>
               <div class="relative">
                 <input
                   id="password"
@@ -155,14 +124,11 @@ import { UserRole } from '../../core/models';
                   class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors p-1"
                   aria-label="Toggle password visibility"
                 >
-                  <span class="material-symbols-outlined text-[18px]">
-                    {{ showPassword() ? 'visibility' : 'visibility_off' }}
-                  </span>
+                  <span class="material-symbols-outlined text-[18px]">{{ showPassword() ? 'visibility' : 'visibility_off' }}</span>
                 </button>
               </div>
             </div>
 
-            <!-- Submit Button -->
             <div class="pt-2">
               <button
                 type="submit"
@@ -174,20 +140,11 @@ import { UserRole } from '../../core/models';
               </button>
             </div>
 
-            <!-- Auxiliary Links -->
             <div class="flex justify-between items-center pt-2">
-              <button
-                type="button"
-                (click)="openForgotPassword()"
-                class="text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors cursor-pointer"
-              >
+              <button type="button" (click)="openForgotPassword()" class="text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors cursor-pointer">
                 Forgot Password?
               </button>
-              <button
-                type="button"
-                (click)="openRequestAccess()"
-                class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-              >
+              <button type="button" (click)="openRequestAccess()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer">
                 Request Access
               </button>
             </div>
@@ -204,8 +161,8 @@ import { UserRole } from '../../core/models';
         </button>
         <div class="mb-5">
           <span class="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">Security Recovery</span>
-          <h3 class="text-lg font-bold text-gray-900 mt-1">Reset Passkey / Password</h3>
-          <p class="text-xs text-gray-500 mt-1">Provide your verified administrative email to receive a reset token.</p>
+          <h3 class="text-lg font-bold text-gray-900 mt-1">Reset Password</h3>
+          <p class="text-xs text-gray-500 mt-1">Provide your verified email to receive a reset link.</p>
         </div>
         <div class="space-y-4">
           <div>
@@ -227,8 +184,8 @@ import { UserRole } from '../../core/models';
         </button>
         <div class="mb-5">
           <span class="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">Personnel Provisioning</span>
-          <h3 class="text-lg font-bold text-gray-900 mt-1">Request Node Authorization</h3>
-          <p class="text-xs text-gray-500 mt-1">Applications are reviewed by the Global Operations Director in Paris.</p>
+          <h3 class="text-lg font-bold text-gray-900 mt-1">Request Access</h3>
+          <p class="text-xs text-gray-500 mt-1">Applications are reviewed by the Global Operations Director.</p>
         </div>
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
@@ -242,18 +199,17 @@ import { UserRole } from '../../core/models';
             </div>
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Boutique / Atelier Hub</label>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Department</label>
             <select [(ngModel)]="reqHub" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-              <option value="PARIS">Paris Flagship (Place Vendôme)</option>
-              <option value="TOKYO">Tokyo Ginza Atelier</option>
-              <option value="NYC">New York SoHo Salon</option>
-              <option value="MILAN">Milan Montenapoleone Suite</option>
-              <option value="ZURICH">Alpine Central Archive Zurich</option>
+              <option value="ventas">Ventas</option>
+              <option value="logistica">Logística</option>
+              <option value="inventario">Inventario</option>
+              <option value="admin">Administración</option>
             </select>
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Justification for Access</label>
-            <textarea [(ngModel)]="reqReason" rows="3" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Assigned to AW26 sample collection & boutique restocking operations."></textarea>
+            <textarea [(ngModel)]="reqReason" rows="3" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="e.g. Assigned to boutique restocking operations."></textarea>
           </div>
           <button (click)="submitAccessRequest()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs">
             Submit Application
@@ -266,18 +222,18 @@ import { UserRole } from '../../core/models';
 export class LoginComponent {
   @Output() loggedIn = new EventEmitter<void>();
 
-  email = 'manager@aether.com';
-  password = '••••••••';
+  email = '';
+  password = '';
   showPassword = signal<boolean>(false);
   isLoading = signal<boolean>(false);
 
   showForgotModal = signal<boolean>(false);
   showRequestModal = signal<boolean>(false);
 
-  recoveryEmail = 'manager@aether.com';
+  recoveryEmail = '';
   reqName = '';
   reqEmail = '';
-  reqHub = 'PARIS';
+  reqHub = 'ventas';
   reqReason = '';
 
   constructor(private authService: AuthService) {}
@@ -286,22 +242,20 @@ export class LoginComponent {
     this.showPassword.update(v => !v);
   }
 
-  selectDemoPersona(email: string, role: UserRole) {
+  selectDemoPersona(email: string, _role: UserRole) {
     this.email = email;
-    this.password = 'aether2026';
-    this.authService.quickSwitchUser(role);
-    this.loggedIn.emit();
+    this.password = 'demo1234';
+    this.onSubmit();
   }
 
   onSubmit() {
     this.isLoading.set(true);
-    setTimeout(() => {
+    this.authService.login(this.email, this.password).then((ok) => {
       this.isLoading.set(false);
-      const ok = this.authService.login(this.email, this.password);
       if (ok) {
         this.loggedIn.emit();
       }
-    }, 450);
+    });
   }
 
   openForgotPassword() {
