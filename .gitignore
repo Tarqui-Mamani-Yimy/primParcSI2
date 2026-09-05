@@ -24,4 +24,5 @@ mobile/app/android/.gradle/
 .idea/
 .DS_Store
 
-.CLAUDE.*
+CLAUDE.md
+image.png

@@ -15,6 +15,7 @@ export interface LoginResponse {
   token_type: string;
 }
 
+
 export interface AuthUser {
   id: string;
   nombre: string;
