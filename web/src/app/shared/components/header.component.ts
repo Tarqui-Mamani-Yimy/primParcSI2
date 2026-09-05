@@ -21,7 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
         </button>
 
         <div class="flex items-center space-x-2 text-sm">
-          <span class="font-bold text-gray-900 tracking-tight">AETHER</span>
+          <span class="font-bold text-gray-900 tracking-tight">YouShop</span>
           <span class="text-gray-300">/</span>
           <span class="text-gray-400 hidden sm:inline">Operaciones</span>
           <span class="text-gray-300 hidden sm:inline">/</span>

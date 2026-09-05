@@ -19,7 +19,7 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
               A
             </div>
             <div>
-              <span class="font-bold text-base tracking-tight text-gray-900 block leading-tight">AETHER</span>
+              <span class="font-bold text-base tracking-tight text-gray-900 block leading-tight">YouShop</span>
               <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Nodo de Operaciones</span>
             </div>
           </div>

@@ -29,7 +29,7 @@ class AppState extends ChangeNotifier {
   late AvatarModel _selectedAvatar;
   AvatarModel get selectedAvatar => _selectedAvatar;
 
-  String _fitMode = 'True-to-Size';
+  String _fitMode = 'Talla Real';
   String get fitMode => _fitMode;
 
   String _selectedSize = 'M';
@@ -129,7 +129,7 @@ class AppState extends ChangeNotifier {
     final newLook = OutfitLook(
       id: 'look-${DateTime.now().millisecondsSinceEpoch}',
       title: 'LOOK - ${_selectedTryOnProduct.name.toUpperCase()}',
-      subtitle: '${_selectedTryOnProduct.category} ($_fitMode fit)',
+      subtitle: '${_selectedTryOnProduct.category} ($_fitMode)',
       imageUrl: _selectedTryOnProduct.imageUrl,
       items: [_selectedTryOnProduct.name],
       palette: [_selectedTryOnProduct.colorHex, '#171612', '#DDD9D8'],

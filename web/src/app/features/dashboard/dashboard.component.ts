@@ -18,7 +18,7 @@ import { AppView } from '../../shared/components/sidebar.component';
         <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-20 pointer-events-none hidden md:block">
           <img
             src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1000&auto=format&fit=crop&q=80"
-            alt="Operaciones AETHER"
+            alt="Operaciones YouShop"
             class="w-full h-full object-cover mix-blend-luminosity"
           />
           <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
@@ -33,7 +33,7 @@ import { AppView } from '../../shared/components/sidebar.component';
           </div>
 
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight">
-            Resumen Global de Operaciones AETHER
+            Resumen Global de Operaciones YouShop
           </h1>
           <p class="text-sm text-gray-300 mt-2 leading-relaxed max-w-xl">
             Telemetría en tiempo real de inventarios de boutiques, reservas de bóveda, despachos seguros y archivo permanente de prendas.

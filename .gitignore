@@ -23,3 +23,5 @@ mobile/app/android/.gradle/
 .vscode/
 .idea/
 .DS_Store
+
+.CLAUDE.*

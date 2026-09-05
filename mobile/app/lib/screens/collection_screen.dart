@@ -15,7 +15,7 @@ class CollectionScreen extends StatefulWidget {
 
 class _CollectionScreenState extends State<CollectionScreen> {
   String selectedFilter = 'Todos';
-  final List<String> filters = ['Todos', 'Oversized', 'Regular', 'Tailoring', 'Outerwear'];
+  final List<String> filters = ['Todos', 'Oversized', 'Regular', 'Sastrería', 'Abrigos'];
 
   @override
   Widget build(BuildContext context) {

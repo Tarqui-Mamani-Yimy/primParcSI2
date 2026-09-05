@@ -51,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Minimalist luxury wardrobe. AI-powered drape simulation & bespoke private atelier fittings.',
+                    'Armario de lujo minimalista. Simulación de drapeado con IA y fittings privados de atelier a medida.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.sourceSerif4(
                       fontSize: 14,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models import Bitacora, Rol, Usuario
 from app.schemas.team import ActivateAccountResponse, AuditLogOut, TeamMemberOut
 from app.security import require_permiso
+from app.services.bitacora import registrar_bitacora
 from app.services.usuarios import build_user_claims
 
 router = APIRouter(prefix="/api/team", tags=["team"])
@@ -89,6 +90,7 @@ async def audit_log(
 @router.patch("/{idUser}/activate", response_model=ActivateAccountResponse)
 async def activate_account(
     idUser: int,
+    request: Request,
     session: AsyncSession = Depends(get_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
@@ -100,5 +102,7 @@ async def activate_account(
     usuario.bloqueadoHasta = None
     usuario.vecesBloqueado = 0
     usuario.requiereActivacion = False
+    ip = request.client.host if request.client else "0.0.0.0"
+    await registrar_bitacora(session, "Cuenta reactivada por un administrador", usuario.idUser, ip)
     await session.commit()
     return ActivateAccountResponse(message="Cuenta reactivada correctamente")

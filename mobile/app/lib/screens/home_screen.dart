@@ -55,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'FALL / WINTER EDIT',
+                          'OTOÑO / INVIERNO EDIT',
                           style: GoogleFonts.outfit(
                             fontSize: 10,
                             letterSpacing: 2.0,
@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Siluetas Minimalistas & Sastrería Fluida',
+                            'Siluetas Minimalistas y Sastrería Fluida',
                           style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,

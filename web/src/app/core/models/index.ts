@@ -149,19 +149,21 @@ export interface DispatchOut {
 // ─────────────────────────────────────────────
 
 export interface TeamMember {
-  id: string;
+  idUser: number;
   nombre: string;
-  email: string;
+  correo: string;
   rol: UserRole;
   permisos: string[];
 }
 
 export interface AuditLogEntry {
-  id: string;
-  timestamp: string;
-  usuario: string;
+  idBitacora: number;
   accion: string;
-  detalles: string;
+  hora: string;
+  fecha: string;
+  ip: string;
+  idUser: number;
+  usuario_nombre: string;
 }
 
 // ─────────────────────────────────────────────

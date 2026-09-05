@@ -42,7 +42,7 @@ import { TeamMember } from '../../core/models';
                 </div>
                 <div>
                   <h3 class="text-sm font-bold text-gray-900">{{ member.nombre }}</h3>
-                  <p class="text-xs text-gray-500 truncate max-w-[140px]">{{ member.email }}</p>
+                  <p class="text-xs text-gray-500 truncate max-w-[140px]">{{ member.correo }}</p>
                 </div>
               </div>
 
@@ -84,13 +84,13 @@ import { TeamMember } from '../../core/models';
             <div class="flex items-start space-x-2.5">
               <span class="material-symbols-outlined text-[18px] text-indigo-600 mt-0.5">verified_user</span>
               <div>
-                <span class="font-bold text-gray-900">{{ log.usuario }}</span>
+                <span class="font-bold text-gray-900">{{ log.usuario_nombre }}</span>
                 <span class="text-gray-400 mx-1.5">•</span>
-                <span class="text-gray-600">{{ log.detalles }}</span>
+                <span class="text-gray-600">{{ log.accion }}</span>
               </div>
             </div>
             <div class="text-[11px] text-gray-400 shrink-0 font-medium">
-              {{ log.timestamp }}
+              {{ log.fecha }} {{ log.hora }}
             </div>
           </div>
         </div>

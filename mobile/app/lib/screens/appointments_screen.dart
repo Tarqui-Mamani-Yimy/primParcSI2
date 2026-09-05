@@ -19,10 +19,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   final _notesController = TextEditingController();
 
   final List<Map<String, String>> dates = [
-    {'month': 'OCT', 'day': '12', 'dow': 'THU'},
-    {'month': 'OCT', 'day': '13', 'dow': 'FRI'},
-    {'month': 'OCT', 'day': '14', 'dow': 'SAT'},
-    {'month': 'OCT', 'day': '15', 'dow': 'SUN'},
+    {'month': 'OCT', 'day': '12', 'dow': 'JUE'},
+    {'month': 'OCT', 'day': '13', 'dow': 'VIE'},
+    {'month': 'OCT', 'day': '14', 'dow': 'SÁB'},
+    {'month': 'OCT', 'day': '15', 'dow': 'DOM'},
   ];
 
   final List<String> times = ['10:00 AM', '11:30 AM', '02:30 PM', '04:00 PM', '05:30 PM'];
@@ -73,9 +73,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           // 1. Service Selection
           Text('1. SELECCIONAR SERVICIO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
           const SizedBox(height: 8),
-          _serviceOption(0, 'In-store Personal Shopping', 'Sesión personalizada de 60 minutos con un estilista exclusivo.'),
+          _serviceOption(0, 'Personal Shopping en Tienda', 'Sesión personalizada de 60 minutos con un estilista exclusivo.'),
           const SizedBox(height: 8),
-          _serviceOption(1, 'Reserva de Probador & Prendas', 'Tus prendas y tallas seleccionadas preparadas con antelación.'),
+          _serviceOption(1, 'Reserva de Probador y Prendas', 'Tus prendas y tallas seleccionadas preparadas con antelación.'),
 
           const SizedBox(height: 16),
 

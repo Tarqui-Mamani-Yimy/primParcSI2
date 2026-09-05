@@ -71,6 +71,8 @@ class Usuario(Base):
     codigoRol: Mapped[int] = mapped_column(ForeignKey("rol.codigoRol", onupdate="CASCADE"), nullable=False)
     intentosFallidos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     bloqueadoHasta: Mapped[datetime | None] = mapped_column(TIMESTAMP)
+    vecesBloqueado: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    requiereActivacion: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     rol: Mapped["Rol"] = relationship()
 

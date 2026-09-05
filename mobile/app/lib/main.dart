@@ -29,7 +29,7 @@ class AetherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AETHER',
+      title: 'YouShop',
       debugShowCheckedModeBanner: false,
       theme: AetherTheme.lightTheme,
       home: const WelcomeScreen(),

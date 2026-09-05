@@ -114,10 +114,10 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _measureItem('HEIGHT', '${profile.measurements.height} cm'),
-                    _measureItem('CHEST', '${profile.measurements.chest} cm'),
-                    _measureItem('WAIST', '${profile.measurements.waist} cm'),
-                    _measureItem('INSEAM', '${profile.measurements.inseam} cm'),
+                    _measureItem('ALTURA', '${profile.measurements.height} cm'),
+                    _measureItem('PECHO', '${profile.measurements.chest} cm'),
+                    _measureItem('CINTURA', '${profile.measurements.waist} cm'),
+                    _measureItem('TIRO', '${profile.measurements.inseam} cm'),
                   ],
                 ),
                 const SizedBox(height: 12),

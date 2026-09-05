@@ -15,7 +15,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
           <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo de Productos</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Archivo y Catálogo Esencial AETHER</h1>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Archivo y Catálogo Esencial YouShop</h1>
           <p class="text-xs text-gray-500 mt-1">Gestión del catálogo de productos, proveedores y colecciones.</p>
         </div>
 

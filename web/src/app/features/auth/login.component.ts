@@ -15,7 +15,7 @@ import { UserRole } from '../../core/models';
       <section class="hidden md:flex md:w-5/12 lg:w-1/2 bg-gray-900 relative flex-col justify-between p-10 lg:p-14 overflow-hidden">
         <div class="absolute inset-0 z-0 pointer-events-none">
           <img
-            alt="Arquitectura de operaciones AETHER"
+            alt="Arquitectura de operaciones YouShop"
             class="w-full h-full object-cover opacity-25 mix-blend-luminosity scale-105"
             src="https://images.unsplash.com/photo-1544441893-675973e31985?w=1600&auto=format&fit=crop&q=80"
           />
@@ -28,7 +28,7 @@ import { UserRole } from '../../core/models';
               A
             </div>
             <div>
-              <span class="text-2xl font-bold text-white tracking-tight block">AETHER</span>
+              <span class="text-2xl font-bold text-white tracking-tight block">YouShop</span>
               <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">Nodo de Operaciones</span>
             </div>
           </div>
@@ -42,7 +42,7 @@ import { UserRole } from '../../core/models';
             Excelencia en Gestión de Vestimenta Esencial
           </h1>
           <p class="text-sm text-gray-300 leading-relaxed">
-            Acceso administrativo seguro al archivo AETHER, plataforma de operaciones y red global de inventario de boutiques.
+            Acceso administrativo seguro al archivo YouShop, plataforma de operaciones y red global de inventario de boutiques.
           </p>
 
           <div class="mt-8 pt-6 border-t border-gray-800">
@@ -50,7 +50,7 @@ import { UserRole } from '../../core/models';
             <div class="flex flex-wrap gap-2">
               <button
                 type="button"
-                (click)="selectDemoPersona('manager@aether.com', 'Administrador')"
+                (click)="selectDemoPersona('manager@youshop.com', 'Administrador')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -58,7 +58,7 @@ import { UserRole } from '../../core/models';
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('curator@aether.com', 'Cajero')"
+                (click)="selectDemoPersona('curator@youshop.com', 'Cajero')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -66,7 +66,7 @@ import { UserRole } from '../../core/models';
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('logistics@aether.com', 'Administrador')"
+                (click)="selectDemoPersona('logistics@youshop.com', 'Administrador')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-sky-400"></span>
@@ -83,7 +83,7 @@ import { UserRole } from '../../core/models';
 
           <div class="md:hidden flex flex-col items-center justify-center mb-6">
             <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">A</div>
-            <span class="text-xl font-bold text-gray-900 tracking-tight">AETHER</span>
+            <span class="text-xl font-bold text-gray-900 tracking-tight">YouShop</span>
             <span class="text-xs tracking-wider text-gray-500 uppercase">Nodo de Operaciones y Archivo</span>
           </div>
 
@@ -101,7 +101,7 @@ import { UserRole } from '../../core/models';
                 type="email"
                 [(ngModel)]="email"
                 required
-                placeholder="gerente@aether.com"
+                placeholder="gerente@youshop.com"
                 class="w-full bg-white border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
               />
             </div>
@@ -170,7 +170,7 @@ import { UserRole } from '../../core/models';
           <div class="space-y-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Correo Electrónico</label>
-              <input type="email" [(ngModel)]="recoveryEmail" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="gerente@aether.com" />
+              <input type="email" [(ngModel)]="recoveryEmail" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="gerente@youshop.com" />
             </div>
             <button (click)="sendPasswordRecovery()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs">
               Enviar Enlace Seguro
@@ -269,7 +269,7 @@ import { UserRole } from '../../core/models';
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Correo Corporativo</label>
-              <input type="email" [(ngModel)]="reqEmail" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="marc.d@aether.com" />
+              <input type="email" [(ngModel)]="reqEmail" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="marc.d@youshop.com" />
             </div>
           </div>
           <div>
@@ -409,7 +409,7 @@ export class LoginComponent implements OnInit {
   }
 
   submitAccessRequest() {
-    this.authService.requestAccess(this.reqEmail || 'staff@aether.com', this.reqName, this.reqHub, this.reqReason);
+    this.authService.requestAccess(this.reqEmail || 'staff@youshop.com', this.reqName, this.reqHub, this.reqReason);
     this.showRequestModal.set(false);
   }
 }

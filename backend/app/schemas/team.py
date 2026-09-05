@@ -24,3 +24,7 @@ class AuditLogOut(BaseModel):
     ip: str
     idUser: int
     usuario_nombre: Optional[str] = None
+
+
+class ActivateAccountResponse(BaseModel):
+    message: str

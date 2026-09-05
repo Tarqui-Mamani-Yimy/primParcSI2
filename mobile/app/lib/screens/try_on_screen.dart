@@ -215,7 +215,7 @@ class TryOnScreen extends StatelessWidget {
           Text('SILUETA Y CAÍDA (FIT)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
           const SizedBox(height: 8),
           Row(
-            children: ['Relaxed', 'True-to-Size', 'Oversized'].map((mode) {
+              children: ['Relajado', 'Talla Real', 'Oversized'].map((mode) {
               final isSel = appState.fitMode == mode;
               return Expanded(
                 child: Padding(
@@ -248,7 +248,7 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 5. Size Selection
-          Text('TALLA DISPONIBLE', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('TALLAS DISPONIBLES', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
           const SizedBox(height: 8),
           Row(
             children: product.sizes.map((sz) {
@@ -289,7 +289,7 @@ class TryOnScreen extends StatelessWidget {
             height: 48,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.shopping_bag_outlined, size: 16),
-              label: Text('AÑADIR A LA BOLSA ($${product.price.toInt()})', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              label: Text('ANADIR A LA BOLSA ($${product.price.toInt()})', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AetherTheme.charcoalDark,
                 foregroundColor: AetherTheme.sandLight,
@@ -298,7 +298,7 @@ class TryOnScreen extends StatelessWidget {
               onPressed: () {
                 appState.addToCart(product, appState.selectedSize);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${product.name} añadida a la bolsa.')),
+                  SnackBar(content: Text('${product.name} anadida a la bolsa.')),
                 );
               },
             ),
@@ -318,7 +318,7 @@ class TryOnScreen extends StatelessWidget {
               onPressed: () {
                 appState.saveLookToProfile();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Look guardado en tu Style Profile.')),
+                  const SnackBar(content: Text('Look guardado en tu perfil de estilo.')),
                 );
               },
             ),

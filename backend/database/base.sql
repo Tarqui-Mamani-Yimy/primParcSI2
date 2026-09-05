@@ -225,13 +225,13 @@ INSERT INTO "asignacion_permiso" ("codigoRol", "idPermiso", "estado") VALUES
 (5, 5, 'Activo'); 
 
 INSERT INTO "Usuario" ("nombre", "correo", "contraseña", "codigoRol") VALUES
-('Revollo Admin', 'nicolasrevolloroman@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 1),
-('Yimysit Admin', 'tarquipatus@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 1),
-('Roberto Encargado', 'encargado.central@tienda.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 2),
-('Lucía Cajera', 'cajero.central@tienda.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 3),
-('Textiles B2B', 'proveedor@textiles.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 4),
-('Juan Pérez Cliente', 'juan.perez@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 5),
-('Maria Gomez Cliente', 'maria.gomez@gmail.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s58OTdO3.S8aC', 5);
+('Revollo Admin', 'nicolasrevolloroman@gmail.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 1),
+('Yimysit Admin', 'patustarqui@gmail.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 1),
+('Roberto Encargado', 'encargado.central@tienda.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 2),
+('Lucía Cajera', 'cajero.central@tienda.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 3),
+('Textiles B2B', 'proveedor@textiles.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 4),
+('Juan Pérez Cliente', 'juan.perez@gmail.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 5),
+('Maria Gomez Cliente', 'maria.gomez@gmail.com', '$2b$12$HWqim2KP4GxJWv1kOb79tudNBV0Y94xoM2y5JRa32DSGPigvenb1C', 5);
 
 INSERT INTO "Ciudad" ("nombCiudad") VALUES
 ('Santa Cruz de la Sierra'),
@@ -314,3 +314,95 @@ ALTER TABLE "Movimiento"
 ALTER TABLE "producto"
     ADD COLUMN IF NOT EXISTS "imagen_url" TEXT NULL,
     ADD COLUMN IF NOT EXISTS "imagenes_secundarias" TEXT[] NULL DEFAULT '{}';
+
+ALTER TABLE "Usuario"
+    ADD COLUMN IF NOT EXISTS "intentosFallidos" INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS "bloqueadoHasta" TIMESTAMP NULL;
+
+
+ALTER TABLE "Usuario"
+    ADD COLUMN IF NOT EXISTS "vecesBloqueado" INTEGER NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS "requiereActivacion" BOOLEAN NOT NULL DEFAULT FALSE;
+
+INSERT INTO "permiso" ("nombrePermiso")
+SELECT p.nombre
+FROM (
+    VALUES
+        ('producto.listar'),
+        ('producto.crear'),
+        ('producto.editar'),
+        ('producto.eliminar'),
+        ('inventario.ver'),
+        ('inventario.ajustar'),
+        ('inventario.traspasar'),
+        ('venta.crear'),
+        ('venta.ver'),
+        ('reserva.crear'),
+        ('reserva.gestionar'),
+        ('usuario.admin'),
+        ('equipo.ver'),
+        ('bitacora.ver'),
+        ('recomendacion.gestionar'),
+        ('cliente.ver')
+) AS p(nombre)
+WHERE NOT EXISTS (
+    SELECT 1 FROM "permiso" WHERE "nombrePermiso" = p.nombre
+);
+
+-- 2) Asignar permisos por rol real (codigoRol confirmado via psql).
+--    Administrador=1, Encargado de Sucursal=2, Cajero=3, Proveedor=4, Cliente=5.
+INSERT INTO "asignacion_permiso" ("codigoRol", "idPermiso")
+SELECT d.codigoRol,
+       pe."idPermiso"
+FROM (
+    VALUES
+        -- Administrador (1): TODOS los permisos granulares.
+        (1, 'producto.listar'),
+        (1, 'producto.crear'),
+        (1, 'producto.editar'),
+        (1, 'producto.eliminar'),
+        (1, 'inventario.ver'),
+        (1, 'inventario.ajustar'),
+        (1, 'inventario.traspasar'),
+        (1, 'venta.crear'),
+        (1, 'venta.ver'),
+        (1, 'reserva.crear'),
+        (1, 'reserva.gestionar'),
+        (1, 'usuario.admin'),
+        (1, 'equipo.ver'),
+        (1, 'bitacora.ver'),
+        (1, 'recomendacion.gestionar'),
+        (1, 'cliente.ver'),
+        -- Encargado de Sucursal (2).
+        (2, 'producto.listar'),
+        (2, 'producto.crear'),
+        (2, 'producto.editar'),
+        (2, 'inventario.ver'),
+        (2, 'inventario.ajustar'),
+        (2, 'inventario.traspasar'),
+        (2, 'venta.ver'),
+        (2, 'reserva.gestionar'),
+        (2, 'equipo.ver'),
+        (2, 'cliente.ver'),
+        (2, 'bitacora.ver'),
+        (2, 'recomendacion.gestionar'),
+        -- Cajero (3).
+        (3, 'producto.listar'),
+        (3, 'inventario.ver'),
+        (3, 'venta.crear'),
+        (3, 'venta.ver'),
+        (3, 'reserva.crear'),
+        (3, 'cliente.ver'),
+        -- Proveedor (4): solo lectura de catalogo.
+        (4, 'producto.listar'),
+        -- Cliente (5).
+        (5, 'producto.listar'),
+        (5, 'reserva.crear')
+) AS d(codigoRol, nombrePermiso)
+JOIN "permiso" pe ON pe."nombrePermiso" = d.nombrePermiso
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM "asignacion_permiso" a
+    WHERE a."codigoRol" = d.codigoRol
+      AND a."idPermiso" = pe."idPermiso"
+);

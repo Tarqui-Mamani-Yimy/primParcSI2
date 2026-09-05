@@ -42,7 +42,7 @@ export class TeamService {
     });
   }
 
-  addMember(member: Omit<TeamMember, 'id'>): Promise<TeamMember | null> {
+  addMember(member: Omit<TeamMember, 'idUser'>): Promise<TeamMember | null> {
     this.notificationService.warning('No disponible', 'La creación de miembros estará disponible en Fase 2.');
     return Promise.resolve(null);
   }
