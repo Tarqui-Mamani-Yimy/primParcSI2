@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { DispatchOrder, DispatchCreateRequest } from '../models';
+import { DispatchIn, DispatchOut } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 
@@ -11,7 +11,7 @@ const API_URL = environment.apiUrl;
   providedIn: 'root'
 })
 export class DispatchService {
-  private dispatchesSignal = signal<DispatchOrder[]>([]);
+  private dispatchesSignal = signal<DispatchOut[]>([]);
   public dispatches = this.dispatchesSignal.asReadonly();
 
   constructor(
@@ -21,7 +21,7 @@ export class DispatchService {
 
   loadDispatches(): Promise<void> {
     return firstValueFrom(
-      this.http.get<DispatchOrder[]>(`${API_URL}/api/dispatches`)
+      this.http.get<DispatchOut[]>(`${API_URL}/api/dispatches`)
     ).then((list) => {
       this.dispatchesSignal.set(list);
     }).catch(() => {
@@ -29,21 +29,17 @@ export class DispatchService {
     });
   }
 
-  createDispatch(request: DispatchCreateRequest): Promise<DispatchOrder | null> {
+  createDispatch(request: DispatchIn): Promise<DispatchOut | null> {
     return firstValueFrom(
-      this.http.post<DispatchOrder>(`${API_URL}/api/dispatches`, request)
+      this.http.post<DispatchOut>(`${API_URL}/api/dispatches`, request)
     ).then((order) => {
       this.dispatchesSignal.update(list => [order, ...list]);
       this.notificationService.success('Despacho creado', `Referencia ${order.referencia} registrada.`);
       return order;
-    }).catch(() => {
-      this.notificationService.error('Error', 'No se pudo crear el despacho.');
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo crear el despacho.';
+      this.notificationService.error('Error', msg);
       return null;
     });
-  }
-
-  updateStatus(orderId: string, newStatus: DispatchOrder['estado']): Promise<boolean> {
-    this.notificationService.warning('No disponible', 'La actualización de estado estará disponible en Fase 2.');
-    return Promise.resolve(false);
   }
 }

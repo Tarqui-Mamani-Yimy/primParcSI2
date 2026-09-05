@@ -2,7 +2,7 @@
 // AUTH
 // ─────────────────────────────────────────────
 
-export type UserRole = 'admin' | 'vendedor';
+export type UserRole = 'Administrador' | 'Encargado de Sucursal' | 'Cajero' | 'Proveedor' | 'Cliente';
 
 export interface LoginRequest {
   email: string;
@@ -24,84 +24,124 @@ export interface AuthUser {
 }
 
 // ─────────────────────────────────────────────
-// PRODUCTS (Catálogo / Archive)
+// PRODUCTS (Contrato real backend)
 // ─────────────────────────────────────────────
 
-export interface ProductItem {
-  id: string;
-  sku: string;
+export interface ProductOut {
+  idProducto: number;
   nombre: string;
-  descripcion: string;
-  coleccion: string;
-  categoria: string;
-  precio: number;
-  imagen_url: string;
+  descripcion: string | null;
+  costo: number;
+  venta: number;
+  tipo: string | null;
+  talla: string | null;
+  color: string | null;
+  idProveedor: number;
+  idColeccion: number;
+  proveedor_nombre: string;
+  coleccion_nombre: string;
+  imagen_url: string | null;
   imagenes_secundarias: string[];
-  tallas: { [size: string]: number };
-  color: string;
-  temporada: string;
-  notas_diseno?: string;
-  estado: 'disponible' | 'agotado' | 'descontinuado';
+}
+
+export interface PaginatedProducts {
+  items: ProductOut[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface ProductoIn {
+  nombre: string;
+  descripcion?: string | null;
+  costo: number;
+  venta: number;
+  tipo?: string | null;
+  talla?: string | null;
+  color?: string | null;
+  idProveedor: number;
+  idColeccion: number;
+  imagen_url?: string | null;
+  imagenes_secundarias?: string[];
+}
+
+export interface ProveedorOption {
+  idProveedor: number;
+  nombre: string;
+}
+
+export interface ColeccionOption {
+  idColeccion: number;
+  nombre_coleccion: string;
+  idTemporada: number;
 }
 
 // ─────────────────────────────────────────────
-// INVENTORY
+// INVENTORY (Contrato real backend)
 // ─────────────────────────────────────────────
 
 export interface InventoryLocation {
-  id: string;
+  codigoSucursal: number;
   nombre: string;
+  direccion: string;
   ciudad: string;
-  direccion?: string;
-  responsable?: string;
 }
 
 export interface InventoryStockEntry {
-  id: string;
-  producto_id: string;
-  sucursal_id: string;
-  talla: string;
-  cantidad: number;
-  minimo?: number;
+  idInv: number;
+  cantidad_actual: number;
+  cantidad_reservada: number;
+  codigoSucursal: number;
+  sucursal_nombre: string;
+  idProducto: number;
+  producto_nombre: string;
+  producto_tipo: string;
+  producto_talla: string;
+  producto_color: string;
+  producto_imagen: string;
 }
 
-export interface StockAdjustRequest {
-  delta: number;
-  reason: string;
-}
-
-export interface TransferRequest {
-  producto_id: string;
-  origen_id: string;
-  destino_id: string;
-  talla: string;
+export interface StockAdjustIn {
   cantidad: number;
+  tipo?: string;
+  motivo?: string | null;
+  signo: 'set' | 'add' | 'subtract';
 }
 
 // ─────────────────────────────────────────────
-// DISPATCHES
+// DISPATCHES (Contrato real backend)
 // ─────────────────────────────────────────────
 
-export type DispatchStatus = 'preparacion' | 'despachado' | 'en_transito' | 'entregado';
+export interface DispatchItem {
+  idProducto: number;
+  cantidad: number;
+}
 
-export interface DispatchOrder {
-  id: string;
+export interface DispatchIn {
+  origen: number;
+  destino: number;
+  items: DispatchItem[];
+  motivo?: string | null;
+}
+
+export interface DispatchMovement {
+  idMov: number;
+  tipo: string;
+  cantidad: number;
+  fecha: string;
+  motivo: string | null;
+  idInv: number;
+  sucursal_nombre: string;
+  idProducto: number;
+  producto_nombre: string;
+}
+
+export interface DispatchOut {
   referencia: string;
-  cliente: string;
-  origen_id: string;
-  destino_id: string;
-  producto_id: string;
-  cantidad: number;
-  estado: DispatchStatus;
-  creado_en: string;
-}
-
-export interface DispatchCreateRequest {
-  origen_id: string;
-  destino_id: string;
-  producto_id: string;
-  cantidad: number;
-  cliente?: string;
+  motivo: string | null;
+  fecha: string;
+  movimientos: DispatchMovement[];
 }
 
 // ─────────────────────────────────────────────

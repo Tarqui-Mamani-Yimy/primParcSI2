@@ -102,6 +102,49 @@ export class AuthService {
     });
   }
 
+  resetPasswordGetToken(email: string): Promise<string | null> {
+    return firstValueFrom(
+      this.http.post<{ reset_token_dev?: string }>(`${API_URL}/api/auth/forgot-password`, { email })
+    ).then((res) => {
+      if (res.reset_token_dev) {
+        this.notificationService.success('Correo enviado', `Se encontró una cuenta asociada a ${email}.`);
+        return res.reset_token_dev;
+      } else {
+        this.notificationService.info('Recuperación', `Si el correo existe, se ha enviado un enlace de recuperación.`);
+        return null;
+      }
+    }).catch(() => {
+      this.notificationService.error('Error', 'No se pudo procesar la solicitud de recuperación.');
+      return null;
+    });
+  }
+
+  resetPasswordConfirm(token: string, newPassword: string): Promise<boolean> {
+    return firstValueFrom(
+      this.http.post(`${API_URL}/api/auth/reset-password`, { token, new_password: newPassword })
+    ).then(() => {
+      this.notificationService.success('Contraseña actualizada', 'Su contraseña ha sido restablecida exitosamente.');
+      return true;
+    }).catch((err) => {
+      const msg = err.error?.detail || 'Token inválido o expirado.';
+      this.notificationService.error('Error', msg);
+      return false;
+    });
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Promise<boolean> {
+    return firstValueFrom(
+      this.http.patch(`${API_URL}/api/auth/password`, { current_password: currentPassword, new_password: newPassword })
+    ).then(() => {
+      this.notificationService.success('Contraseña actualizada', 'Su contraseña ha sido cambiada exitosamente.');
+      return true;
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo cambiar la contraseña.';
+      this.notificationService.error('Error', msg);
+      return false;
+    });
+  }
+
   requestAccess(email: string, fullName: string, department: string, justification: string): void {
     firstValueFrom(
       this.http.post(`${API_URL}/api/auth/request-access`, { email, nombre: fullName, department, justification })

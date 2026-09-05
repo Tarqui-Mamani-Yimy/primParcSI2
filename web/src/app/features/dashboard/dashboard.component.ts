@@ -13,12 +13,12 @@ import { AppView } from '../../shared/components/sidebar.component';
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-200">
 
-      <!-- Welcome Hero Banner -->
+      <!-- Banner de bienvenida -->
       <div class="bg-gradient-to-r from-gray-900 to-indigo-950 text-white rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-xs">
         <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-20 pointer-events-none hidden md:block">
           <img
             src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1000&auto=format&fit=crop&q=80"
-            alt="AETHER Operations"
+            alt="Operaciones AETHER"
             class="w-full h-full object-cover mix-blend-luminosity"
           />
           <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-transparent"></div>
@@ -27,16 +27,16 @@ import { AppView } from '../../shared/components/sidebar.component';
         <div class="relative z-10 max-w-2xl">
           <div class="flex items-center space-x-2 mb-2">
             <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-200 text-xs font-bold tracking-wide uppercase border border-indigo-400/30">
-              Operations Terminal
+              Terminal de Operaciones
             </span>
-            <span class="text-gray-300 text-xs">• {{ inventoryService.locations().length }} Sucursales Synced</span>
+            <span class="text-gray-300 text-xs">• {{ inventoryService.locations().length }} Sucursales Sincronizadas</span>
           </div>
 
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight">
-            AETHER Global Operations Overview
+            Resumen Global de Operaciones AETHER
           </h1>
           <p class="text-sm text-gray-300 mt-2 leading-relaxed max-w-xl">
-            Real-time telemetry across boutique inventories, vault reserves, secured dispatches, and permanent garment archive.
+            Telemetría en tiempo real de inventarios de boutiques, reservas de bóveda, despachos seguros y archivo permanente de prendas.
           </p>
 
           <div class="flex flex-wrap gap-3 mt-5">
@@ -45,26 +45,25 @@ import { AppView } from '../../shared/components/sidebar.component';
               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center space-x-2 cursor-pointer"
             >
               <span class="material-symbols-outlined text-[18px]">checkroom</span>
-              <span>Curate Garment Archive</span>
+              <span>Gestionar Archivo de Prendas</span>
             </button>
             <button
               (click)="navigate.emit('inventory')"
               class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold rounded-lg transition-colors flex items-center space-x-2 cursor-pointer"
             >
               <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
-              <span>Transfer Boutique Stock</span>
+              <span>Transferir Stock de Boutique</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Key Performance Metrics Grid -->
+      <!-- Métricas clave de rendimiento -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
 
-        <!-- Metric 1: Total Archive Valuation -->
         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
           <div class="flex items-center justify-between text-gray-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Archive Valuation</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Valoración del Archivo</span>
             <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">euro</span>
             </div>
@@ -75,14 +74,13 @@ import { AppView } from '../../shared/components/sidebar.component';
           <div class="flex items-center space-x-1.5 mt-2 text-xs text-emerald-700 font-medium">
             <span class="material-symbols-outlined text-[16px]">trending_up</span>
             <span class="font-semibold">+18.4%</span>
-            <span class="text-gray-500">vs previous cycle</span>
+            <span class="text-gray-500">vs ciclo anterior</span>
           </div>
         </div>
 
-        <!-- Metric 2: Active Inventory Units -->
         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
           <div class="flex items-center justify-between text-gray-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Boutique Units</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Unidades en Boutiques</span>
             <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">inventory_2</span>
             </div>
@@ -92,14 +90,13 @@ import { AppView } from '../../shared/components/sidebar.component';
           </p>
           <div class="flex items-center space-x-1.5 mt-2 text-xs text-gray-600 font-medium">
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Allocated across {{ inventoryService.locations().length }} locations</span>
+            <span>Asignadas en {{ inventoryService.locations().length }} ubicaciones</span>
           </div>
         </div>
 
-        <!-- Metric 3: Active Dispatches -->
         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
           <div class="flex items-center justify-between text-gray-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Active Dispatches</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Despachos Activos</span>
             <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             </div>
@@ -109,14 +106,13 @@ import { AppView } from '../../shared/components/sidebar.component';
           </p>
           <div class="flex items-center space-x-1.5 mt-2 text-xs text-amber-700 font-medium">
             <span class="material-symbols-outlined text-[16px]">priority_high</span>
-            <span>Active shipments in transit</span>
+            <span>Envíos activos en tránsito</span>
           </div>
         </div>
 
-        <!-- Metric 4: Permanent Archive Pieces -->
         <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-2xs">
           <div class="flex items-center justify-between text-gray-500 mb-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Archived SKUs</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-400">SKUs Archivados</span>
             <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">style</span>
             </div>
@@ -125,26 +121,26 @@ import { AppView } from '../../shared/components/sidebar.component';
             {{ archiveService.products().length }}
           </p>
           <div class="flex items-center space-x-1.5 mt-2 text-xs text-gray-500">
-            <span>Permanent & Seasonal Collections</span>
+            <span>Colecciones permanentes y de temporada</span>
           </div>
         </div>
       </div>
 
-      <!-- Main Section: Boutique Matrix & Active Dispatches Split -->
+      <!-- Sección principal: Matrix de boutiques y despachos -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Left 2 Cols: Global Boutique Network Distribution -->
+        <!-- Izquierda: Red global de boutiques -->
         <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-2xs">
           <div class="flex items-center justify-between pb-4 border-b border-gray-100">
             <div>
-              <h2 class="text-base font-bold text-gray-900">Global Boutique Nodes</h2>
-              <p class="text-xs text-gray-500">Physical stock balance and active reserve telemetry</p>
+              <h2 class="text-base font-bold text-gray-900">Nodos Globales de Boutique</h2>
+              <p class="text-xs text-gray-500">Balance de stock físico y telemetría de reservas activas</p>
             </div>
             <button
               (click)="navigate.emit('inventory')"
               class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center space-x-1"
             >
-              <span>View Full Matrix</span>
+              <span>Ver Matriz Completa</span>
               <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
@@ -157,32 +153,32 @@ import { AppView } from '../../shared/components/sidebar.component';
                 </div>
                 <div>
                   <p class="text-sm font-semibold text-gray-900">{{ loc.nombre }}</p>
-                  <p class="text-xs text-gray-500">{{ loc.direccion }} • Mgr: {{ loc.responsable }}</p>
+                  <p class="text-xs text-gray-500">{{ loc.direccion }}</p>
                 </div>
               </div>
 
               <div class="flex items-center space-x-4 sm:text-right">
                 <div class="min-w-[70px]">
                   <p class="text-sm font-bold text-gray-900">
-                    {{ getLocationStockCount(loc.id) }} pcs
+                    {{ getLocationStockCount(loc.codigoSucursal) }} pzs
                   </p>
-                  <p class="text-[11px] text-emerald-700 font-medium">Optimal</p>
+                  <p class="text-[11px] text-emerald-700 font-medium">Óptimo</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right 1 Col: Recent Dispatches Feed -->
+        <!-- Derecha: Despachos recientes -->
         <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-2xs flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between pb-4 border-b border-gray-100">
-              <h2 class="text-base font-bold text-gray-900">Live Dispatches</h2>
+              <h2 class="text-base font-bold text-gray-900">Despachos en Vivo</h2>
               <button
                 (click)="navigate.emit('logistics')"
                 class="text-xs font-bold text-indigo-600 hover:text-indigo-800"
               >
-                All ({{ dispatchService.dispatches().length }})
+                Todos ({{ dispatchService.dispatches().length }})
               </button>
             </div>
 
@@ -193,26 +189,16 @@ import { AppView } from '../../shared/components/sidebar.component';
               >
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-bold text-gray-900">{{ order.referencia }}</span>
-                  <span
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                    [ngClass]="{
-                      'bg-emerald-50 text-emerald-700 border border-emerald-200': order.estado === 'entregado',
-                      'bg-sky-50 text-sky-700 border border-sky-200': order.estado === 'en_transito',
-                      'bg-amber-50 text-amber-700 border border-amber-200': order.estado === 'despachado',
-                      'bg-gray-100 text-gray-700 border border-gray-200': order.estado === 'preparacion'
-                    }"
-                  >
-                    {{ order.estado.replace('_', ' ') }}
+                  <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold uppercase tracking-wider">
+                    Despacho
                   </span>
                 </div>
 
-                <p class="text-xs font-semibold text-gray-900">{{ order.cliente }}</p>
-                <p class="text-xs text-gray-500 truncate">
-                  {{ getLocationName(order.origen_id) }} → {{ getLocationName(order.destino_id) }}
-                </p>
+                <p *ngIf="order.motivo" class="text-xs text-gray-500 truncate">{{ order.motivo }}</p>
+                <p *ngIf="!order.motivo" class="text-xs text-gray-400 italic">Sin motivo registrado</p>
 
-                <div class="flex items-center justify-between pt-1 border-t border-gray-200 text-xs">
-                  <span class="text-gray-500">{{ order.cantidad }} units</span>
+                <div *ngIf="order.movimientos && order.movimientos.length > 0" class="flex items-center justify-between pt-1 border-t border-gray-200 text-xs">
+                  <span class="text-gray-500">{{ order.movimientos.length }} movimiento(s)</span>
                 </div>
               </div>
             </div>
@@ -223,24 +209,24 @@ import { AppView } from '../../shared/components/sidebar.component';
               (click)="navigate.emit('logistics')"
               class="w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors text-center block shadow-xs"
             >
-              Book New Dispatch
+              Registrar Nuevo Despacho
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Featured Permanent Archive Preview -->
+      <!-- Prendas destacadas del archivo permanente -->
       <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-2xs">
         <div class="flex items-center justify-between mb-6">
           <div>
-            <h2 class="text-base font-bold text-gray-900">Permanent Archive Highlights</h2>
-            <p class="text-xs text-gray-500">Architectural silhouettes and certified material fabrications</p>
+            <h2 class="text-base font-bold text-gray-900">Prendas Destacadas del Archivo Permanente</h2>
+            <p class="text-xs text-gray-500">Siluetas arquitectónicas y fabricaciones con materiales certificados</p>
           </div>
           <button
             (click)="navigate.emit('archive')"
             class="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-semibold transition-colors"
           >
-            Explore Full Archive →
+            Explorar Archivo Completo →
           </button>
         </div>
 
@@ -256,17 +242,17 @@ import { AppView } from '../../shared/components/sidebar.component';
                 class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
               />
               <div class="absolute top-2.5 left-2.5 bg-gray-900/80 backdrop-blur-xs text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
-                {{ item.sku }}
+                ID {{ item.idProducto }}
               </div>
               <div class="absolute bottom-2.5 right-2.5 bg-white/95 backdrop-blur-xs text-gray-900 px-2 py-0.5 rounded text-xs font-bold shadow-xs">
-                {{ item.precio.toLocaleString() }} Bs
+                {{ item.venta.toLocaleString() }} Bs
               </div>
             </div>
 
             <div class="p-4 flex-1 flex flex-col justify-between">
               <div>
                 <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                  {{ item.coleccion.replace('_', ' ') }}
+                  {{ item.coleccion_nombre }}
                 </p>
                 <h3 class="text-sm font-bold text-gray-900 mt-1 leading-snug">{{ item.nombre }}</h3>
                 <p class="text-xs text-gray-500 mt-1 line-clamp-2 leading-relaxed">{{ item.descripcion }}</p>
@@ -276,7 +262,7 @@ import { AppView } from '../../shared/components/sidebar.component';
                 <span class="text-gray-600 font-medium">{{ item.color }}</span>
                 <span class="text-emerald-700 font-semibold flex items-center space-x-1">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>Active</span>
+                  <span>Activo</span>
                 </span>
               </div>
             </div>
@@ -307,31 +293,27 @@ export class DashboardComponent implements OnInit {
   totalValuation = computed(() => {
     let sum = 0;
     for (const item of this.archiveService.products()) {
-      let totalPcs = 0;
-      for (const size in item.tallas) {
-        totalPcs += item.tallas[size];
-      }
-      sum += totalPcs * item.precio;
+      sum += item.venta;
     }
     return sum;
   });
 
   totalUnits = computed(() => {
-    return this.inventoryService.stock().reduce((acc, curr) => acc + curr.cantidad, 0);
+    return this.inventoryService.stock().reduce((acc, curr) => acc + curr.cantidad_actual, 0);
   });
 
   activeDispatchesCount = computed(() => {
-    return this.dispatchService.dispatches().filter(d => d.estado !== 'entregado').length;
+    return this.dispatchService.dispatches().length;
   });
 
-  getLocationStockCount(locationId: string): number {
+  getLocationStockCount(codigoSucursal: number): number {
     return this.inventoryService
       .stock()
-      .filter(s => s.sucursal_id === locationId)
-      .reduce((acc, curr) => acc + curr.cantidad, 0);
+      .filter(s => s.codigoSucursal === codigoSucursal)
+      .reduce((acc, curr) => acc + curr.cantidad_actual, 0);
   }
 
-  getLocationName(locId: string): string {
-    return this.inventoryService.locations().find(l => l.id === locId)?.nombre || 'N/A';
+  getLocationName(codigoSucursal: number): string {
+    return this.inventoryService.locations().find(l => l.codigoSucursal === codigoSucursal)?.nombre || 'N/A';
   }
 }

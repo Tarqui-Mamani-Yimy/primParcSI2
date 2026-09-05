@@ -9,22 +9,18 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
   imports: [CommonModule],
   template: `
     <aside class="w-64 bg-white text-gray-900 flex flex-col justify-between h-full border-r border-gray-200 select-none">
-      
-      <!-- Top Section -->
+
+      <!-- Sección superior -->
       <div>
-        <!-- Brand Header in Sidebar -->
+        <!-- Encabezado de marca en sidebar -->
         <div class="p-6 border-b border-gray-100 flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs">
               A
             </div>
             <div>
-              <span class="font-bold text-base tracking-tight text-gray-900 block leading-tight">
-                AETHER
-              </span>
-              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
-                Operations Node
-              </span>
+              <span class="font-bold text-base tracking-tight text-gray-900 block leading-tight">AETHER</span>
+              <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Nodo de Operaciones</span>
             </div>
           </div>
           <span class="text-[10px] font-bold px-2 py-0.5 bg-green-50 text-green-700 rounded-full border border-green-200 uppercase">
@@ -32,13 +28,13 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
           </span>
         </div>
 
-        <!-- Navigation Section -->
+        <!-- Sección de navegación -->
         <nav class="flex-1 p-4 space-y-1">
           <div class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
-            Core Modules
+            Módulos Principales
           </div>
 
-          <!-- Dashboard View -->
+          <!-- Centro de Operaciones -->
           <button
             (click)="selectView('dashboard')"
             [class.bg-indigo-50]="currentView === 'dashboard'"
@@ -56,12 +52,10 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
             >
               <span class="material-symbols-outlined text-[18px]">dashboard</span>
             </div>
-            <span class="font-medium tracking-tight">
-              Operations Center
-            </span>
+            <span class="font-medium tracking-tight">Centro de Operaciones</span>
           </button>
 
-          <!-- Archive & Garment Catalog -->
+          <!-- Archivo y Catálogo -->
           <button
             (click)="selectView('archive')"
             [class.bg-indigo-50]="currentView === 'archive'"
@@ -79,12 +73,10 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
             >
               <span class="material-symbols-outlined text-[18px]">checkroom</span>
             </div>
-            <span class="font-medium tracking-tight">
-              Archive & Catalog
-            </span>
+            <span class="font-medium tracking-tight">Archivo y Catálogo</span>
           </button>
 
-          <!-- Global Inventory Network -->
+          <!-- Inventario Global -->
           <button
             (click)="selectView('inventory')"
             [class.bg-indigo-50]="currentView === 'inventory'"
@@ -102,12 +94,10 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
             >
               <span class="material-symbols-outlined text-[18px]">inventory_2</span>
             </div>
-            <span class="font-medium tracking-tight">
-              Global Inventory
-            </span>
+            <span class="font-medium tracking-tight">Inventario Global</span>
           </button>
 
-          <!-- Dispatches & Logistics -->
+          <!-- Despachos y Logística -->
           <button
             (click)="selectView('logistics')"
             [class.bg-indigo-50]="currentView === 'logistics'"
@@ -125,16 +115,14 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
             >
               <span class="material-symbols-outlined text-[18px]">local_shipping</span>
             </div>
-            <span class="font-medium tracking-tight">
-              Dispatches & VIP
-            </span>
+            <span class="font-medium tracking-tight">Despachos y VIP</span>
           </button>
 
           <div class="pt-4 text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
-            Governance
+            Administración
           </div>
 
-          <!-- Team & Security Governance -->
+          <!-- Personal y Nodos -->
           <button
             (click)="selectView('team')"
             [class.bg-indigo-50]="currentView === 'team'"
@@ -152,24 +140,20 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
             >
               <span class="material-symbols-outlined text-[18px]">shield_person</span>
             </div>
-            <span class="font-medium tracking-tight">
-              Personnel & Nodes
-            </span>
+            <span class="font-medium tracking-tight">Personal y Nodos</span>
           </button>
         </nav>
       </div>
 
-      <!-- Bottom Card & Switch to Login Demo -->
+      <!-- Sección inferior -->
       <div class="p-4 border-t border-gray-100 space-y-2">
         <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
           <div class="flex items-center space-x-2 mb-1">
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">
-              Zurich Vault Active
-            </p>
+            <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">Bóveda de Zurich Activa</p>
           </div>
           <p class="text-xs text-gray-500 leading-relaxed">
-            Synchronized with Paris & Ginza ateliers.
+            Sincronizada con ateliers de París y Ginza.
           </p>
         </div>
 
@@ -178,7 +162,7 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'tea
           class="w-full py-2 px-3 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
         >
           <span class="material-symbols-outlined text-[16px] text-gray-500">lock_reset</span>
-          <span>Switch to Login View</span>
+          <span>Cambiar a Vista de Inicio de Sesión</span>
         </button>
       </div>
     </aside>

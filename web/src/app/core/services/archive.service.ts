@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ProductItem } from '../models';
+import { ProductOut, PaginatedProducts, ProductoIn, ProveedorOption, ColeccionOption } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 
@@ -11,66 +11,94 @@ const API_URL = environment.apiUrl;
   providedIn: 'root'
 })
 export class ArchiveService {
-  private productsSignal = signal<ProductItem[]>([]);
+  private productsSignal = signal<ProductOut[]>([]);
+  private proveedoresSignal = signal<ProveedorOption[]>([]);
+  private coleccionesSignal = signal<ColeccionOption[]>([]);
+  private totalSignal = signal<number>(0);
+
   public products = this.productsSignal.asReadonly();
+  public proveedores = this.proveedoresSignal.asReadonly();
+  public colecciones = this.coleccionesSignal.asReadonly();
+  public total = this.totalSignal.asReadonly();
 
   constructor(
     private http: HttpClient,
     private notificationService: NotificationService,
   ) {}
 
-  loadProducts(filters?: { coleccion?: string; categoria?: string; search?: string }): Promise<void> {
+  loadProducts(filters?: { idColeccion?: number; tipo?: string; talla?: string; color?: string; q?: string; page?: number; size?: number }): Promise<void> {
     let params = new HttpParams();
-    if (filters?.coleccion) params = params.set('coleccion', filters.coleccion);
-    if (filters?.categoria) params = params.set('categoria', filters.categoria);
-    if (filters?.search) params = params.set('search', filters.search);
+    if (filters?.idColeccion) params = params.set('idColeccion', filters.idColeccion.toString());
+    if (filters?.tipo) params = params.set('tipo', filters.tipo);
+    if (filters?.talla) params = params.set('talla', filters.talla);
+    if (filters?.color) params = params.set('color', filters.color);
+    if (filters?.q) params = params.set('q', filters.q);
+    if (filters?.page) params = params.set('page', filters.page.toString());
+    if (filters?.size) params = params.set('size', filters.size.toString());
 
     return firstValueFrom(
-      this.http.get<ProductItem[]>(`${API_URL}/api/products`, { params })
-    ).then((list) => {
-      this.productsSignal.set(list);
+      this.http.get<PaginatedProducts>(`${API_URL}/api/products`, { params })
+    ).then((res) => {
+      this.productsSignal.set(res.items);
+      this.totalSignal.set(res.total);
     }).catch(() => {
       this.notificationService.error('Error', 'No se pudo cargar el catálogo.');
     });
   }
 
-  getProductById(id: string): Promise<ProductItem | null> {
+  loadProveedores(): Promise<void> {
     return firstValueFrom(
-      this.http.get<ProductItem>(`${API_URL}/api/products/${id}`)
-    ).catch(() => null);
+      this.http.get<ProveedorOption[]>(`${API_URL}/api/suppliers`)
+    ).then((list) => {
+      this.proveedoresSignal.set(list);
+    }).catch(() => {
+      this.notificationService.error('Error', 'No se pudieron cargar los proveedores.');
+    });
   }
 
-  addProduct(newProduct: Omit<ProductItem, 'id'>): Promise<ProductItem | null> {
+  loadColecciones(): Promise<void> {
     return firstValueFrom(
-      this.http.post<ProductItem>(`${API_URL}/api/products`, newProduct)
+      this.http.get<ColeccionOption[]>(`${API_URL}/api/collections`)
+    ).then((list) => {
+      this.coleccionesSignal.set(list);
+    }).catch(() => {
+      this.notificationService.error('Error', 'No se pudieron cargar las colecciones.');
+    });
+  }
+
+  addProduct(newProduct: ProductoIn): Promise<ProductOut | null> {
+    return firstValueFrom(
+      this.http.post<ProductOut>(`${API_URL}/api/products`, newProduct)
     ).then((product) => {
       this.productsSignal.update(list => [product, ...list]);
       this.notificationService.success('Producto agregado', `"${product.nombre}" añadido al catálogo.`);
       return product;
-    }).catch(() => {
-      this.notificationService.error('Error', 'No se pudo agregar el producto.');
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo agregar el producto.';
+      this.notificationService.error('Error', msg);
       return null;
     });
   }
 
-  updateProduct(id: string, updates: Partial<ProductItem>): Promise<ProductItem | null> {
+  updateProduct(id: number, updates: Partial<ProductoIn>): Promise<ProductOut | null> {
     return firstValueFrom(
-      this.http.put<ProductItem>(`${API_URL}/api/products/${id}`, updates)
+      this.http.put<ProductOut>(`${API_URL}/api/products/${id}`, updates)
     ).then((product) => {
-      this.productsSignal.update(list => list.map(p => p.id === id ? product : p));
-      this.notificationService.info('Producto actualizado', `SKU: ${updates.sku || id}`);
+      this.productsSignal.update(list => list.map(p => p.idProducto === id ? product : p));
+      this.notificationService.info('Producto actualizado', `${product.nombre}`);
       return product;
-    }).catch(() => {
-      this.notificationService.error('Error', 'No se pudo actualizar el producto.');
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo actualizar el producto.';
+      this.notificationService.error('Error', msg);
       return null;
     });
   }
 
-  deleteProduct(id: string): Promise<boolean> {
+  deleteProduct(id: number): Promise<boolean> {
     return firstValueFrom(
       this.http.delete(`${API_URL}/api/products/${id}`)
     ).then(() => {
-      this.productsSignal.update(list => list.filter(p => p.id !== id));
+      this.productsSignal.update(list => list.filter(p => p.idProducto !== id));
       this.notificationService.warning('Producto eliminado', `ID: ${id} removido del catálogo.`);
       return true;
     }).catch(() => {

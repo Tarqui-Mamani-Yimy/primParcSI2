@@ -2,7 +2,7 @@ import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../core/services/archive.service';
-import { ProductItem } from '../../core/models';
+import { ProductOut, ProductoIn } from '../../core/models';
 
 @Component({
   selector: 'app-archive',
@@ -11,12 +11,12 @@ import { ProductItem } from '../../core/models';
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
-      <!-- Top Title & Action Header -->
+      <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Curated Garment Architecture</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">AETHER Archive & Essential Catalog</h1>
-          <p class="text-xs text-gray-500 mt-1">Official register of permanent essential wear, certified yarn specifications, and seasonal releases.</p>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo de Productos</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Archivo y Catálogo Esencial AETHER</h1>
+          <p class="text-xs text-gray-500 mt-1">Gestión del catálogo de productos, proveedores y colecciones.</p>
         </div>
 
         <div class="flex items-center space-x-3">
@@ -25,56 +25,50 @@ import { ProductItem } from '../../core/models';
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
-            <span>Curate New Garment</span>
+            <span>Agregar Producto</span>
           </button>
         </div>
       </div>
 
-      <!-- Filters & Search -->
-      <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs">
-        <div class="flex flex-wrap items-center gap-1.5">
-          <button
-            (click)="selectedCollection.set('ALL')"
-            [class.bg-indigo-600]="selectedCollection() === 'ALL'"
-            [class.text-white]="selectedCollection() === 'ALL'"
-            [class.text-gray-600]="selectedCollection() !== 'ALL'"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >All Collections</button>
-          <button
-            (click)="selectedCollection.set('ESSENTIAL_PERMANENT')"
-            [class.bg-indigo-600]="selectedCollection() === 'ESSENTIAL_PERMANENT'"
-            [class.text-white]="selectedCollection() === 'ESSENTIAL_PERMANENT'"
-            [class.text-gray-600]="selectedCollection() !== 'ESSENTIAL_PERMANENT'"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >Essential Permanent</button>
-          <button
-            (click)="selectedCollection.set('ARCHIVE_AW25')"
-            [class.bg-indigo-600]="selectedCollection() === 'ARCHIVE_AW25'"
-            [class.text-white]="selectedCollection() === 'ARCHIVE_AW25'"
-            [class.text-gray-600]="selectedCollection() !== 'ARCHIVE_AW25'"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >Archive AW25</button>
-          <button
-            (click)="selectedCollection.set('ATELIER_SS26')"
-            [class.bg-indigo-600]="selectedCollection() === 'ATELIER_SS26'"
-            [class.text-white]="selectedCollection() === 'ATELIER_SS26'"
-            [class.text-gray-600]="selectedCollection() !== 'ATELIER_SS26'"
-            class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
-          >SS26 Atelier</button>
-        </div>
-
-        <div class="relative min-w-[240px]">
+      <!-- Filtros -->
+      <div class="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs">
+        <div class="relative min-w-[200px] flex-1">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-gray-400">search</span>
           <input
             type="text"
             [(ngModel)]="searchQuery"
-            placeholder="Search SKU, fabric, title..."
+            (ngModelChange)="onSearch()"
+            placeholder="Buscar por nombre..."
             class="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
           />
         </div>
+        <select
+          [(ngModel)]="filterTipo"
+          (ngModelChange)="onFilter()"
+          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        >
+          <option value="">Todos los tipos</option>
+          <option value="Camisa">Camisa</option>
+          <option value="Pantalon">Pantalón</option>
+          <option value="Vestido">Vestido</option>
+          <option value="Chaqueta">Chaqueta</option>
+          <option value="Falda">Falda</option>
+        </select>
+        <select
+          [(ngModel)]="filterColor"
+          (ngModelChange)="onFilter()"
+          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        >
+          <option value="">Todos los colores</option>
+          <option value="Negro">Negro</option>
+          <option value="Blanco">Blanco</option>
+          <option value="Azul">Azul</option>
+          <option value="Rojo">Rojo</option>
+          <option value="Gris">Gris</option>
+        </select>
       </div>
 
-      <!-- Garment Gallery Grid -->
+      <!-- Galería de productos -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           *ngFor="let item of filteredProducts()"
@@ -82,22 +76,18 @@ import { ProductItem } from '../../core/models';
         >
           <div class="aspect-[4/3] w-full bg-gray-100 overflow-hidden relative">
             <img
-              [src]="item.imagen_url"
+              [src]="item.imagen_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80'"
               [alt]="item.nombre"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div class="absolute top-3 left-3 flex flex-col gap-1.5">
               <span class="px-2.5 py-1 bg-gray-900/90 backdrop-blur-xs text-white rounded-md text-[10px] font-bold tracking-wider uppercase shadow-xs">
-                {{ item.sku }}
+                ID {{ item.idProducto }}
               </span>
-              <span
-                *ngIf="item.estado === 'agotado'"
-                class="px-2 py-0.5 bg-amber-500 text-white rounded text-[9px] font-bold uppercase shadow-xs"
-              >Out of Stock</span>
             </div>
-
             <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-gray-200/80 shadow-xs text-right">
-              <p class="text-xs font-bold text-gray-900">{{ item.precio.toLocaleString() }} Bs</p>
+              <p class="text-[10px] text-gray-500">Venta</p>
+              <p class="text-xs font-bold text-gray-900">{{ item.venta.toLocaleString() }} Bs</p>
             </div>
           </div>
 
@@ -105,32 +95,33 @@ import { ProductItem } from '../../core/models';
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-                  {{ item.categoria }} • {{ item.temporada }}
+                  {{ item.tipo || 'Sin tipo' }} {{ item.talla ? '• ' + item.talla : '' }}
                 </span>
-                <span class="text-xs text-gray-500">{{ item.color }}</span>
+                <span class="text-xs text-gray-500">{{ item.color || '' }}</span>
               </div>
               <h3 class="text-base font-bold text-gray-900 leading-snug">{{ item.nombre }}</h3>
               <p class="text-xs text-gray-600 mt-1 leading-relaxed line-clamp-2">{{ item.descripcion }}</p>
             </div>
 
             <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-              <div class="flex gap-1 text-xs">
-                <span *ngFor="let s of getAvailableSizes(item)" class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 font-semibold text-[11px]">
-                  {{ s }}
-                </span>
+              <div class="text-xs text-gray-500">
+                <span class="font-semibold">{{ item.coleccion_nombre }}</span>
               </div>
               <button
                 (click)="inspectProduct(item)"
                 class="px-3 py-1.5 bg-gray-900 text-white hover:bg-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
-              >Inspect Specs</button>
+              >Inspeccionar</button>
             </div>
           </div>
         </div>
       </div>
 
+      <div *ngIf="filteredProducts().length === 0" class="text-center py-12 text-gray-400 text-sm">
+        No se encontraron productos con los filtros seleccionados.
+      </div>
     </div>
 
-    <!-- Garment Detailed Inspection Modal -->
+    <!-- Modal: Inspección detallada de producto -->
     <div *ngIf="inspectingItem()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-3xl w-full rounded-2xl border border-gray-200 shadow-xl overflow-hidden max-h-[90vh] flex flex-col relative">
         <button
@@ -144,53 +135,55 @@ import { ProductItem } from '../../core/models';
           <div *ngIf="inspectingItem() as p">
             <div class="flex flex-col md:flex-row gap-6">
               <div class="w-full md:w-1/2 aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                <img [src]="p.imagen_url" [alt]="p.nombre" class="w-full h-full object-cover" />
+                <img [src]="p.imagen_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800'" [alt]="p.nombre" class="w-full h-full object-cover" />
               </div>
               <div class="w-full md:w-1/2 flex flex-col justify-between">
                 <div>
                   <span class="text-[11px] font-bold tracking-wider text-indigo-600 uppercase">
-                    {{ p.sku }} • {{ p.coleccion.replace('_', ' ') }}
+                    ID {{ p.idProducto }} • {{ p.tipo || 'Sin tipo' }}
                   </span>
                   <h2 class="text-xl font-bold text-gray-900 mt-1 leading-snug">{{ p.nombre }}</h2>
                   <p class="text-xs text-gray-600 mt-1">{{ p.descripcion }}</p>
                 </div>
 
-                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 my-3">
-                  <p class="text-[11px] font-bold uppercase tracking-wider text-gray-500">Retail Price</p>
-                  <p class="text-xl font-bold text-gray-900 mt-0.5">{{ p.precio.toLocaleString() }} Bs</p>
+                <div class="grid grid-cols-2 gap-3 my-3">
+                  <div class="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Costo</p>
+                    <p class="text-lg font-bold text-gray-900 mt-0.5">{{ p.costo.toLocaleString() }} Bs</p>
+                  </div>
+                  <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-200">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Venta</p>
+                    <p class="text-lg font-bold text-indigo-700 mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="mt-6 pt-6 border-t border-gray-100 space-y-3">
-              <h3 class="text-sm font-bold text-gray-900">Color & Season</h3>
-              <div class="p-3.5 rounded-xl bg-gray-50 border border-gray-200">
-                <div class="flex justify-between items-center">
-                  <span class="font-bold text-gray-900 text-xs">{{ p.color }}</span>
-                  <span class="text-xs text-indigo-600 font-semibold">{{ p.temporada }}</span>
-                </div>
+            <div class="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Tipo</p>
+                <p class="text-sm font-bold text-gray-900">{{ p.tipo || '—' }}</p>
               </div>
-            </div>
-
-            <div *ngIf="p.notas_diseno" class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-2">Designer Notes</h3>
-              <p class="text-xs text-gray-600 leading-relaxed p-4 rounded-xl bg-gray-50 border border-gray-200 italic">
-                "{{ p.notas_diseno }}"
-              </p>
-            </div>
-
-            <div class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-3">Size Network Matrix</h3>
-              <div class="grid grid-cols-5 gap-2 text-center">
-                <div *ngFor="let key of getKeys(p.tallas)" class="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                  <p class="text-xs font-bold text-gray-500">Size {{ key }}</p>
-                  <p class="text-base font-bold text-gray-900 mt-0.5">{{ p.tallas[key] }} pcs</p>
-                </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Talla</p>
+                <p class="text-sm font-bold text-gray-900">{{ p.talla || '—' }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Color</p>
+                <p class="text-sm font-bold text-gray-900">{{ p.color || '—' }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Colección</p>
+                <p class="text-sm font-bold text-gray-900">{{ p.coleccion_nombre }}</p>
+              </div>
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Proveedor</p>
+                <p class="text-sm font-bold text-gray-900">{{ p.proveedor_nombre }}</p>
               </div>
             </div>
 
             <div *ngIf="p.imagenes_secundarias && p.imagenes_secundarias.length > 0" class="mt-6 pt-6 border-t border-gray-100">
-              <h3 class="text-sm font-bold text-gray-900 mb-3">Additional Images</h3>
+              <h3 class="text-sm font-bold text-gray-900 mb-3">Imágenes Adicionales</h3>
               <div class="grid grid-cols-3 gap-2">
                 <img *ngFor="let img of p.imagenes_secundarias" [src]="img" class="w-full h-24 object-cover rounded-lg border border-gray-200" />
               </div>
@@ -200,13 +193,13 @@ import { ProductItem } from '../../core/models';
 
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
           <button (click)="inspectingItem.set(null)" class="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors">
-            Close Dossier
+            Cerrar
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Curate New Garment Modal -->
+    <!-- Modal: Agregar nuevo producto -->
     <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-xl w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 max-h-[90vh] overflow-y-auto relative">
         <button (click)="showCreateModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
@@ -214,65 +207,78 @@ import { ProductItem } from '../../core/models';
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Atelier Curation</span>
-          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Register Archive Garment</h2>
-          <p class="text-xs text-gray-500">Add a new essential piece to the master catalog.</p>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Agregar Nuevo Producto</h2>
+          <p class="text-xs text-gray-500">Registre una nueva prenda en el catálogo maestro.</p>
         </div>
 
-        <form (ngSubmit)="saveNewGarment()" class="space-y-4">
+        <form (ngSubmit)="saveNewProduct()" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Garment Name</label>
-              <input type="text" [(ngModel)]="newGarment.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre *</label>
+              <input type="text" [(ngModel)]="newProduct.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">SKU Code</label>
-              <input type="text" [(ngModel)]="newGarment.sku" name="sku" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Tipo</label>
+              <input type="text" [(ngModel)]="newProduct.tipo" name="tipo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. Camisa" />
             </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Description</label>
-            <input type="text" [(ngModel)]="newGarment.descripcion" name="descripcion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Descripción</label>
+            <textarea [(ngModel)]="newProduct.descripcion" name="descripcion" rows="2" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
           </div>
 
-          <div class="grid grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Category</label>
-              <select [(ngModel)]="newGarment.categoria" name="categoria" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="OUTERWEAR">Outerwear</option>
-                <option value="TAILORING">Tailoring</option>
-                <option value="KNITWEAR">Knitwear</option>
-                <option value="TROUSERS">Trousers</option>
-                <option value="FOOTWEAR">Footwear</option>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Costo (Bs) *</label>
+              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.costo" name="costo" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Precio de Venta (Bs) *</label>
+              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.venta" name="venta" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Talla</label>
+              <input type="text" [(ngModel)]="newProduct.talla" name="talla" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. M" />
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Color</label>
+              <input type="text" [(ngModel)]="newProduct.color" name="color" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. Negro" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Proveedor *</label>
+              <select [(ngModel)]="newProduct.idProveedor" name="idProveedor" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option [ngValue]="null" disabled>Seleccionar proveedor</option>
+                <option *ngFor="let pr of archiveService.proveedores()" [ngValue]="pr.idProveedor">
+                  {{ pr.nombre }}
+                </option>
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Collection</label>
-              <select [(ngModel)]="newGarment.coleccion" name="coleccion" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="ESSENTIAL_PERMANENT">Essential Permanent</option>
-                <option value="ARCHIVE_AW25">Archive AW25</option>
-                <option value="ATELIER_SS26">Atelier SS26</option>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Colección *</label>
+              <select [(ngModel)]="newProduct.idColeccion" name="idColeccion" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option [ngValue]="null" disabled>Seleccionar colección</option>
+                <option *ngFor="let c of archiveService.colecciones()" [ngValue]="c.idColeccion">
+                  {{ c.nombre_coleccion }}
+                </option>
               </select>
             </div>
-            <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Price (Bs)</label>
-              <input type="number" [(ngModel)]="newGarment.precio" name="precio" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
-            </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Color</label>
-            <input type="text" [(ngModel)]="newGarment.color" name="color" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">URL de Imagen</label>
+            <input type="url" [(ngModel)]="newProduct.imagen_url" name="imagen_url" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://..." />
           </div>
 
-          <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Designer Notes</label>
-            <textarea [(ngModel)]="newGarment.notas_diseno" name="notas" rows="2" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
-          </div>
-
-          <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
-            Curate & Commit to Archive
+          <button type="submit" [disabled]="!newProduct.nombre || !newProduct.costo || !newProduct.venta || !newProduct.idProveedor || !newProduct.idColeccion" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
+            Guardar Producto
           </button>
         </form>
       </div>
@@ -280,85 +286,91 @@ import { ProductItem } from '../../core/models';
   `
 })
 export class ArchiveComponent implements OnInit {
-  selectedCollection = signal<string>('ALL');
-  searchQuery = '';
-  inspectingItem = signal<ProductItem | null>(null);
+  inspectingItem = signal<ProductOut | null>(null);
   showCreateModal = signal<boolean>(false);
 
-  newGarment: Partial<ProductItem> = {
+  searchQuery = '';
+  filterTipo = '';
+  filterColor = '';
+
+  newProduct: Partial<ProductoIn> = {
     nombre: '',
-    sku: 'AETH-AL-007',
     descripcion: '',
-    categoria: 'OUTERWEAR',
-    coleccion: 'ESSENTIAL_PERMANENT',
-    precio: 1650,
-    imagen_url: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80',
+    costo: 0,
+    venta: 0,
+    tipo: '',
+    talla: '',
+    color: '',
+    idProveedor: null as unknown as number,
+    idColeccion: null as unknown as number,
+    imagen_url: '',
     imagenes_secundarias: [],
-    tallas: { 'S': 8, 'M': 12, 'L': 6 },
-    color: 'Natural Vicuña',
-    temporada: 'Core 2026',
-    notas_diseno: '',
-    estado: 'disponible',
   };
 
   constructor(public archiveService: ArchiveService) {}
 
   ngOnInit() {
     this.archiveService.loadProducts();
+    this.archiveService.loadProveedores();
+    this.archiveService.loadColecciones();
   }
 
   filteredProducts = computed(() => {
-    let list = this.archiveService.products();
-    if (this.selectedCollection() !== 'ALL') {
-      list = list.filter(p => p.coleccion === this.selectedCollection());
-    }
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase();
-      list = list.filter(
-        p =>
-          p.nombre.toLowerCase().includes(q) ||
-          p.sku.toLowerCase().includes(q) ||
-          p.descripcion.toLowerCase().includes(q)
-      );
-    }
-    return list;
+    return this.archiveService.products();
   });
 
-  inspectProduct(item: ProductItem) {
+  onSearch() {
+    this.archiveService.loadProducts({ q: this.searchQuery || undefined, tipo: this.filterTipo || undefined, color: this.filterColor || undefined });
+  }
+
+  onFilter() {
+    this.archiveService.loadProducts({ q: this.searchQuery || undefined, tipo: this.filterTipo || undefined, color: this.filterColor || undefined });
+  }
+
+  inspectProduct(item: ProductOut) {
     this.inspectingItem.set(item);
-  }
-
-  getAvailableSizes(item: ProductItem): string[] {
-    return Object.keys(item.tallas || {});
-  }
-
-  getKeys(obj: any): string[] {
-    return Object.keys(obj || {});
   }
 
   openCreateModal() {
     this.showCreateModal.set(true);
   }
 
-  saveNewGarment() {
-    if (!this.newGarment.nombre) return;
+  saveNewProduct() {
+    if (!this.newProduct.nombre || !this.newProduct.costo || !this.newProduct.venta || !this.newProduct.idProveedor || !this.newProduct.idColeccion) return;
 
     this.archiveService.addProduct({
-      sku: this.newGarment.sku || 'AETH-000',
-      nombre: this.newGarment.nombre,
-      descripcion: this.newGarment.descripcion || 'Essential Architectural Garment',
-      categoria: this.newGarment.categoria || 'OUTERWEAR',
-      coleccion: this.newGarment.coleccion || 'ESSENTIAL_PERMANENT',
-      precio: Number(this.newGarment.precio) || 1200,
-      imagen_url: this.newGarment.imagen_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80',
-      imagenes_secundarias: [],
-      tallas: { 'S': 6, 'M': 10, 'L': 6 },
-      color: this.newGarment.color || 'Obsidian Sand',
-      temporada: 'Core 2026',
-      notas_diseno: this.newGarment.notas_diseno || 'Precision crafted.',
-      estado: 'disponible',
+      nombre: this.newProduct.nombre!,
+      descripcion: this.newProduct.descripcion || null,
+      costo: Number(this.newProduct.costo),
+      venta: Number(this.newProduct.venta),
+      tipo: this.newProduct.tipo || null,
+      talla: this.newProduct.talla || null,
+      color: this.newProduct.color || null,
+      idProveedor: this.newProduct.idProveedor!,
+      idColeccion: this.newProduct.idColeccion!,
+      imagen_url: this.newProduct.imagen_url || null,
+      imagenes_secundarias: this.newProduct.imagenes_secundarias || [],
+    }).then((ok) => {
+      if (ok) {
+        this.showCreateModal.set(false);
+        this.resetForm();
+      }
     });
+  }
 
-    this.showCreateModal.set(false);
+  private resetForm() {
+    this.newProduct = {
+      nombre: '',
+      descripcion: '',
+      costo: 0,
+      venta: 0,
+      tipo: '',
+      talla: '',
+      color: '',
+      idProveedor: null as unknown as number,
+      idColeccion: null as unknown as number,
+      imagen_url: '',
+      imagenes_secundarias: [],
+    };
   }
 }

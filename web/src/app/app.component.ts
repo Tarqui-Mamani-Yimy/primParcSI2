@@ -131,17 +131,17 @@ export class AppComponent {
   getViewTitle(view: AppView): string {
     switch (view) {
       case 'dashboard':
-        return 'Operations Center';
+        return 'Centro de Operaciones';
       case 'archive':
-        return 'Garment Archive & Catalog';
+        return 'Archivo y Catálogo de Prendas';
       case 'inventory':
-        return 'Global Stock Allocation';
+        return 'Asignación Global de Stock';
       case 'logistics':
-        return 'Dispatches & Secured Transit';
+        return 'Despachos y Tránsito Seguro';
       case 'team':
-        return 'Personnel & Node Access';
+        return 'Personal y Acceso a Nodos';
       default:
-        return 'Operations';
+        return 'Operaciones';
     }
   }
 }

@@ -11,24 +11,24 @@ import { TeamMember } from '../../core/models';
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
-      <!-- Header -->
+      <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Security Governance & RBAC</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Personnel Directory & Access Nodes</h1>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Gobernanza de Seguridad y RBAC</span>
+          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Directorio de Personal y Nodos de Acceso</h1>
           <p class="text-xs text-gray-500 mt-1">
-            Role-based permissions, activity logs, and administrative node authorization.
+            Permisos basados en roles, registros de actividad y autorización de nodos administrativos.
           </p>
         </div>
 
         <div class="flex items-center space-x-3">
           <div class="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-700">
-            Create/Edit: Phase 2
+            Crear/Editar: Fase 2
           </div>
         </div>
       </div>
 
-      <!-- Personnel Cards Grid -->
+      <!-- Tarjetas de personal -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <div
           *ngFor="let member of teamService.teamMembers()"
@@ -48,17 +48,14 @@ import { TeamMember } from '../../core/models';
 
               <span
                 class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border"
-                [ngClass]="{
-                  'bg-indigo-50 text-indigo-700 border-indigo-200': member.rol === 'admin',
-                  'bg-amber-50 text-amber-700 border-amber-200': member.rol === 'vendedor'
-                }"
+                [ngClass]="getRolBadgeClass(member.rol)"
               >
                 {{ member.rol }}
               </span>
             </div>
 
             <div class="mt-3.5 pt-3 border-t border-gray-100">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Active Privileges:</p>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Permisos Activos:</p>
               <div class="flex flex-wrap gap-1.5">
                 <span
                   *ngFor="let perm of member.permisos"
@@ -72,14 +69,14 @@ import { TeamMember } from '../../core/models';
         </div>
       </div>
 
-      <!-- Security Audit Trail -->
+      <!-- Registro de auditoría de seguridad -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 lg:p-6 shadow-xs">
         <div class="flex items-center justify-between pb-3.5 border-b border-gray-100">
           <div>
-            <h2 class="text-sm font-bold text-gray-900">Security Audit & Activity Ledger</h2>
-            <p class="text-xs text-gray-500">Immutable register of inventory alterations, dispatches, and access events</p>
+            <h2 class="text-sm font-bold text-gray-900">Registro de Auditoría y Actividad de Seguridad</h2>
+            <p class="text-xs text-gray-500">Registro inmutable de alteraciones de inventario, despachos y eventos de acceso</p>
           </div>
-          <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider">Live Stream</span>
+          <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider">Flujo en Vivo</span>
         </div>
 
         <div class="divide-y divide-gray-100 mt-1">
@@ -108,5 +105,15 @@ export class TeamComponent implements OnInit {
   ngOnInit() {
     this.teamService.loadTeam();
     this.teamService.loadAuditLog();
+  }
+
+  getRolBadgeClass(rol: string): string {
+    const lower = rol.toLowerCase();
+    if (lower.includes('admin')) return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (lower.includes('encargado') || lower.includes('sucursal')) return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (lower.includes('cajero')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (lower.includes('proveedor')) return 'bg-sky-50 text-sky-700 border-sky-200';
+    if (lower.includes('cliente')) return 'bg-gray-100 text-gray-600 border-gray-200';
+    return 'bg-gray-100 text-gray-600 border-gray-200';
   }
 }
