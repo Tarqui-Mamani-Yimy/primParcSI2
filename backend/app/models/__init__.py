@@ -69,6 +69,8 @@ class Usuario(Base):
     correo: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     contraseña: Mapped[str] = mapped_column(String(255), nullable=False)
     codigoRol: Mapped[int] = mapped_column(ForeignKey("rol.codigoRol", onupdate="CASCADE"), nullable=False)
+    intentosFallidos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bloqueadoHasta: Mapped[datetime | None] = mapped_column(TIMESTAMP)
 
     rol: Mapped["Rol"] = relationship()
 

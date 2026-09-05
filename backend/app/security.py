@@ -20,15 +20,15 @@ PWD_RESET_TOKEN_EXPIRE_MINUTES = 15
 def validate_password_strength(password: str) -> None:
     """Valida la fortaleza de una contrasena y lanza ValueError con los requisitos faltantes.
 
-    Reglas: minimo 12 caracteres, al menos una minuscula, una mayuscula,
+    Reglas: minimo 10 caracteres, al menos una minuscula, una mayuscula,
     un digito y un caracter especial (no alfanumerico).
     """
     if not isinstance(password, str):
         raise ValueError("La contrasena debe ser una cadena de texto")
 
     faltantes = []
-    if len(password) < 12:
-        faltantes.append("al menos 12 caracteres")
+    if len(password) < 10:
+        faltantes.append("al menos 10 caracteres")
     if not re.search(r"[a-z]", password):
         faltantes.append("una letra minuscula")
     if not re.search(r"[A-Z]", password):
