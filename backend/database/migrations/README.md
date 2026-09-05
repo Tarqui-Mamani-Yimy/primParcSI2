@@ -31,14 +31,42 @@ docker exec -i ropaDocker \
   -v ON_ERROR_STOP=1 \
   -f /dev/stdin \
   < database/migrations/002_add_imagenes_producto.sql
+
+# 4) Aplicar la migracion 003 (bloqueo de cuenta tras intentos fallidos)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/003_add_bloqueo_login.sql
+
+# 5) Aplicar la migracion 004 (bloqueo progresivo + activacion manual)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/004_add_bloqueo_progresivo.sql
+
+# 6) Aplicar la migracion 005 (asignar permisos granulares a los roles reales)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/005_asignar_permisos_reales.sql
 ```
 
 Usar `ADD COLUMN IF NOT EXISTS` para que sean idempotentes (se pueden
-re-ejecutar sin error).
+re-ejecutar sin error). La migracion 005 usa `INSERT ... SELECT ... WHERE NOT EXISTS`
+para ser igual de idempotente.
 
 ## Verificacion rapida
 
 ```bash
 docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "Movimiento"'
 docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "producto"'
+
+# Permisos por rol (migracion 005):
+docker exec ropaDocker psql -U yimysito -d ropaDB -c \
+  'SELECT r."codigoRol", r."nombreRol", COUNT(ap."idRolPermiso") AS total_permisos
+   FROM "rol" r LEFT JOIN "asignacion_permiso" ap ON ap."codigoRol" = r."codigoRol"
+   GROUP BY r."codigoRol", r."nombreRol" ORDER BY r."codigoRol";'
 ```

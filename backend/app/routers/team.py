@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Bitacora, Rol, Usuario
-from app.schemas.team import AuditLogOut, TeamMemberOut
+from app.schemas.team import ActivateAccountResponse, AuditLogOut, TeamMemberOut
 from app.security import require_permiso
 from app.services.usuarios import build_user_claims
 
@@ -16,7 +16,9 @@ async def list_team(session: AsyncSession = Depends(get_db),
                     _=Depends(require_permiso("equipo.ver"))):
     roles_staff = (
         await session.execute(
-            select(Rol).where(Rol.nombreRol.in_(["Admin", "Vendedor"]))
+            select(Rol).where(
+                Rol.nombreRol.in_(["Administrador", "Encargado de Sucursal", "Cajero"])
+            )
         )
     ).scalars().all()
     codigos_staff = [r.codigoRol for r in roles_staff]
@@ -82,3 +84,21 @@ async def audit_log(
         )
         for b, u in rows
     ]
+
+
+@router.patch("/{idUser}/activate", response_model=ActivateAccountResponse)
+async def activate_account(
+    idUser: int,
+    session: AsyncSession = Depends(get_db),
+    _=Depends(require_permiso("usuario.admin")),
+):
+    usuario = await session.get(Usuario, idUser)
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario.intentosFallidos = 0
+    usuario.bloqueadoHasta = None
+    usuario.vecesBloqueado = 0
+    usuario.requiereActivacion = False
+    await session.commit()
+    return ActivateAccountResponse(message="Cuenta reactivada correctamente")
