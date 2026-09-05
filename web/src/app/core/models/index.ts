@@ -71,6 +71,19 @@ export interface ProveedorOption {
   nombre: string;
 }
 
+export interface Proveedor {
+  idProveedor: number;
+  nombre: string;
+  telefono: string | null;
+  correo: string | null;
+}
+
+export interface ProveedorIn {
+  nombre: string;
+  telefono?: string | null;
+  correo?: string | null;
+}
+
 export interface ColeccionOption {
   idColeccion: number;
   nombre_coleccion: string;
