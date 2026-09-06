@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+import logging
+import traceback
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.routers import (
@@ -23,6 +27,7 @@ from app.routers import (
 )
 
 settings = get_settings()
+logger = logging.getLogger("app.errors")
 
 app = FastAPI(
     title="API Ropa Unisex",
@@ -37,6 +42,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Sin esto, una excepcion no controlada la resuelve directamente
+    # ServerErrorMiddleware por fuera del CORSMiddleware y la respuesta
+    # sale sin cabeceras CORS (el navegador lo reporta como error de CORS
+    # en vez de mostrar el 500 real). Al capturarla aca, FastAPI la trata
+    # como una respuesta normal y si pasa por el CORSMiddleware.
+    logger.error(
+        "Excepcion no controlada en %s %s:\n%s",
+        request.method,
+        request.url.path,
+        traceback.format_exc(),
+    )
+    body = {"detail": "Internal Server Error"}
+    if settings.DEBUG:
+        body["exception_type"] = type(exc).__name__
+        body["exception_detail"] = str(exc)
+    return JSONResponse(status_code=500, content=body)
 
 
 @app.get("/")

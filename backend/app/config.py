@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str = "https://prim-parc-si-2.vercel.app"
 
+    DEBUG: bool = False
+
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
     SMTP_USER: str | None = None
