@@ -1,4 +1,8 @@
+const isProd = (import.meta as any).env?.PROD ?? false;
+
 export const environment = {
-  production: true,
-  apiUrl: 'http://localhost:8000' || 'https://primparcsi2.onrender.com',
+  production: isProd,
+  apiUrl:
+    (import.meta as any).env?.VITE_API_URL ||
+    (isProd ? 'https://primparcsi2.onrender.com' : 'http://localhost:8000'),
 };

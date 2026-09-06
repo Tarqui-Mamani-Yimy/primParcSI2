@@ -13,9 +13,10 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:8080",
         "http://127.0.0.1:3000",
+        "https://prim-parc-si-2.vercel.app",
     ]
 
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "https://prim-parc-si-2.vercel.app"
 
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
