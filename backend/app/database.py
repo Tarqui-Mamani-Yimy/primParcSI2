@@ -11,9 +11,12 @@ engine = create_async_engine(
     future=True,
     # El pooler de Supabase (Supavisor) en modo "transaction" no soporta
     # prepared statements: cada query puede caer en una conexion fisica
-    # distinta del pool, y asyncpg los usa por defecto. Sin esto, las
-    # queries fallan de forma intermitente con InvalidSQLStatementNameError.
-    connect_args={"statement_cache_size": 0},
+    # distinta del pool. "statement_cache_size" apaga la cache de asyncpg,
+    # pero el dialecto asyncpg de SQLAlchemy mantiene su PROPIA cache de
+    # statements nombrados por encima de esa (de ahi los nombres
+    # "__asyncpg_stmt_N__" en el error); hay que apagar tambien esta con
+    # "prepared_statement_cache_size" o el error persiste bajo concurrencia.
+    connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
 )
 
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
