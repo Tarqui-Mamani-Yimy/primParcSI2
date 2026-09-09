@@ -59,6 +59,13 @@ async def _registrar_bitacora(session: AsyncSession, accion: str, idUser: int, i
     session.add(b)
 
 
+async def _cliente_del_caller(session: AsyncSession, auth: dict) -> Cliente | None:
+    """Resuelve el `Cliente` propio del usuario autenticado (mismo patron que list_reservations)."""
+    return (
+        await session.execute(select(Cliente).where(Cliente.idUser == int(auth["sub"])))
+    ).scalar_one_or_none()
+
+
 @router.get("", response_model=list[ReservaOut])
 async def list_reservations(
     idCliente: int | None = None,
@@ -89,9 +96,19 @@ async def list_reservations(
 async def create_reservation(
     payload: ReservaIn,
     session: AsyncSession = Depends(get_db),
-    _=Depends(require_permiso("reserva.crear")),
+    auth: dict = Depends(require_permiso("reserva.crear")),
 ):
-    if not await session.get(Cliente, payload.idCliente):
+    if "reserva.gestionar" not in auth.get("permisos", []):
+        cliente = await _cliente_del_caller(session, auth)
+        if cliente is None:
+            raise HTTPException(status_code=403, detail="La cuenta no tiene un cliente asociado")
+        if payload.idCliente is not None and payload.idCliente != cliente.idCliente:
+            raise HTTPException(status_code=403, detail="No puede reservar en nombre de otro cliente")
+        id_cliente = cliente.idCliente
+    else:
+        id_cliente = payload.idCliente
+
+    if id_cliente is None or not await session.get(Cliente, id_cliente):
         raise HTTPException(status_code=400, detail="Cliente inexistente")
     if not await session.get(Sucursal, payload.codigoSucursal):
         raise HTTPException(status_code=400, detail="Sucursal inexistente")
@@ -115,7 +132,7 @@ async def create_reservation(
         fecha=payload.fecha,
         horario=_parse_hora(payload.horario),
         estado="Pendiente",
-        idCliente=payload.idCliente,
+        idCliente=id_cliente,
         codigoSucursal=payload.codigoSucursal,
         idProducto=payload.idProducto,
     )
@@ -206,11 +223,15 @@ async def confirm_reservation(
 async def cancel_reservation(
     codigoReserva: int,
     session: AsyncSession = Depends(get_db),
-    _=Depends(require_permiso("reserva.gestionar")),
+    auth: dict = Depends(get_current_payload),
 ):
     reserva = await session.get(Reserva, codigoReserva)
     if not reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if "reserva.gestionar" not in auth.get("permisos", []):
+        cliente = await _cliente_del_caller(session, auth)
+        if cliente is None or reserva.idCliente != cliente.idCliente:
+            raise HTTPException(status_code=403, detail="No tiene permiso para cancelar esta reserva")
     if reserva.estado != "Pendiente":
         raise HTTPException(status_code=400, detail="Solo se pueden cancelar reservas pendientes")
 

@@ -174,7 +174,7 @@ class VentaOut(ORMModel):
 class ReservaIn(BaseModel):
     fecha: date
     horario: str
-    idCliente: int
+    idCliente: int | None = None
     codigoSucursal: int
     idProducto: int
 
