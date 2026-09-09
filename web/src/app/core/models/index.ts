@@ -92,6 +92,35 @@ export interface ColeccionOption {
 }
 
 // ─────────────────────────────────────────────
+// SEASONS & COLLECTIONS (CU6 — Contrato real backend)
+// ─────────────────────────────────────────────
+
+export interface Temporada {
+  idTemporada: number;
+  nombreTemporada: string;
+  fecha_ini: string;
+  fecha_fin: string;
+}
+
+export interface TemporadaIn {
+  nombreTemporada: string;
+  fecha_ini: string;
+  fecha_fin: string;
+}
+
+export interface Coleccion {
+  idColeccion: number;
+  nombre_coleccion: string;
+  idTemporada: number;
+  temporada_nombre: string | null;
+}
+
+export interface ColeccionIn {
+  nombre_coleccion: string;
+  idTemporada: number;
+}
+
+// ─────────────────────────────────────────────
 // INVENTORY (Contrato real backend)
 // ─────────────────────────────────────────────
 

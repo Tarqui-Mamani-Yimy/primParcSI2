@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Temporada
+from app.models import Colecciones, Temporada
 from app.schemas.fase2 import TemporadaIn, TemporadaOut, TemporadaUpdate
 from app.security import require_permiso
 
@@ -70,5 +70,15 @@ async def delete_season(
     t = await session.get(Temporada, idTemporada)
     if not t:
         raise HTTPException(status_code=404, detail="Temporada no encontrada")
+    count = (
+        await session.execute(
+            select(func.count()).select_from(Colecciones).where(Colecciones.idTemporada == idTemporada)
+        )
+    ).scalar_one()
+    if count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede eliminar: la temporada tiene {count} colección(es) asociada(s)",
+        )
     await session.delete(t)
     await session.commit()
