@@ -10,6 +10,7 @@ import { ArchiveComponent } from './features/archive/archive.component';
 import { InventoryComponent } from './features/inventory/inventory.component';
 import { LogisticsComponent } from './features/logistics/logistics.component';
 import { SuppliersComponent } from './features/suppliers/suppliers.component';
+import { SeasonsComponent } from './features/seasons/seasons.component';
 import { TeamComponent } from './features/team/team.component';
 
 @Component({
@@ -26,6 +27,7 @@ import { TeamComponent } from './features/team/team.component';
     InventoryComponent,
     LogisticsComponent,
     SuppliersComponent,
+    SeasonsComponent,
     TeamComponent
   ],
   template: `
@@ -98,6 +100,10 @@ import { TeamComponent } from './features/team/team.component';
               *ngIf="activeView() === 'suppliers'"
             ></app-suppliers>
 
+            <app-seasons
+              *ngIf="activeView() === 'seasons'"
+            ></app-seasons>
+
             <app-team
               *ngIf="activeView() === 'team'"
             ></app-team>
@@ -146,6 +152,8 @@ export class AppComponent {
         return 'Despachos y Tránsito Seguro';
       case 'suppliers':
         return 'Gestión de Proveedores';
+      case 'seasons':
+        return 'Temporadas y Colecciones';
       case 'team':
         return 'Personal y Acceso a Nodos';
       default:
