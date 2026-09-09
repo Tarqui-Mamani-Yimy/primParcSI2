@@ -11,7 +11,7 @@ from app.schemas.dispatches import (
     DispatchOut,
     MovimientoOut,
 )
-from app.security import get_current_payload, require_permiso
+from app.security import require_permiso
 
 router = APIRouter(prefix="/api/dispatches", tags=["dispatches"])
 
@@ -41,7 +41,7 @@ async def _serialize_movimiento(mov: Movimiento, session: AsyncSession) -> Movim
 async def create_dispatch(
     payload: DispatchIn,
     session: AsyncSession = Depends(get_db),
-    _=Depends(get_current_payload),
+    _=Depends(require_permiso("inventario.traspasar")),
 ):
     if payload.origen == payload.destino:
         raise HTTPException(status_code=400, detail="Origen y destino deben ser distintos")

@@ -9,7 +9,7 @@ from app.schemas.inventory import (
     StockAdjustIn,
     StockOut,
 )
-from app.security import get_current_payload, require_permiso
+from app.security import require_permiso
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
 
@@ -68,7 +68,7 @@ async def adjust_stock(
     idInv: int,
     payload: StockAdjustIn,
     session: AsyncSession = Depends(get_db),
-    _=Depends(get_current_payload),
+    _=Depends(require_permiso("inventario.ajustar")),
 ):
     inv = await session.get(Inventario, idInv)
     if not inv:

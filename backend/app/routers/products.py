@@ -12,7 +12,7 @@ from app.schemas.products import (
     ProductoOut,
     ProductoUpdate,
 )
-from app.security import get_current_payload
+from app.security import require_permiso
 
 router = APIRouter(prefix="/api/products", tags=["products"])
 
@@ -99,7 +99,7 @@ async def get_product(idProducto: int, session: AsyncSession = Depends(get_db)):
 async def create_product(
     payload: ProductoIn,
     session: AsyncSession = Depends(get_db),
-    _=Depends(get_current_payload),
+    _=Depends(require_permiso("producto.crear")),
 ):
     if not await session.get(Proveedor, payload.idProveedor):
         raise HTTPException(status_code=400, detail="Proveedor inexistente")
@@ -118,7 +118,7 @@ async def update_product(
     idProducto: int,
     payload: ProductoUpdate,
     session: AsyncSession = Depends(get_db),
-    _=Depends(get_current_payload),
+    _=Depends(require_permiso("producto.editar")),
 ):
     producto = await session.get(Producto, idProducto)
     if not producto:
@@ -142,7 +142,7 @@ async def update_product(
 async def delete_product(
     idProducto: int,
     session: AsyncSession = Depends(get_db),
-    _=Depends(get_current_payload),
+    _=Depends(require_permiso("producto.eliminar")),
 ):
     producto = await session.get(Producto, idProducto)
     if not producto:
