@@ -2,16 +2,16 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../../core/services/archive.service';
-import { NotificationService } from '../../../core/services/notification.service';
 import { ProductOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
+import { ReservationFormComponent } from '../reservations/reservation-form.component';
 
 const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-customer-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductDetailComponent],
+  imports: [CommonModule, FormsModule, ProductDetailComponent, ReservationFormComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
 
@@ -151,8 +151,15 @@ const PAGE_SIZE = 12;
       *ngIf="selectedProductId() !== null"
       [idProducto]="selectedProductId()!"
       (cerrar)="closeDetail()"
-      (reservar)="onReservar()"
+      (reservar)="onReservar($event)"
     ></app-product-detail>
+
+    <app-reservation-form
+      *ngIf="reservandoProducto() !== null"
+      [producto]="reservandoProducto()!"
+      (cerrar)="reservandoProducto.set(null)"
+      (creada)="onReservaCreada()"
+    ></app-reservation-form>
   `
 })
 export class CatalogComponent implements OnInit {
@@ -165,6 +172,7 @@ export class CatalogComponent implements OnInit {
 
   page = signal<number>(1);
   selectedProductId = signal<number | null>(null);
+  reservandoProducto = signal<ProductOut | null>(null);
 
   totalPages = computed(() => {
     const total = this.archiveService.total();
@@ -173,7 +181,6 @@ export class CatalogComponent implements OnInit {
 
   constructor(
     public archiveService: ArchiveService,
-    private notificationService: NotificationService,
   ) {}
 
   ngOnInit() {
@@ -201,11 +208,13 @@ export class CatalogComponent implements OnInit {
     this.selectedProductId.set(null);
   }
 
-  onReservar() {
-    this.notificationService.info(
-      'Próximamente',
-      'La reserva desde el catálogo estará disponible en una próxima actualización.'
-    );
+  onReservar(producto: ProductOut) {
+    this.selectedProductId.set(null);
+    this.reservandoProducto.set(producto);
+  }
+
+  onReservaCreada() {
+    this.reservandoProducto.set(null);
   }
 
   private fetchProducts() {

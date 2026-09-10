@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerProfileComponent } from './profile/customer-profile.component';
 import { CatalogComponent } from './catalog/catalog.component';
+import { CustomerReservationsComponent } from './reservations/customer-reservations.component';
 
 export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
 @Component({
   selector: 'app-customer-shell',
   standalone: true,
-  imports: [CommonModule, CustomerProfileComponent, CatalogComponent],
+  imports: [CommonModule, CustomerProfileComponent, CatalogComponent, CustomerReservationsComponent],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
 
@@ -105,13 +106,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
       <main class="flex-1 overflow-y-auto bg-gray-50">
         <app-customer-catalog *ngIf="currentView() === 'catalog'"></app-customer-catalog>
 
-        <div *ngIf="currentView() === 'reservations'" class="flex items-center justify-center h-full p-6">
-          <div class="text-center text-gray-500">
-            <span class="material-symbols-outlined text-[40px] text-gray-300">event_available</span>
-            <p class="mt-2 text-sm font-semibold">Mis reservas próximamente</p>
-            <p class="text-xs text-gray-400 mt-1">Esta sección estará disponible en una próxima actualización.</p>
-          </div>
-        </div>
+        <app-customer-reservations *ngIf="currentView() === 'reservations'"></app-customer-reservations>
 
         <app-customer-profile *ngIf="currentView() === 'profile'"></app-customer-profile>
       </main>
