@@ -24,6 +24,12 @@ export interface AuthUser {
   permisos: string[];
 }
 
+export interface RegisterRequest {
+  nombre: string;
+  email: string;
+  password: string;
+}
+
 // ─────────────────────────────────────────────
 // PRODUCTS (Contrato real backend)
 // ─────────────────────────────────────────────
@@ -207,6 +213,30 @@ export interface AuditLogEntry {
   ip: string;
   idUser: number;
   usuario_nombre: string;
+}
+
+// ─────────────────────────────────────────────
+// RESERVATIONS (Contrato real backend — CU10/CU12)
+// ─────────────────────────────────────────────
+
+export interface Reserva {
+  codigoReserva: number;
+  fecha: string;
+  horario: string;
+  estado: string;
+  idCliente: number;
+  codigoSucursal: number;
+  idProducto: number;
+  producto_nombre: string | null;
+  sucursal_nombre: string | null;
+}
+
+export interface ReservaIn {
+  // idCliente se omite intencionalmente: el backend lo deriva del JWT del cliente autenticado
+  fecha: string;
+  horario: string;
+  codigoSucursal: number;
+  idProducto: number;
 }
 
 // ─────────────────────────────────────────────

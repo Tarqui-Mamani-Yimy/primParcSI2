@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { LoginComponent } from './features/auth/login.component';
@@ -12,6 +12,7 @@ import { LogisticsComponent } from './features/logistics/logistics.component';
 import { SuppliersComponent } from './features/suppliers/suppliers.component';
 import { SeasonsComponent } from './features/seasons/seasons.component';
 import { TeamComponent } from './features/team/team.component';
+import { CustomerShellComponent } from './features/customer/customer-shell.component';
 
 @Component({
   selector: 'app-root',
@@ -28,13 +29,31 @@ import { TeamComponent } from './features/team/team.component';
     LogisticsComponent,
     SuppliersComponent,
     SeasonsComponent,
-    TeamComponent
+    TeamComponent,
+    CustomerShellComponent
   ],
   template: `
     <!-- Top Level Screen Router: Show Login or Authenticated Portal -->
-    <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else portalLayout">
+    <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else authGate">
       <app-login (loggedIn)="onLoginSuccess()"></app-login>
     </ng-container>
+
+    <!-- Authenticated but currentUser() not yet resolved: neutral loading state to avoid
+         flashing the staff shell for a Cliente that reloads the page (loadTokenFromStorage
+         sets isAuthenticated before fetchCurrentUser() resolves). -->
+    <ng-template #authGate>
+      <ng-container *ngIf="authService.currentUser() !== null; else loadingState">
+        <ng-container *ngIf="isCustomer(); else portalLayout">
+          <app-customer-shell (logout)="onLogout()"></app-customer-shell>
+        </ng-container>
+      </ng-container>
+    </ng-template>
+
+    <ng-template #loadingState>
+      <div class="flex h-screen w-screen items-center justify-center bg-gray-50 text-gray-500 text-sm font-medium">
+        Cargando sesión…
+      </div>
+    </ng-template>
 
     <!-- Main Operational Workspace Shell -->
     <ng-template #portalLayout>
@@ -120,6 +139,8 @@ export class AppComponent {
   activeView = signal<AppView>('dashboard');
   showAuthScreen = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
+
+  isCustomer = computed(() => this.authService.currentUser()?.rol === 'Cliente');
 
   constructor(public authService: AuthService) {}
 

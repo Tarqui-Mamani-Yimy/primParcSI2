@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AuthUser, LoginResponse } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
@@ -77,7 +77,9 @@ export class AuthService {
 
   fetchCurrentUser(): Promise<void> {
     return firstValueFrom(
-      this.http.get<{ idUser: string; nombre: string; correo: string; rol: string; permisos: string[] }>(`${API_URL}/api/auth/me`)
+      this.http
+        .get<{ idUser: string; nombre: string; correo: string; rol: string; permisos: string[] }>(`${API_URL}/api/auth/me`)
+        .pipe(timeout(10000))
     ).then((u) => {
       this.currentUserSignal.set({
         id: u.idUser,
@@ -88,6 +90,7 @@ export class AuthService {
       });
       this.isAuthenticatedSignal.set(true);
     }).catch(() => {
+      this.notificationService.error('Sesión no válida', 'No pudimos validar tu sesión. Volvé a iniciar sesión.');
       this.logout();
     });
   }
