@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models';
+import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared/utils/password-rules';
 
 @Component({
   selector: 'app-login',
@@ -146,6 +147,13 @@ import { UserRole } from '../../core/models';
               </button>
               <button type="button" (click)="openRequestAccess()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer">
                 Solicitar Acceso
+              </button>
+            </div>
+
+            <div class="pt-1 text-center">
+              <span class="text-xs text-gray-500">¿Sos cliente y no tenés cuenta?</span>
+              <button type="button" (click)="onShowRegister()" class="ml-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer">
+                Crear cuenta
               </button>
             </div>
           </form>
@@ -295,6 +303,7 @@ import { UserRole } from '../../core/models';
 })
 export class LoginComponent implements OnInit {
   @Output() loggedIn = new EventEmitter<void>();
+  @Output() showRegister = new EventEmitter<void>();
 
   email = '';
   password = '';
@@ -369,30 +378,30 @@ export class LoginComponent implements OnInit {
   }
 
   hasLower(value: string): boolean {
-    return /[a-z]/.test(value);
+    return hasLower(value);
   }
 
   hasUpper(value: string): boolean {
-    return /[A-Z]/.test(value);
+    return hasUpper(value);
   }
 
   hasDigit(value: string): boolean {
-    return /[0-9]/.test(value);
+    return hasDigit(value);
   }
 
   hasSpecial(value: string): boolean {
-    return /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value);
+    return hasSpecial(value);
   }
 
   isRecoveryPasswordValid(): boolean {
     return (
-      this.recoveryNewPassword.length >= 10 &&
-      this.hasLower(this.recoveryNewPassword) &&
-      this.hasUpper(this.recoveryNewPassword) &&
-      this.hasDigit(this.recoveryNewPassword) &&
-      this.hasSpecial(this.recoveryNewPassword) &&
+      isStrong(this.recoveryNewPassword) &&
       this.recoveryNewPassword === this.recoveryConfirmPassword
     );
+  }
+
+  onShowRegister() {
+    this.showRegister.emit();
   }
 
   submitNewPassword() {

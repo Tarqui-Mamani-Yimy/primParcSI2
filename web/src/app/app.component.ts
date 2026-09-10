@@ -2,6 +2,7 @@ import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { LoginComponent } from './features/auth/login.component';
+import { RegisterComponent } from './features/auth/register.component';
 import { HeaderComponent } from './shared/components/header.component';
 import { SidebarComponent, AppView } from './shared/components/sidebar.component';
 import { ToastContainerComponent } from './shared/components/toast-container.component';
@@ -20,6 +21,7 @@ import { CustomerShellComponent } from './features/customer/customer-shell.compo
   imports: [
     CommonModule,
     LoginComponent,
+    RegisterComponent,
     HeaderComponent,
     SidebarComponent,
     ToastContainerComponent,
@@ -33,9 +35,18 @@ import { CustomerShellComponent } from './features/customer/customer-shell.compo
     CustomerShellComponent
   ],
   template: `
-    <!-- Top Level Screen Router: Show Login or Authenticated Portal -->
+    <!-- Top Level Screen Router: Show Login/Register or Authenticated Portal -->
     <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else authGate">
-      <app-login (loggedIn)="onLoginSuccess()"></app-login>
+      <app-login
+        *ngIf="authMode() === 'login'"
+        (loggedIn)="onLoginSuccess()"
+        (showRegister)="authMode.set('register')"
+      ></app-login>
+      <app-register
+        *ngIf="authMode() === 'register'"
+        (registered)="onRegisterSuccess()"
+        (backToLogin)="authMode.set('login')"
+      ></app-register>
     </ng-container>
 
     <!-- Authenticated but currentUser() not yet resolved: neutral loading state to avoid
@@ -139,6 +150,7 @@ export class AppComponent {
   activeView = signal<AppView>('dashboard');
   showAuthScreen = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
+  authMode = signal<'login' | 'register'>('login');
 
   isCustomer = computed(() => this.authService.currentUser()?.rol === 'Cliente');
 
@@ -146,10 +158,17 @@ export class AppComponent {
 
   onLoginSuccess() {
     this.showAuthScreen.set(false);
+    this.authMode.set('login');
+  }
+
+  onRegisterSuccess() {
+    this.showAuthScreen.set(false);
+    this.authMode.set('login');
   }
 
   onLogout() {
     this.showAuthScreen.set(true);
+    this.authMode.set('login');
   }
 
   toggleAuthScreen() {
