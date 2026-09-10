@@ -2,13 +2,14 @@ import { Component, EventEmitter, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { CustomerProfileComponent } from './profile/customer-profile.component';
+import { CatalogComponent } from './catalog/catalog.component';
 
 export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
 @Component({
   selector: 'app-customer-shell',
   standalone: true,
-  imports: [CommonModule, CustomerProfileComponent],
+  imports: [CommonModule, CustomerProfileComponent, CatalogComponent],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
 
@@ -102,13 +103,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
       <!-- Contenido de la vista actual -->
       <main class="flex-1 overflow-y-auto bg-gray-50">
-        <div *ngIf="currentView() === 'catalog'" class="flex items-center justify-center h-full p-6">
-          <div class="text-center text-gray-500">
-            <span class="material-symbols-outlined text-[40px] text-gray-300">storefront</span>
-            <p class="mt-2 text-sm font-semibold">Catálogo próximamente</p>
-            <p class="text-xs text-gray-400 mt-1">Esta sección estará disponible en una próxima actualización.</p>
-          </div>
-        </div>
+        <app-customer-catalog *ngIf="currentView() === 'catalog'"></app-customer-catalog>
 
         <div *ngIf="currentView() === 'reservations'" class="flex items-center justify-center h-full p-6">
           <div class="text-center text-gray-500">

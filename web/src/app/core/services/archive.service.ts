@@ -26,9 +26,10 @@ export class ArchiveService {
     private notificationService: NotificationService,
   ) {}
 
-  loadProducts(filters?: { idColeccion?: number; tipo?: string; talla?: string; color?: string; q?: string; page?: number; size?: number }): Promise<void> {
+  loadProducts(filters?: { idColeccion?: number; idProveedor?: number; tipo?: string; talla?: string; color?: string; q?: string; page?: number; size?: number }): Promise<void> {
     let params = new HttpParams();
     if (filters?.idColeccion) params = params.set('idColeccion', filters.idColeccion.toString());
+    if (filters?.idProveedor) params = params.set('idProveedor', filters.idProveedor.toString());
     if (filters?.tipo) params = params.set('tipo', filters.tipo);
     if (filters?.talla) params = params.set('talla', filters.talla);
     if (filters?.color) params = params.set('color', filters.color);
