@@ -52,6 +52,13 @@ docker exec -i ropaDocker \
   -v ON_ERROR_STOP=1 \
   -f /dev/stdin \
   < database/migrations/005_asignar_permisos_reales.sql
+
+# 7) Aplicar la migracion 006 (columnas Stripe en metodo_pago)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/006_add_stripe_metodo_pago.sql
 ```
 
 Usar `ADD COLUMN IF NOT EXISTS` para que sean idempotentes (se pueden

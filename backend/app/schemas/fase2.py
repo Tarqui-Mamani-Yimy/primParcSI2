@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -128,6 +129,10 @@ class MetodoPagoOut(ORMModel):
     estado: str
     fecha: datetime
     monto: float
+    stripePaymentIntentId: Optional[str] = None
+    moneda: Optional[str] = None
+    estadoStripe: Optional[str] = None
+    origen: Optional[str] = None
 
 
 class MetodoPagoIn(BaseModel):
@@ -237,3 +242,28 @@ class LogOut(BaseModel):
     ip: str
     idUser: int
     usuario_nombre: Optional[str] = None
+
+
+class DetallePagoItem(BaseModel):
+    idProducto: int
+    cantidad: int
+
+
+class PagoIntentIn(BaseModel):
+    items: list[DetallePagoItem]
+    claveIntento: UUID
+    concepto: Optional[str] = None
+
+
+class PagoIntentOut(BaseModel):
+    paymentIntentId: str
+    clientSecret: str
+    monto: float
+
+
+class PagoIntentVerificadoOut(BaseModel):
+    paymentIntentId: str
+    estado: str
+    pagado: bool
+    idMetPago: Optional[int] = None
+    monto: Optional[float] = None

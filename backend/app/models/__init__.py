@@ -205,6 +205,10 @@ class MetodoPago(Base):
     estado: Mapped[str] = mapped_column(String(30), default="Activo", nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
     monto: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
+    stripePaymentIntentId: Mapped[str | None] = mapped_column(String(255))
+    moneda: Mapped[str | None] = mapped_column(String(3))
+    estadoStripe: Mapped[str | None] = mapped_column(String(30))
+    origen: Mapped[str | None] = mapped_column(String(20))
 
 
 class Reserva(Base):
