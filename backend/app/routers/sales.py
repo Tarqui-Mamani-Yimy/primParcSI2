@@ -136,6 +136,7 @@ async def create_sale(
             await session.execute(
                 select(Inventario).where(
                     Inventario.idProducto == item.idProducto,
+                    Inventario.codigoSucursal == payload.codigoSucursal,
                     Inventario.cantidad_reservada < Inventario.cantidad_actual,
                 ).order_by(Inventario.idInv)
             )
@@ -143,13 +144,19 @@ async def create_sale(
         if inv is None:
             raise HTTPException(
                 status_code=400,
-                detail=f"Stock insuficiente del producto {item.idProducto} en todas las sucursales",
+                detail=(
+                    f"Stock insuficiente del producto {item.idProducto} "
+                    f"en la sucursal {payload.codigoSucursal}"
+                ),
             )
 
         if inv.cantidad_actual - inv.cantidad_reservada < item.cantidad:
             raise HTTPException(
                 status_code=400,
-                detail=f"Stock disponible insuficiente del producto {item.idProducto}",
+                detail=(
+                    f"Stock disponible insuficiente del producto {item.idProducto} "
+                    f"en la sucursal {payload.codigoSucursal}"
+                ),
             )
 
         precio_unitario = float(producto.venta)

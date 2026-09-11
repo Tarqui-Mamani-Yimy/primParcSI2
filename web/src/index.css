@@ -41,3 +41,29 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #d1d5db;
 }
+
+/* Comprobante de venta imprimible (CU19/CU20, receipt-modal.component.ts):
+   al imprimir se oculta todo el chrome de la app (sidebar, header, botones
+   de acción) y solo queda visible el comprobante (.receipt-print). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print,
+  .receipt-print * {
+    visibility: visible;
+  }
+  .receipt-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-shadow: none !important;
+  }
+  /* `aside`/`header` cubren sidebar y header; los botones de acción del
+     comprobante ya usan la utilidad `print:hidden` de Tailwind. */
+  aside,
+  header {
+    display: none !important;
+  }
+}

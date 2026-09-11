@@ -270,6 +270,36 @@ export interface MetodoPago {
 }
 
 // ─────────────────────────────────────────────
+// POS — Venta Presencial (CU19/CU20)
+// ─────────────────────────────────────────────
+
+export interface VentaIn {
+  idCliente: number;
+  idMetPago: number;
+  codigoSucursal: number;
+  items: { idProducto: number; cantidad: number }[];
+}
+
+// Línea de ticket en memoria del cliente: nunca se envía tal cual al
+// servidor, solo `idProducto`/`cantidad` derivados de ella.
+export interface TicketLine {
+  idProducto: number;
+  nombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  disponible: number;
+}
+
+// Cliente para el picker del registro (GET /api/customers, cliente.ver).
+export interface Cliente {
+  idCliente: number;
+  nombre: string;
+  telefono: string | null;
+  direccion: string | null;
+  idUser: number;
+}
+
+// ─────────────────────────────────────────────
 // UI (no necesita backend)
 // ─────────────────────────────────────────────
 

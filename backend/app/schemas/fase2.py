@@ -155,6 +155,7 @@ class DetalleVentaIn(BaseModel):
 class VentaIn(BaseModel):
     idCliente: int
     idMetPago: int
+    codigoSucursal: int
     items: list[DetalleVentaIn]
 
 

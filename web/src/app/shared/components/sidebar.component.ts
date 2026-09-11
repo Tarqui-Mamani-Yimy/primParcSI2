@@ -1,7 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../core/services/auth.service';
 
-export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team' | 'reservations';
+export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team' | 'reservations' | 'pos';
 
 @Component({
   selector: 'app-sidebar',
@@ -181,6 +182,28 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'sup
             <span class="font-medium tracking-tight">Reservas</span>
           </button>
 
+          <!-- Caja (Venta Presencial, CU19/CU20) — solo con venta.crear -->
+          <button
+            *ngIf="canOpenPos"
+            (click)="selectView('pos')"
+            [class.bg-indigo-50]="currentView === 'pos'"
+            [class.text-indigo-700]="currentView === 'pos'"
+            [class.font-semibold]="currentView === 'pos'"
+            [class.text-gray-600]="currentView !== 'pos'"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+          >
+            <div
+              [class.bg-indigo-600]="currentView === 'pos'"
+              [class.text-white]="currentView === 'pos'"
+              [class.bg-gray-100]="currentView !== 'pos'"
+              [class.text-gray-500]="currentView !== 'pos'"
+              class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+            </div>
+            <span class="font-medium tracking-tight">Caja</span>
+          </button>
+
           <div class="pt-4 text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
             Administración
           </div>
@@ -235,6 +258,12 @@ export class SidebarComponent {
   @Input() currentView: AppView = 'dashboard';
   @Output() viewChange = new EventEmitter<AppView>();
   @Output() viewAuthScreen = new EventEmitter<void>();
+
+  constructor(private authService: AuthService) {}
+
+  get canOpenPos(): boolean {
+    return this.authService.currentUser()?.permisos.includes('venta.crear') ?? false;
+  }
 
   selectView(view: AppView) {
     this.viewChange.emit(view);
