@@ -240,6 +240,36 @@ export interface ReservaIn {
 }
 
 // ─────────────────────────────────────────────
+// SALES / PAYMENT METHODS (Contrato real backend — CU13/CU14/CU15)
+// ─────────────────────────────────────────────
+
+export interface DetalleVenta {
+  codigoVenta: number;
+  cantidad: number;
+  precio_unitario: number;
+  idProducto: number;
+  producto_nombre: string | null;
+  idVenta: number;
+}
+
+export interface Venta {
+  idVenta: number;
+  fecha: string;
+  total: number;
+  idCliente: number;
+  idMetPago: number;
+  detalles: DetalleVenta[];
+}
+
+export interface MetodoPago {
+  idMetPago: number;
+  tipo: string;
+  estado: string;
+  fecha: string;
+  monto: number;
+}
+
+// ─────────────────────────────────────────────
 // UI (no necesita backend)
 // ─────────────────────────────────────────────
 

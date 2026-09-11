@@ -14,6 +14,7 @@ import { SuppliersComponent } from './features/suppliers/suppliers.component';
 import { SeasonsComponent } from './features/seasons/seasons.component';
 import { TeamComponent } from './features/team/team.component';
 import { CustomerShellComponent } from './features/customer/customer-shell.component';
+import { StaffReservationsComponent } from './features/reservations/staff-reservations.component';
 
 @Component({
   selector: 'app-root',
@@ -32,7 +33,8 @@ import { CustomerShellComponent } from './features/customer/customer-shell.compo
     SuppliersComponent,
     SeasonsComponent,
     TeamComponent,
-    CustomerShellComponent
+    CustomerShellComponent,
+    StaffReservationsComponent
   ],
   template: `
     <!-- Top Level Screen Router: Show Login/Register or Authenticated Portal -->
@@ -137,6 +139,10 @@ import { CustomerShellComponent } from './features/customer/customer-shell.compo
             <app-team
               *ngIf="activeView() === 'team'"
             ></app-team>
+
+            <app-staff-reservations
+              *ngIf="activeView() === 'reservations'"
+            ></app-staff-reservations>
           </main>
         </div>
       </div>
@@ -196,6 +202,8 @@ export class AppComponent {
         return 'Temporadas y Colecciones';
       case 'team':
         return 'Personal y Acceso a Nodos';
+      case 'reservations':
+        return 'Reservas y Atención en Sucursal';
       default:
         return 'Operaciones';
     }

@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team';
+export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team' | 'reservations';
 
 @Component({
   selector: 'app-sidebar',
@@ -158,6 +158,27 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'sup
               <span class="material-symbols-outlined text-[18px]">event_note</span>
             </div>
             <span class="font-medium tracking-tight">Temporadas y Colecciones</span>
+          </button>
+
+          <!-- Reservas -->
+          <button
+            (click)="selectView('reservations')"
+            [class.bg-indigo-50]="currentView === 'reservations'"
+            [class.text-indigo-700]="currentView === 'reservations'"
+            [class.font-semibold]="currentView === 'reservations'"
+            [class.text-gray-600]="currentView !== 'reservations'"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+          >
+            <div
+              [class.bg-indigo-600]="currentView === 'reservations'"
+              [class.text-white]="currentView === 'reservations'"
+              [class.bg-gray-100]="currentView !== 'reservations'"
+              [class.text-gray-500]="currentView !== 'reservations'"
+              class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">event_available</span>
+            </div>
+            <span class="font-medium tracking-tight">Reservas</span>
           </button>
 
           <div class="pt-4 text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">

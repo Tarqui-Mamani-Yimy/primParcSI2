@@ -31,6 +31,8 @@ import { ReservationsService } from '../../../core/services/reservations.service
                 class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                 [class.bg-amber-50]="r.estado === 'Pendiente'"
                 [class.text-amber-700]="r.estado === 'Pendiente'"
+                [class.bg-sky-50]="r.estado === 'Preparada en Sucursal'"
+                [class.text-sky-700]="r.estado === 'Preparada en Sucursal'"
                 [class.bg-emerald-50]="r.estado === 'Confirmada'"
                 [class.text-emerald-700]="r.estado === 'Confirmada'"
                 [class.bg-gray-100]="r.estado === 'Cancelada'"

@@ -142,6 +142,34 @@ async def create_reservation(
     return await _serialize_reserva(reserva, session)
 
 
+@router.put("/{codigoReserva}/prepare", response_model=ReservaOut)
+async def prepare_reservation(
+    codigoReserva: int,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+    auth: dict = Depends(require_permiso("reserva.gestionar")),
+):
+    reserva = await session.get(Reserva, codigoReserva)
+    if not reserva:
+        raise HTTPException(status_code=404, detail="Reserva no encontrada")
+    if reserva.estado != "Pendiente":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Reserva en estado {reserva.estado}, solo se puede preparar una reserva Pendiente",
+        )
+
+    reserva.estado = "Preparada en Sucursal"
+    await _registrar_bitacora(
+        session,
+        f"Reserva {codigoReserva} preparada en sucursal",
+        int(auth["sub"]),
+        request.client.host if request.client else "0.0.0.0",
+    )
+    await session.commit()
+    await session.refresh(reserva)
+    return await _serialize_reserva(reserva, session)
+
+
 @router.put("/{codigoReserva}/confirm", response_model=VentaOut)
 async def confirm_reservation(
     codigoReserva: int,
@@ -153,7 +181,12 @@ async def confirm_reservation(
     reserva = await session.get(Reserva, codigoReserva)
     if not reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if reserva.estado != "Pendiente":
+    if reserva.estado != "Preparada en Sucursal":
+        if reserva.estado == "Pendiente":
+            raise HTTPException(
+                status_code=400,
+                detail="La reserva aún no fue preparada en sucursal; primero debe prepararse",
+            )
         raise HTTPException(status_code=400, detail=f"Reserva en estado {reserva.estado}, no se puede confirmar")
     if not await session.get(MetodoPago, payload.idMetPago):
         raise HTTPException(status_code=400, detail="Metodo de pago inexistente")
@@ -228,11 +261,18 @@ async def cancel_reservation(
     reserva = await session.get(Reserva, codigoReserva)
     if not reserva:
         raise HTTPException(status_code=404, detail="Reserva no encontrada")
-    if "reserva.gestionar" not in auth.get("permisos", []):
+    es_staff = "reserva.gestionar" in auth.get("permisos", [])
+    if not es_staff:
         cliente = await _cliente_del_caller(session, auth)
         if cliente is None or reserva.idCliente != cliente.idCliente:
             raise HTTPException(status_code=403, detail="No tiene permiso para cancelar esta reserva")
-    if reserva.estado != "Pendiente":
+    estados_ok = ("Pendiente", "Preparada en Sucursal") if es_staff else ("Pendiente",)
+    if reserva.estado not in estados_ok:
+        if es_staff:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Reserva en estado {reserva.estado}, solo se pueden cancelar reservas Pendiente o Preparada en Sucursal",
+            )
         raise HTTPException(status_code=400, detail="Solo se pueden cancelar reservas pendientes")
 
     inv = (
