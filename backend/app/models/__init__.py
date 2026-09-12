@@ -210,6 +210,12 @@ class MetodoPago(Base):
     estadoStripe: Mapped[str | None] = mapped_column(String(30))
     origen: Mapped[str | None] = mapped_column(String(20))
     idUserPago: Mapped[int | None] = mapped_column(ForeignKey("Usuario.idUser", onupdate="CASCADE"))
+    # Migracion 010 (correccion review CU12) — ligadura producto/sucursal de
+    # un anticipo de reserva verificado (NULL para filas de venta/POS) y
+    # marca atomica de un-solo-uso (reemplaza el chequeo por SELECT suelto).
+    idProducto: Mapped[int | None] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"))
+    codigoSucursal: Mapped[int | None] = mapped_column(ForeignKey("Sucursal.codigoSucursal", onupdate="CASCADE"))
+    consumidoEn: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
 
 class Reserva(Base):
@@ -226,6 +232,12 @@ class Reserva(Base):
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)
     codigoSucursal: Mapped[int] = mapped_column(ForeignKey("Sucursal.codigoSucursal", onupdate="CASCADE"), nullable=False)
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
+    # Migracion 009 (CU12) — ambas nullable, inertes para reservas anteriores.
+    # "montoDeposito" es un snapshot inmutable de MetodoPago.monto al momento
+    # de la verificacion: NUNCA se relee MetodoPago.monto en vivo (ver
+    # migracion 009 y D3 en design.md).
+    idMetPago: Mapped[int | None] = mapped_column(ForeignKey("metodo_pago.idMetPago", onupdate="CASCADE"))
+    montoDeposito: Mapped[float | None] = mapped_column(Numeric(10, 2))
 
 
 class Venta(Base):

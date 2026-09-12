@@ -11,7 +11,6 @@ from app.models import (
     DetalleVenta,
     Historial,
     Inventario,
-    MetodoPago,
     Movimiento,
     Producto,
     Venta,
@@ -19,6 +18,7 @@ from app.models import (
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut
 from app.security import get_current_payload, require_permiso
 from app.services.disponibilidad import resolver_inventario
+from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 
 router = APIRouter(prefix="/api/sales", tags=["sales"])
 
@@ -143,22 +143,12 @@ async def create_sale(
     if id_cliente is None or not await session.get(Cliente, id_cliente):
         raise HTTPException(status_code=400, detail="Cliente inexistente")
 
-    metodo_pago = await session.get(MetodoPago, payload.idMetPago)
-    if not metodo_pago:
-        raise HTTPException(status_code=400, detail="Metodo de pago inexistente")
-    if metodo_pago.idUserPago is not None and metodo_pago.idUserPago != int(auth["sub"]):
-        raise HTTPException(status_code=403, detail="El metodo de pago no pertenece a este usuario")
-    # CU17 es solo pasarela: un Cliente autocomprandose nunca puede pagar con
-    # un MetodoPago que el no cree via /api/payments (ej. uno "Efectivo" que
-    # el mismo Cliente creo a mano ahora que tiene venta.crear).
-    if es_autocompra and metodo_pago.origen != "tarjeta_stripe":
-        raise HTTPException(status_code=403, detail="La compra en línea solo admite pago con tarjeta")
-
-    venta_previa = (
-        await session.execute(select(Venta).where(Venta.idMetPago == payload.idMetPago))
-    ).scalar_one_or_none()
-    if venta_previa is not None:
-        raise HTTPException(status_code=400, detail="El metodo de pago ya fue utilizado en otra venta")
+    # Guard centralizado (Payment Method Single-Use Across Sales / Cross-Table
+    # Single-Use): ownership + origen tarjeta_stripe para autocompra, y ahora
+    # ademas rechaza un idMetPago ya consumido por CUALQUIER Venta O Reserva
+    # (antes solo se miraba Venta). exigir_tarjeta == es_autocompra: mismo
+    # criterio previo ("venta.ver" not in permisos), sin cambio de semantica.
+    await exigir_metodo_pago_consumible(session, payload.idMetPago, int(auth["sub"]), es_autocompra)
 
     total = 0.0
     venta = Venta(total=0.0, idCliente=id_cliente, idMetPago=payload.idMetPago)

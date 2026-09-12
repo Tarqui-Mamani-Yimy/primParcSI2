@@ -11,7 +11,6 @@ from app.models import (
     DetalleVenta,
     Historial,
     Inventario,
-    MetodoPago,
     Movimiento,
     Producto,
     Reserva,
@@ -25,6 +24,7 @@ from app.schemas.fase2 import (
     VentaOut,
 )
 from app.security import get_current_payload, require_permiso
+from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 
 router = APIRouter(prefix="/api/reservations", tags=["reservations"])
 
@@ -50,6 +50,8 @@ async def _serialize_reserva(r: Reserva, session: AsyncSession) -> ReservaOut:
         idProducto=r.idProducto,
         producto_nombre=p.nombre if p else None,
         sucursal_nombre=s.nombre if s else None,
+        idMetPago=r.idMetPago,
+        montoDeposito=float(r.montoDeposito) if r.montoDeposito is not None else None,
     )
 
 
@@ -115,6 +117,21 @@ async def create_reservation(
     if not await session.get(Producto, payload.idProducto):
         raise HTTPException(status_code=400, detail="Producto inexistente")
 
+    # Anticipo obligatorio (Mandatory Server-Computed Deposit / Card-Only
+    # Deposit With Ownership Guard): un caller sin reserva.gestionar SOLO
+    # puede pagar con un MetodoPago propio y de origen tarjeta_stripe; un
+    # caller staff puede usar cualquier MetodoPago (paridad POS). Se corre
+    # ANTES de mutar Inventario para no reservar stock si el deposito falla.
+    exigir_tarjeta = "reserva.gestionar" not in auth.get("permisos", [])
+    metodo = await exigir_metodo_pago_consumible(
+        session,
+        payload.idMetPago,
+        int(auth["sub"]),
+        exigir_tarjeta,
+        id_producto=payload.idProducto,
+        codigo_sucursal=payload.codigoSucursal,
+    )
+
     inv = (
         await session.execute(
             select(Inventario).where(
@@ -135,6 +152,8 @@ async def create_reservation(
         idCliente=id_cliente,
         codigoSucursal=payload.codigoSucursal,
         idProducto=payload.idProducto,
+        idMetPago=metodo.idMetPago,
+        montoDeposito=metodo.monto,
     )
     session.add(reserva)
     await session.commit()
@@ -188,8 +207,12 @@ async def confirm_reservation(
                 detail="La reserva aún no fue preparada en sucursal; primero debe prepararse",
             )
         raise HTTPException(status_code=400, detail=f"Reserva en estado {reserva.estado}, no se puede confirmar")
-    if not await session.get(MetodoPago, payload.idMetPago):
-        raise HTTPException(status_code=400, detail="Metodo de pago inexistente")
+    # Guard centralizado (Cross-Table Single-Use / Confirm Requires Preparada
+    # en Sucursal): antes solo se validaba que el MetodoPago existiera; ahora
+    # tambien se exige ownership (tolerante a NULL para filas Efectivo/QR) y
+    # que no este ya consumido por otra Venta/Reserva. exigir_tarjeta=False:
+    # el saldo puede pagarse con cualquier origen, paridad POS.
+    await exigir_metodo_pago_consumible(session, payload.idMetPago, int(auth["sub"]), False)
 
     inv = (
         await session.execute(
@@ -209,7 +232,16 @@ async def confirm_reservation(
     inv.cantidad_reservada -= 1
     inv.cantidad_actual -= 1
 
-    venta = Venta(total=float(producto.venta), idCliente=reserva.idCliente, idMetPago=payload.idMetPago)
+    # Confirm Requires Preparada en Sucursal (delta staff-reservation-management):
+    # el cliente nunca paga mas del 100% entre el anticipo y el saldo. Una
+    # reserva pre-migracion 009 (montoDeposito NULL) mantiene el total previo
+    # sin deduccion. Clampeado en 0 para nunca generar un total negativo.
+    if reserva.montoDeposito is not None:
+        total_confirmacion = max(float(producto.venta) - float(reserva.montoDeposito), 0.0)
+    else:
+        total_confirmacion = float(producto.venta)
+
+    venta = Venta(total=total_confirmacion, idCliente=reserva.idCliente, idMetPago=payload.idMetPago)
     session.add(venta)
     await session.flush()
 

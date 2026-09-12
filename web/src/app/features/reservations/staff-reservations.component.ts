@@ -47,6 +47,7 @@ import { ReservationsService } from '../../core/services/reservations.service';
               <th class="px-4 py-3">Producto</th>
               <th class="px-4 py-3">Sucursal</th>
               <th class="px-4 py-3">Fecha / Horario</th>
+              <th class="px-4 py-3">Anticipo</th>
               <th class="px-4 py-3">Estado</th>
               <th class="px-4 py-3">Acciones</th>
             </tr>
@@ -58,6 +59,12 @@ import { ReservationsService } from '../../core/services/reservations.service';
               <td class="px-4 py-3 font-medium text-gray-900">{{ r.producto_nombre || ('Producto #' + r.idProducto) }}</td>
               <td class="px-4 py-3 text-gray-600">{{ r.sucursal_nombre || ('Sucursal #' + r.codigoSucursal) }}</td>
               <td class="px-4 py-3 text-gray-600">{{ r.fecha }} · {{ r.horario }}</td>
+              <td class="px-4 py-3 text-gray-600">
+                <span *ngIf="r.montoDeposito !== null; else sinDeposito" class="font-semibold text-emerald-700">
+                  Bs {{ r.montoDeposito!.toFixed(2) }}
+                </span>
+                <ng-template #sinDeposito><span class="text-gray-400">—</span></ng-template>
+              </td>
               <td class="px-4 py-3">
                 <span
                   class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"

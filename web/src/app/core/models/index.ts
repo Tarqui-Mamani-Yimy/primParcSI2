@@ -229,6 +229,10 @@ export interface Reserva {
   idProducto: number;
   producto_nombre: string | null;
   sucursal_nombre: string | null;
+  // CU12: anticipo del 10% cobrado por tarjeta antes de crear la reserva.
+  // Ambos son null para una reserva creada antes de la migracion 009.
+  idMetPago: number | null;
+  montoDeposito: number | null;
 }
 
 export interface ReservaIn {
@@ -237,6 +241,7 @@ export interface ReservaIn {
   horario: string;
   codigoSucursal: number;
   idProducto: number;
+  idMetPago: number; // anticipo verificado (CU12) — obligatorio
 }
 
 // ─────────────────────────────────────────────

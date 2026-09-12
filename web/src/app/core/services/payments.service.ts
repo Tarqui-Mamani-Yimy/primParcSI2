@@ -20,6 +20,10 @@ export interface PagoIntentIn {
   items: DetallePagoItem[];
   claveIntento: string;
   concepto?: string;
+  // CU12: 'venta' (default) preserva POS/CU17 sin cambios. 'reserva_deposito'
+  // activa la rama de anticipo del 10% en el backend; requiere codigoSucursal.
+  proposito?: 'venta' | 'reserva_deposito';
+  codigoSucursal?: number;
 }
 
 export interface PagoIntentOut {

@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
@@ -183,6 +183,7 @@ class ReservaIn(BaseModel):
     idCliente: int | None = None
     codigoSucursal: int
     idProducto: int
+    idMetPago: int  # anticipo verificado (CU12) — obligatorio, sin excepcion
 
 
 class ReservaOut(ORMModel):
@@ -195,6 +196,8 @@ class ReservaOut(ORMModel):
     idProducto: int
     producto_nombre: Optional[str] = None
     sucursal_nombre: Optional[str] = None
+    idMetPago: Optional[int] = None
+    montoDeposito: Optional[float] = None
 
 
 class ReservaStatusOut(ReservaOut):
@@ -254,6 +257,11 @@ class PagoIntentIn(BaseModel):
     items: list[DetallePagoItem]
     claveIntento: UUID
     concepto: Optional[str] = None
+    # CU12: "venta" preserva el comportamiento POS/CU17 byte-a-byte (default).
+    # "reserva_deposito" activa la rama de anticipo del 10% en payments.py;
+    # requiere codigoSucursal (D2) para el chequeo de stock branch-scoped.
+    proposito: Literal["venta", "reserva_deposito"] = "venta"
+    codigoSucursal: Optional[int] = None
 
 
 class PagoIntentOut(BaseModel):
