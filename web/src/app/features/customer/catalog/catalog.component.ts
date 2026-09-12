@@ -5,13 +5,14 @@ import { ArchiveService } from '../../../core/services/archive.service';
 import { ProductOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
+import { PurchaseModalComponent } from '../checkout/purchase-modal.component';
 
 const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-customer-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductDetailComponent, ReservationFormComponent],
+  imports: [CommonModule, FormsModule, ProductDetailComponent, ReservationFormComponent, PurchaseModalComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
 
@@ -152,6 +153,7 @@ const PAGE_SIZE = 12;
       [idProducto]="selectedProductId()!"
       (cerrar)="closeDetail()"
       (reservar)="onReservar($event)"
+      (comprar)="onComprar($event)"
     ></app-product-detail>
 
     <app-reservation-form
@@ -160,6 +162,14 @@ const PAGE_SIZE = 12;
       (cerrar)="reservandoProducto.set(null)"
       (creada)="onReservaCreada()"
     ></app-reservation-form>
+
+    <app-purchase-modal
+      *ngIf="comprandoProducto() !== null"
+      [producto]="comprandoProducto()!"
+      [cantidad]="comprandoCantidad()"
+      (cerrar)="comprandoProducto.set(null)"
+      (completada)="onCompraCompletada()"
+    ></app-purchase-modal>
   `
 })
 export class CatalogComponent implements OnInit {
@@ -173,6 +183,8 @@ export class CatalogComponent implements OnInit {
   page = signal<number>(1);
   selectedProductId = signal<number | null>(null);
   reservandoProducto = signal<ProductOut | null>(null);
+  comprandoProducto = signal<ProductOut | null>(null);
+  comprandoCantidad = signal<number>(1);
 
   totalPages = computed(() => {
     const total = this.archiveService.total();
@@ -215,6 +227,17 @@ export class CatalogComponent implements OnInit {
 
   onReservaCreada() {
     this.reservandoProducto.set(null);
+  }
+
+  onComprar(evt: { producto: ProductOut; cantidad: number }) {
+    this.selectedProductId.set(null);
+    this.comprandoProducto.set(evt.producto);
+    this.comprandoCantidad.set(evt.cantidad);
+  }
+
+  onCompraCompletada() {
+    // El modal sigue abierto mostrando el comprobante (<app-receipt-modal>);
+    // el usuario lo cierra explicitamente, recien ahi se limpia el estado.
   }
 
   private fetchProducts() {

@@ -209,6 +209,7 @@ class MetodoPago(Base):
     moneda: Mapped[str | None] = mapped_column(String(3))
     estadoStripe: Mapped[str | None] = mapped_column(String(30))
     origen: Mapped[str | None] = mapped_column(String(20))
+    idUserPago: Mapped[int | None] = mapped_column(ForeignKey("Usuario.idUser", onupdate="CASCADE"))
 
 
 class Reserva(Base):

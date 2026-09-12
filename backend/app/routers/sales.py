@@ -18,6 +18,7 @@ from app.models import (
 )
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut
 from app.security import get_current_payload, require_permiso
+from app.services.disponibilidad import resolver_inventario
 
 router = APIRouter(prefix="/api/sales", tags=["sales"])
 
@@ -44,6 +45,14 @@ async def _serialize_detalle(d: DetalleVenta, session: AsyncSession) -> DetalleV
         producto_nombre=p.nombre if p else None,
         idVenta=d.idVenta,
     )
+
+
+async def _cliente_del_caller(session: AsyncSession, auth: dict) -> Cliente | None:
+    """Resuelve el `Cliente` propio del usuario autenticado (mismo patron que
+    `reservations.py::_cliente_del_caller`)."""
+    return (
+        await session.execute(select(Cliente).where(Cliente.idUser == int(auth["sub"])))
+    ).scalar_one_or_none()
 
 
 async def _serialize_venta(v: Venta, session: AsyncSession, detalles: list[DetalleVenta]) -> VentaOut:
@@ -115,13 +124,44 @@ async def create_sale(
 ):
     if not payload.items:
         raise HTTPException(status_code=400, detail="Debe enviar al menos un item")
-    if not await session.get(Cliente, payload.idCliente):
+
+    # Ownership: un caller sin "venta.ver" (Cliente) solo puede comprar para
+    # si mismo — idCliente se deriva de su propio JWT, mismo patron que
+    # `reservations.py::create_reservation`. Un caller staff con "venta.ver"
+    # sigue especificando idCliente explicitamente (POS/CU19 sin cambios).
+    es_autocompra = "venta.ver" not in auth.get("permisos", [])
+    if es_autocompra:
+        cliente = await _cliente_del_caller(session, auth)
+        if cliente is None:
+            raise HTTPException(status_code=403, detail="La cuenta no tiene un cliente asociado")
+        if payload.idCliente is not None and payload.idCliente != cliente.idCliente:
+            raise HTTPException(status_code=403, detail="No puede comprar en nombre de otro cliente")
+        id_cliente = cliente.idCliente
+    else:
+        id_cliente = payload.idCliente
+
+    if id_cliente is None or not await session.get(Cliente, id_cliente):
         raise HTTPException(status_code=400, detail="Cliente inexistente")
-    if not await session.get(MetodoPago, payload.idMetPago):
+
+    metodo_pago = await session.get(MetodoPago, payload.idMetPago)
+    if not metodo_pago:
         raise HTTPException(status_code=400, detail="Metodo de pago inexistente")
+    if metodo_pago.idUserPago is not None and metodo_pago.idUserPago != int(auth["sub"]):
+        raise HTTPException(status_code=403, detail="El metodo de pago no pertenece a este usuario")
+    # CU17 es solo pasarela: un Cliente autocomprandose nunca puede pagar con
+    # un MetodoPago que el no cree via /api/payments (ej. uno "Efectivo" que
+    # el mismo Cliente creo a mano ahora que tiene venta.crear).
+    if es_autocompra and metodo_pago.origen != "tarjeta_stripe":
+        raise HTTPException(status_code=403, detail="La compra en línea solo admite pago con tarjeta")
+
+    venta_previa = (
+        await session.execute(select(Venta).where(Venta.idMetPago == payload.idMetPago))
+    ).scalar_one_or_none()
+    if venta_previa is not None:
+        raise HTTPException(status_code=400, detail="El metodo de pago ya fue utilizado en otra venta")
 
     total = 0.0
-    venta = Venta(total=0.0, idCliente=payload.idCliente, idMetPago=payload.idMetPago)
+    venta = Venta(total=0.0, idCliente=id_cliente, idMetPago=payload.idMetPago)
     session.add(venta)
     await session.flush()
 
@@ -132,32 +172,47 @@ async def create_sale(
         if not producto:
             raise HTTPException(status_code=400, detail=f"Producto {item.idProducto} inexistente")
 
-        inv = (
-            await session.execute(
-                select(Inventario).where(
-                    Inventario.idProducto == item.idProducto,
-                    Inventario.codigoSucursal == payload.codigoSucursal,
-                    Inventario.cantidad_reservada < Inventario.cantidad_actual,
-                ).order_by(Inventario.idInv)
-            )
-        ).scalars().first()
-        if inv is None:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Stock insuficiente del producto {item.idProducto} "
-                    f"en la sucursal {payload.codigoSucursal}"
-                ),
-            )
+        if payload.codigoSucursal is not None:
+            inv = (
+                await session.execute(
+                    select(Inventario).where(
+                        Inventario.idProducto == item.idProducto,
+                        Inventario.codigoSucursal == payload.codigoSucursal,
+                        Inventario.cantidad_reservada < Inventario.cantidad_actual,
+                    ).order_by(Inventario.idInv)
+                )
+            ).scalars().first()
+            if inv is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Stock insuficiente del producto {item.idProducto} "
+                        f"en la sucursal {payload.codigoSucursal}"
+                    ),
+                )
 
-        if inv.cantidad_actual - inv.cantidad_reservada < item.cantidad:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Stock disponible insuficiente del producto {item.idProducto} "
-                    f"en la sucursal {payload.codigoSucursal}"
-                ),
-            )
+            if inv.cantidad_actual - inv.cantidad_reservada < item.cantidad:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Stock disponible insuficiente del producto {item.idProducto} "
+                        f"en la sucursal {payload.codigoSucursal}"
+                    ),
+                )
+        else:
+            # Compra en linea sin sucursal explicita (D4): se resuelve la
+            # UNICA fila de Inventario, entre todas las sucursales, cuya
+            # disponibilidad por si sola cubre la cantidad pedida — nunca se
+            # suma disponibilidad entre sucursales.
+            inv = await resolver_inventario(session, item.idProducto, item.cantidad, None)
+            if inv is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Ninguna sucursal tiene stock disponible suficiente del "
+                        f"producto {item.idProducto} para la cantidad solicitada"
+                    ),
+                )
 
         precio_unitario = float(producto.venta)
         inv.cantidad_actual -= item.cantidad
@@ -183,7 +238,7 @@ async def create_sale(
         session.add(
             Historial(
                 idProducto=item.idProducto,
-                idCliente=payload.idCliente,
+                idCliente=id_cliente,
                 idVenta=venta.idVenta,
             )
         )

@@ -58,12 +58,45 @@ const API_URL = environment.apiUrl;
                 <p class="text-lg font-bold text-indigo-700 mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
               </div>
 
-              <button
-                (click)="reservar.emit(p)"
-                class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
-              >
-                Reservar
-              </button>
+              <div class="flex items-center gap-2 mb-3" *ngIf="stripeDisponible">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Cantidad</span>
+                <button
+                  type="button"
+                  (click)="ajustarCantidad(-1)"
+                  [disabled]="cantidad() <= 1"
+                  class="w-7 h-7 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >−</button>
+                <span class="w-8 text-center text-sm font-bold text-gray-900">{{ cantidad() }}</span>
+                <button
+                  type="button"
+                  (click)="ajustarCantidad(1)"
+                  [disabled]="cantidad() >= cantidadMaxima"
+                  class="w-7 h-7 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >+</button>
+              </div>
+
+              <div class="flex gap-2">
+                <button
+                  (click)="reservar.emit(p)"
+                  class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
+                >
+                  Reservar
+                </button>
+                <button
+                  *ngIf="stripeDisponible"
+                  (click)="onComprar(p)"
+                  class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
+                >
+                  Comprar ahora
+                </button>
+                <p
+                  *ngIf="!stripeDisponible"
+                  class="flex-1 py-2.5 text-center text-[11px] font-semibold text-gray-400 border border-gray-200 rounded-lg"
+                  title="El cobro con tarjeta no está disponible en este servidor"
+                >
+                  Compra no disponible
+                </p>
+              </div>
             </div>
           </div>
 
@@ -102,17 +135,39 @@ export class ProductDetailComponent implements OnChanges {
   @Input({ required: true }) idProducto!: number;
   @Output() cerrar = new EventEmitter<void>();
   @Output() reservar = new EventEmitter<ProductOut>();
+  @Output() comprar = new EventEmitter<{ producto: ProductOut; cantidad: number }>();
 
   producto = signal<ProductOut | null>(null);
   loading = signal<boolean>(true);
   notFound = signal<boolean>(false);
+  cantidad = signal<number>(1);
+
+  // Sin lectura de disponibilidad real por sucursal (el Cliente no tiene
+  // `inventario.ver`, ver design.md D5): el selector se acota a un tope fijo
+  // y arbitrario. El stock real lo verifica siempre el servidor antes de
+  // cobrar (POST /api/payments/intents) y antes de vender (POST /api/sales).
+  cantidadMaxima = 10;
+
+  stripeDisponible = !!environment.stripePublishableKey;
 
   constructor(private http: HttpClient) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['idProducto']) {
+      this.cantidad.set(1);
       this.fetchProducto();
     }
+  }
+
+  ajustarCantidad(delta: number): void {
+    this.cantidad.update(c => Math.min(Math.max(c + delta, 1), this.cantidadMaxima));
+  }
+
+  onComprar(p: ProductOut): void {
+    if (!this.stripeDisponible) {
+      return;
+    }
+    this.comprar.emit({ producto: p, cantidad: this.cantidad() });
   }
 
   private async fetchProducto() {

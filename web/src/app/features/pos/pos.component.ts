@@ -15,7 +15,7 @@ import { SalesService } from '../../core/services/sales.service';
 import { PaymentsService } from '../../core/services/payments.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { CardPaymentComponent } from '../../shared/components/card-payment.component';
-import { ReceiptModalComponent } from './receipt-modal.component';
+import { ReceiptModalComponent } from '../../shared/components/receipt-modal.component';
 import { environment } from '../../../environments/environment';
 
 const API_URL = environment.apiUrl;

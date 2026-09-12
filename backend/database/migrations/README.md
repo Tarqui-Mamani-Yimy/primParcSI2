@@ -59,6 +59,20 @@ docker exec -i ropaDocker \
   -v ON_ERROR_STOP=1 \
   -f /dev/stdin \
   < database/migrations/006_add_stripe_metodo_pago.sql
+
+# 8) Aplicar la migracion 007 (permiso venta.crear para el rol Cliente, CU17/CU18)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/007_permiso_venta_cliente.sql
+
+# 9) Aplicar la migracion 008 (columna idUserPago en metodo_pago, CU17/CU18)
+docker exec -i ropaDocker \
+  psql -U yimysito -d ropaDB \
+  -v ON_ERROR_STOP=1 \
+  -f /dev/stdin \
+  < database/migrations/008_add_metodo_pago_owner.sql
 ```
 
 Usar `ADD COLUMN IF NOT EXISTS` para que sean idempotentes (se pueden
@@ -76,4 +90,15 @@ docker exec ropaDocker psql -U yimysito -d ropaDB -c \
   'SELECT r."codigoRol", r."nombreRol", COUNT(ap."idRolPermiso") AS total_permisos
    FROM "rol" r LEFT JOIN "asignacion_permiso" ap ON ap."codigoRol" = r."codigoRol"
    GROUP BY r."codigoRol", r."nombreRol" ORDER BY r."codigoRol";'
+
+# El rol Cliente (5) debe tener venta.crear (migracion 007):
+docker exec ropaDocker psql -U yimysito -d ropaDB -c \
+  'SELECT r."nombreRol", p."nombrePermiso"
+   FROM "asignacion_permiso" a
+   JOIN "rol" r ON r."codigoRol" = a."codigoRol"
+   JOIN "permiso" p ON p."idPermiso" = a."idPermiso"
+   WHERE r."codigoRol" = 5 AND p."nombrePermiso" = 'venta.crear';'
+
+# Columna idUserPago en metodo_pago (migracion 008):
+docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "metodo_pago"'
 ```

@@ -153,9 +153,9 @@ class DetalleVentaIn(BaseModel):
 
 
 class VentaIn(BaseModel):
-    idCliente: int
+    idCliente: Optional[int] = None       # staff only; derivado del JWT para un Cliente
     idMetPago: int
-    codigoSucursal: int
+    codigoSucursal: Optional[int] = None  # None => el backend resuelve la sucursal
     items: list[DetalleVentaIn]
 
 

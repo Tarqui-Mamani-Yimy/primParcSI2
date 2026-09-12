@@ -274,9 +274,13 @@ export interface MetodoPago {
 // ─────────────────────────────────────────────
 
 export interface VentaIn {
-  idCliente: number;
+  // idCliente y codigoSucursal se omiten en una compra digital del cliente
+  // (CU17/CU18): el backend deriva idCliente del JWT y resuelve la sucursal
+  // automaticamente (ver purchase-modal.component.ts). El POS (CU19/CU20)
+  // sigue enviando ambos explicitamente.
+  idCliente?: number;
   idMetPago: number;
-  codigoSucursal: number;
+  codigoSucursal?: number;
   items: { idProducto: number; cantidad: number }[];
 }
 

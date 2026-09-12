@@ -17,6 +17,7 @@ from app.database import get_db
 from app.models import MetodoPago, Producto
 from app.schemas.fase2 import PagoIntentIn, PagoIntentOut, PagoIntentVerificadoOut
 from app.security import require_permiso
+from app.services.disponibilidad import resolver_inventario
 from app.services.pagos_stripe import (
     StripeNoConfigurado,
     StripePagoError,
@@ -56,6 +57,20 @@ async def create_payment_intent(
             raise HTTPException(status_code=400, detail=f"Producto {item.idProducto} inexistente")
         total += Decimal(str(producto.venta)) * item.cantidad
 
+    # Stock verificado ANTES de cobrar (D5): branch-agnostico, la misma
+    # formula de `create_sale` — ninguna fila individual de `Inventario`
+    # cubre la cantidad => 400 y NUNCA se llama a Stripe.
+    for item in payload.items:
+        inv = await resolver_inventario(session, item.idProducto, item.cantidad, None)
+        if inv is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Ninguna sucursal tiene stock disponible suficiente del "
+                    f"producto {item.idProducto} para la cantidad solicitada"
+                ),
+            )
+
     id_user = int(auth["sub"])
     clave_idempotencia = f"pi:{id_user}:{payload.claveIntento}"
     metadata = {"idUser": str(id_user), "concepto": payload.concepto or ""}
@@ -84,6 +99,7 @@ async def verify_payment_intent(
     session: AsyncSession = Depends(get_db),
     _auth: dict = Depends(require_permiso("venta.crear")),
 ):
+    id_user = int(_auth["sub"])
     _requerir_stripe_configurado()
 
     try:
@@ -124,6 +140,7 @@ async def verify_payment_intent(
         moneda=intent.get("currency"),
         estadoStripe=intent["status"],
         origen="tarjeta_stripe",
+        idUserPago=id_user,
     )
     session.add(metodo)
     await session.commit()
