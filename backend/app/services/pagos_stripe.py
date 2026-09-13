@@ -103,5 +103,5 @@ async def obtener_payment_intent(payment_intent_id: str) -> dict:
         "status": intent["status"],
         "amount_received": intent["amount_received"],
         "currency": intent["currency"],
-        "metadata": dict(intent["metadata"] or {}),
+        "metadata": dict(getattr(intent["metadata"], "to_dict", lambda: intent["metadata"] or {})()),
     }

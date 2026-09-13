@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { CartService } from '../../core/services/cart.service';
 import { CustomerProfileComponent } from './profile/customer-profile.component';
 import { CatalogComponent } from './catalog/catalog.component';
 import { CustomerReservationsComponent } from './reservations/customer-reservations.component';
@@ -56,6 +57,20 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
         </div>
 
         <div class="flex items-center space-x-3" *ngIf="authService.currentUser() as user">
+          <button
+            (click)="onAbrirCarrito()"
+            class="relative p-2 rounded-lg hover:bg-indigo-50 text-gray-600 hover:text-indigo-700 transition-colors cursor-pointer"
+            aria-label="Ver carrito"
+            title="Ver carrito"
+          >
+            <span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+            <span
+              *ngIf="cartService.cantidadTotal() > 0"
+              class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center"
+            >
+              {{ cartService.cantidadTotal() }}
+            </span>
+          </button>
           <div class="hidden md:block text-right">
             <p class="text-xs font-bold text-gray-900 leading-tight">{{ user.nombre }}</p>
             <p class="text-[10px] text-gray-500 font-medium">{{ user.rol }}</p>
@@ -118,10 +133,18 @@ export class CustomerShellComponent {
 
   @Output() logout = new EventEmitter<void>();
 
-  constructor(public authService: AuthService) {}
+  constructor(
+    public authService: AuthService,
+    public cartService: CartService,
+  ) {}
 
   onLogout() {
     this.authService.logout();
     this.logout.emit();
+  }
+
+  onAbrirCarrito() {
+    this.currentView.set('catalog');
+    this.cartService.abrirPanel();
   }
 }

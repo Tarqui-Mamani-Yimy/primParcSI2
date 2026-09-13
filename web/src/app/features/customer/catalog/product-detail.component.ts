@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ProductOut } from '../../../core/models';
 import { environment } from '../../../../environments/environment';
+import { CANTIDAD_MAXIMA_LINEA } from '../../../core/services/cart.service';
 
 const API_URL = environment.apiUrl;
 
@@ -75,7 +76,7 @@ const API_URL = environment.apiUrl;
                 >+</button>
               </div>
 
-              <div class="flex gap-2">
+              <div class="flex flex-wrap gap-2">
                 <button
                   (click)="reservar.emit(p)"
                   class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
@@ -88,6 +89,13 @@ const API_URL = environment.apiUrl;
                   class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
                 >
                   Comprar ahora
+                </button>
+                <button
+                  *ngIf="stripeDisponible"
+                  (click)="onAgregarAlCarrito(p)"
+                  class="flex-1 py-2.5 bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
+                >
+                  Agregar al carrito
                 </button>
                 <p
                   *ngIf="!stripeDisponible"
@@ -136,6 +144,7 @@ export class ProductDetailComponent implements OnChanges {
   @Output() cerrar = new EventEmitter<void>();
   @Output() reservar = new EventEmitter<ProductOut>();
   @Output() comprar = new EventEmitter<{ producto: ProductOut; cantidad: number }>();
+  @Output() agregarAlCarrito = new EventEmitter<{ producto: ProductOut; cantidad: number }>();
 
   producto = signal<ProductOut | null>(null);
   loading = signal<boolean>(true);
@@ -144,9 +153,11 @@ export class ProductDetailComponent implements OnChanges {
 
   // Sin lectura de disponibilidad real por sucursal (el Cliente no tiene
   // `inventario.ver`, ver design.md D5): el selector se acota a un tope fijo
-  // y arbitrario. El stock real lo verifica siempre el servidor antes de
-  // cobrar (POST /api/payments/intents) y antes de vender (POST /api/sales).
-  cantidadMaxima = 10;
+  // y arbitrario, compartido con `CartService` (CU16 D2) para que el
+  // stepper y el carrito nunca desincronicen su tope. El stock real lo
+  // verifica siempre el servidor antes de cobrar (POST
+  // /api/payments/intents) y antes de vender (POST /api/sales).
+  cantidadMaxima = CANTIDAD_MAXIMA_LINEA;
 
   stripeDisponible = !!environment.stripePublishableKey;
 
@@ -168,6 +179,13 @@ export class ProductDetailComponent implements OnChanges {
       return;
     }
     this.comprar.emit({ producto: p, cantidad: this.cantidad() });
+  }
+
+  onAgregarAlCarrito(p: ProductOut): void {
+    if (!this.stripeDisponible) {
+      return;
+    }
+    this.agregarAlCarrito.emit({ producto: p, cantidad: this.cantidad() });
   }
 
   private async fetchProducto() {

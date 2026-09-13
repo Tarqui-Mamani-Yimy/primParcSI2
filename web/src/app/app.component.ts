@@ -16,6 +16,7 @@ import { TeamComponent } from './features/team/team.component';
 import { CustomerShellComponent } from './features/customer/customer-shell.component';
 import { StaffReservationsComponent } from './features/reservations/staff-reservations.component';
 import { PosComponent } from './features/pos/pos.component';
+import { LocationsComponent } from './features/locations/locations.component';
 
 @Component({
   selector: 'app-root',
@@ -36,7 +37,8 @@ import { PosComponent } from './features/pos/pos.component';
     TeamComponent,
     CustomerShellComponent,
     StaffReservationsComponent,
-    PosComponent
+    PosComponent,
+    LocationsComponent
   ],
   template: `
     <!-- Top Level Screen Router: Show Login/Register or Authenticated Portal -->
@@ -149,6 +151,10 @@ import { PosComponent } from './features/pos/pos.component';
             <app-pos
               *ngIf="activeView() === 'pos'"
             ></app-pos>
+
+            <app-locations
+              *ngIf="activeView() === 'locations'"
+            ></app-locations>
           </main>
         </div>
       </div>
@@ -212,6 +218,8 @@ export class AppComponent {
         return 'Reservas y Atención en Sucursal';
       case 'pos':
         return 'Caja — Venta Presencial';
+      case 'locations':
+        return 'Ciudades y Sucursales';
       default:
         return 'Operaciones';
     }

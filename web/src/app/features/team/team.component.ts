@@ -2,7 +2,11 @@ import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TeamService } from '../../core/services/team.service';
-import { TeamMember } from '../../core/models';
+import { NotificationService } from '../../core/services/notification.service';
+import { TeamMember, StaffRole } from '../../core/models';
+import { hasDigit, hasLower, hasSpecial, hasUpper, hasMinLength, isStrong } from '../../shared/utils/password-rules';
+
+const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Cajero'];
 
 @Component({
   selector: 'app-team',
@@ -22,9 +26,13 @@ import { TeamMember } from '../../core/models';
         </div>
 
         <div class="flex items-center space-x-3">
-          <div class="px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-700">
-            Crear/Editar: Fase 2
-          </div>
+          <button
+            (click)="openCreateModal()"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            <span>Nuevo Usuario</span>
+          </button>
         </div>
       </div>
 
@@ -65,6 +73,18 @@ import { TeamMember } from '../../core/models';
                 </span>
               </div>
             </div>
+
+            <div class="mt-3.5 pt-3 border-t border-gray-100">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5 block">Cambiar Rol</label>
+              <select
+                [disabled]="savingRoleFor() === member.idUser"
+                [value]="member.rol"
+                (change)="onRoleChange(member, $event)"
+                class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+              >
+                <option *ngFor="let rol of staffRoles" [value]="rol">{{ rol }}</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -97,10 +117,97 @@ import { TeamMember } from '../../core/models';
       </div>
 
     </div>
+
+    <!-- Modal: Crear usuario de personal -->
+    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
+        <button (click)="closeCreateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+
+        <div class="mb-5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Gobernanza de Seguridad</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Nuevo Usuario de Personal</h2>
+        </div>
+
+        <form (ngSubmit)="submitCreate()" class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
+            <input type="text" [(ngModel)]="form.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Correo</label>
+            <input type="email" [(ngModel)]="form.email" name="email" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Contraseña</label>
+            <input type="password" [(ngModel)]="form.password" name="password" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Rol</label>
+            <select [(ngModel)]="form.rol" name="rol" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option *ngFor="let rol of staffRoles" [value]="rol">{{ rol }}</option>
+            </select>
+          </div>
+
+          <!-- Checklist en vivo de reglas de contraseña -->
+          <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-1.5">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Requisitos de contraseña:</p>
+            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasMinLength(form.password)" [class.text-gray-400]="!hasMinLength(form.password)">
+              <span>{{ hasMinLength(form.password) ? '✓' : '○' }}</span>
+              <span>Mínimo 10 caracteres</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasLower(form.password)" [class.text-gray-400]="!hasLower(form.password)">
+              <span>{{ hasLower(form.password) ? '✓' : '○' }}</span>
+              <span>Al menos 1 minúscula</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasUpper(form.password)" [class.text-gray-400]="!hasUpper(form.password)">
+              <span>{{ hasUpper(form.password) ? '✓' : '○' }}</span>
+              <span>Al menos 1 mayúscula</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasDigit(form.password)" [class.text-gray-400]="!hasDigit(form.password)">
+              <span>{{ hasDigit(form.password) ? '✓' : '○' }}</span>
+              <span>Al menos 1 número</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasSpecial(form.password)" [class.text-gray-400]="!hasSpecial(form.password)">
+              <span>{{ hasSpecial(form.password) ? '✓' : '○' }}</span>
+              <span>Al menos 1 carácter especial</span>
+            </div>
+          </div>
+
+          <p *ngIf="createError()" class="text-xs text-rose-600">{{ createError() }}</p>
+
+          <button
+            type="submit"
+            [disabled]="saving() || !canSubmitCreate()"
+            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+          >
+            {{ saving() ? 'Creando...' : 'Crear Usuario' }}
+          </button>
+        </form>
+      </div>
+    </div>
   `
 })
 export class TeamComponent implements OnInit {
-  constructor(public teamService: TeamService) {}
+  staffRoles = STAFF_ROLES;
+
+  showCreateModal = signal<boolean>(false);
+  saving = signal<boolean>(false);
+  createError = signal<string | null>(null);
+  savingRoleFor = signal<number | null>(null);
+
+  form: { nombre: string; email: string; password: string; rol: StaffRole } = {
+    nombre: '',
+    email: '',
+    password: '',
+    rol: 'Cajero',
+  };
+
+  constructor(
+    public teamService: TeamService,
+    private notificationService: NotificationService,
+  ) {}
 
   ngOnInit() {
     this.teamService.loadTeam();
@@ -115,5 +222,87 @@ export class TeamComponent implements OnInit {
     if (lower.includes('proveedor')) return 'bg-sky-50 text-sky-700 border-sky-200';
     if (lower.includes('cliente')) return 'bg-gray-100 text-gray-600 border-gray-200';
     return 'bg-gray-100 text-gray-600 border-gray-200';
+  }
+
+  hasLower(value: string): boolean {
+    return hasLower(value);
+  }
+
+  hasUpper(value: string): boolean {
+    return hasUpper(value);
+  }
+
+  hasDigit(value: string): boolean {
+    return hasDigit(value);
+  }
+
+  hasSpecial(value: string): boolean {
+    return hasSpecial(value);
+  }
+
+  hasMinLength(value: string): boolean {
+    return hasMinLength(value);
+  }
+
+  canSubmitCreate(): boolean {
+    return (
+      this.form.nombre.trim().length > 0 &&
+      this.form.email.trim().length > 0 &&
+      isStrong(this.form.password)
+    );
+  }
+
+  openCreateModal() {
+    this.form = { nombre: '', email: '', password: '', rol: 'Cajero' };
+    this.createError.set(null);
+    this.showCreateModal.set(true);
+  }
+
+  closeCreateModal() {
+    this.showCreateModal.set(false);
+  }
+
+  submitCreate() {
+    if (!this.canSubmitCreate()) return;
+
+    this.createError.set(null);
+    this.saving.set(true);
+
+    this.teamService
+      .createStaffUser({ ...this.form })
+      .then(() => {
+        this.saving.set(false);
+        this.showCreateModal.set(false);
+        this.notificationService.success('Usuario creado', `"${this.form.nombre}" fue agregado al equipo.`);
+      })
+      .catch((err) => {
+        this.saving.set(false);
+        const msg = err.error?.detail || 'No se pudo crear el usuario.';
+        this.createError.set(msg);
+        this.notificationService.error('Error', msg);
+      });
+  }
+
+  onRoleChange(member: TeamMember, event: Event) {
+    const nuevoRol = (event.target as HTMLSelectElement).value as StaffRole;
+    if (nuevoRol === member.rol) return;
+
+    this.savingRoleFor.set(member.idUser);
+
+    this.teamService
+      .changeRole(member.idUser, nuevoRol)
+      .then(() => {
+        this.savingRoleFor.set(null);
+        this.notificationService.success(
+          'Rol actualizado',
+          `El rol de "${member.nombre}" cambiará en su próximo inicio de sesión.`,
+        );
+      })
+      .catch((err) => {
+        this.savingRoleFor.set(null);
+        const msg = err.error?.detail || 'No se pudo cambiar el rol.';
+        this.notificationService.error('Error', msg);
+        (event.target as HTMLSelectElement).value = member.rol;
+      });
   }
 }

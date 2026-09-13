@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { ProductOut, Venta } from '../../../core/models';
+import type { CartLine, Venta } from '../../../core/models';
 import { PaymentsService } from '../../../core/services/payments.service';
 import { SalesService } from '../../../core/services/sales.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
@@ -9,13 +9,22 @@ import { ReceiptModalComponent } from '../../../shared/components/receipt-modal.
 type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' | 'error';
 
 /**
- * Checkout de compra digital (CU17/CU18): un solo producto, pago SOLO con
- * tarjeta via Stripe (Requirement "Card-Only Modality"). Replica la maquina
- * de estados de `pos.component.ts` — el pago SIEMPRE se obtiene antes de
- * `POST /api/sales`, y si la venta falla despues de un cobro verificado, el
- * `idMetPago` se retiene para reintentar sin cobrar dos veces (Requirement
- * "Charge Preserved on Sale Failure"). Nunca envia `idCliente` ni
- * `codigoSucursal`: el backend los deriva/resuelve (D2/D4 en design.md).
+ * Checkout de compra digital (CU17/CU18, generalizado por CU16 a una o mas
+ * lineas): pago SOLO con tarjeta via Stripe (Requirement "Card-Only
+ * Modality"). Replica la maquina de estados de `pos.component.ts` — el pago
+ * SIEMPRE se obtiene antes de `POST /api/sales`, y si la venta falla despues
+ * de un cobro verificado, el `idMetPago` se retiene para reintentar sin
+ * cobrar dos veces (Requirement "Charge Preserved on Sale Failure"). Nunca
+ * envia `idCliente` ni `codigoSucursal`: el backend los deriva/resuelve
+ * (D2/D4 en design.md).
+ *
+ * `lineas` es una FOTO congelada tomada por el host cuando arranca el
+ * checkout (CU16 D3): este componente nunca lee `CartService` en vivo, asi
+ * que vaciar o editar el carrito despues de abrir el modal no puede mutar
+ * un cobro en curso ni vaciar el encabezado del comprobante. "Comprar
+ * ahora" pasa exactamente el mismo tipo de dato — un arreglo de una sola
+ * linea — por este mismo camino (Requirement "Buy-Now Remains Independent
+ * of the Cart").
  */
 @Component({
   selector: 'app-purchase-modal',
@@ -30,8 +39,8 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
         <div class="p-5 border-b border-gray-100 flex items-start justify-between">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Comprar ahora</span>
-            <h2 class="text-base font-bold text-gray-900 mt-0.5 leading-snug">{{ producto.nombre }}</h2>
-            <p class="text-xs text-gray-500 mt-0.5">Cantidad: {{ cantidad }}</p>
+            <h2 class="text-base font-bold text-gray-900 mt-0.5 leading-snug">{{ tituloCompra() }}</h2>
+            <p class="text-xs text-gray-500 mt-0.5">{{ subtituloCantidad() }}</p>
           </div>
           <button
             *ngIf="estado() !== 'cobrado_sin_venta'"
@@ -64,7 +73,7 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
           <div *ngIf="estado() === 'cobrando' && clientSecret()">
             <app-card-payment
               [clientSecret]="clientSecret()"
-              [concepto]="'Compra: ' + producto.nombre"
+              [concepto]="'Compra: ' + tituloCompra()"
               (pagado)="onCardPagado($event)"
               (fallo)="onCardFallo($event)"
               (cancelado)="onCardCancelado()"
@@ -99,8 +108,7 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
   `
 })
 export class PurchaseModalComponent implements OnInit {
-  @Input({ required: true }) producto!: ProductOut;
-  @Input({ required: true }) cantidad = 1;
+  @Input({ required: true }) lineas!: CartLine[];
   @Output() cerrar = new EventEmitter<void>();
   @Output() completada = new EventEmitter<Venta>();
 
@@ -120,15 +128,40 @@ export class PurchaseModalComponent implements OnInit {
     this.iniciarCobro();
   }
 
+  // Una sola linea conserva la redaccion original ("Comprar ahora" y
+  // buy-now, Requirement "Buy-Now Remains Independent of the Cart"); dos o
+  // mas resumen el carrito.
+  private get esUnaLinea(): boolean {
+    return this.lineas.length === 1;
+  }
+
+  tituloCompra(): string {
+    return this.esUnaLinea ? this.lineas[0].producto.nombre : `${this.lineas.length} productos`;
+  }
+
+  subtituloCantidad(): string {
+    return this.esUnaLinea
+      ? `Cantidad: ${this.lineas[0].cantidad}`
+      : `Total de unidades: ${this.cantidadTotal()}`;
+  }
+
+  private cantidadTotal(): number {
+    return this.lineas.reduce((total, linea) => total + linea.cantidad, 0);
+  }
+
+  private itemsDeLineas(): { idProducto: number; cantidad: number }[] {
+    return this.lineas.map(linea => ({ idProducto: linea.producto.idProducto, cantidad: linea.cantidad }));
+  }
+
   // POST /api/payments/intents: el servidor valida stock ANTES de crear el
   // intento (Requirement "Stock Verified Before Any Charge") — si no hay
   // stock en ninguna sucursal, devuelve 400 y esta llamada nunca cobra nada.
   private async iniciarCobro(): Promise<void> {
     this.enviando.set(true);
     const intent = await this.paymentsService.crearIntent({
-      items: [{ idProducto: this.producto.idProducto, cantidad: this.cantidad }],
+      items: this.itemsDeLineas(),
       claveIntento: crypto.randomUUID(),
-      concepto: `Compra en línea — ${this.producto.nombre}`,
+      concepto: `Compra en línea — ${this.tituloCompra()}`,
     });
     this.enviando.set(false);
     if (!intent) {
@@ -180,7 +213,7 @@ export class PurchaseModalComponent implements OnInit {
     this.enviando.set(true);
     const venta = await this.salesService.crearVenta({
       idMetPago,
-      items: [{ idProducto: this.producto.idProducto, cantidad: this.cantidad }],
+      items: this.itemsDeLineas(),
     });
     this.enviando.set(false);
 

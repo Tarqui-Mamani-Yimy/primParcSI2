@@ -205,6 +205,19 @@ export interface TeamMember {
   permisos: string[];
 }
 
+export type StaffRole = 'Administrador' | 'Encargado de Sucursal' | 'Cajero';
+
+export interface StaffUserIn {
+  nombre: string;
+  email: string;
+  password: string;
+  rol: StaffRole;
+}
+
+export interface ChangeRoleIn {
+  rol: StaffRole;
+}
+
 export interface AuditLogEntry {
   idBitacora: number;
   accion: string;
@@ -299,6 +312,15 @@ export interface TicketLine {
   disponible: number;
 }
 
+// Línea del carrito de compras del cliente (CU16): frontend-only, nunca se
+// persiste (ni backend ni localStorage). Conserva el `ProductOut` completo
+// porque el modal de compra y el drawer del carrito ya lo necesitan entero
+// (nombre, venta, imagen_url), evitando una re-hidratación por línea.
+export interface CartLine {
+  producto: ProductOut;
+  cantidad: number;
+}
+
 // Cliente para el picker del registro (GET /api/customers, cliente.ver).
 export interface Cliente {
   idCliente: number;
@@ -306,6 +328,33 @@ export interface Cliente {
   telefono: string | null;
   direccion: string | null;
   idUser: number;
+}
+
+// ─────────────────────────────────────────────
+// CITIES & BRANCHES (CU04 — Contrato real backend)
+// ─────────────────────────────────────────────
+
+export interface Ciudad {
+  idCiudad: number;
+  nombCiudad: string;
+}
+
+export interface CiudadIn {
+  nombCiudad: string;
+}
+
+export interface Sucursal {
+  codigoSucursal: number;
+  nombre: string;
+  direccion: string;
+  idCiudad: number;
+  ciudad_nombre?: string | null;
+}
+
+export interface SucursalIn {
+  nombre: string;
+  direccion: string;
+  idCiudad: number;
 }
 
 // ─────────────────────────────────────────────

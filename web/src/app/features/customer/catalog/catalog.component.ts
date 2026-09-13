@@ -2,17 +2,26 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../../core/services/archive.service';
-import { ProductOut } from '../../../core/models';
+import { CartService } from '../../../core/services/cart.service';
+import { CartLine, ProductOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
 import { PurchaseModalComponent } from '../checkout/purchase-modal.component';
+import { CartDrawerComponent } from '../cart/cart-drawer.component';
 
 const PAGE_SIZE = 12;
 
 @Component({
   selector: 'app-customer-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductDetailComponent, ReservationFormComponent, PurchaseModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ProductDetailComponent,
+    ReservationFormComponent,
+    PurchaseModalComponent,
+    CartDrawerComponent,
+  ],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
 
@@ -154,6 +163,7 @@ const PAGE_SIZE = 12;
       (cerrar)="closeDetail()"
       (reservar)="onReservar($event)"
       (comprar)="onComprar($event)"
+      (agregarAlCarrito)="onAgregarAlCarrito($event)"
     ></app-product-detail>
 
     <app-reservation-form
@@ -163,11 +173,12 @@ const PAGE_SIZE = 12;
       (creada)="onReservaCreada()"
     ></app-reservation-form>
 
+    <app-cart-drawer (finalizarCompra)="onFinalizarCompraCarrito()"></app-cart-drawer>
+
     <app-purchase-modal
-      *ngIf="comprandoProducto() !== null"
-      [producto]="comprandoProducto()!"
-      [cantidad]="comprandoCantidad()"
-      (cerrar)="comprandoProducto.set(null)"
+      *ngIf="checkoutLineas() !== null"
+      [lineas]="checkoutLineas()!"
+      (cerrar)="checkoutLineas.set(null)"
       (completada)="onCompraCompletada()"
     ></app-purchase-modal>
   `
@@ -183,8 +194,16 @@ export class CatalogComponent implements OnInit {
   page = signal<number>(1);
   selectedProductId = signal<number | null>(null);
   reservandoProducto = signal<ProductOut | null>(null);
-  comprandoProducto = signal<ProductOut | null>(null);
-  comprandoCantidad = signal<number>(1);
+
+  // Foto congelada de las lineas a pagar (CU16 D3): buy-now guarda un
+  // arreglo de una sola linea, "Finalizar compra" del carrito guarda
+  // `cartService.lineas()`. El modal nunca lee el carrito en vivo.
+  checkoutLineas = signal<CartLine[] | null>(null);
+
+  // Solo el checkout iniciado desde el carrito vacia el carrito al
+  // completarse (Requirement "Buy-Now Remains Independent of the Cart" —
+  // comprar ahora nunca debe tocar las lineas del carrito real).
+  private checkoutDesdeCarrito = signal<boolean>(false);
 
   totalPages = computed(() => {
     const total = this.archiveService.total();
@@ -193,6 +212,7 @@ export class CatalogComponent implements OnInit {
 
   constructor(
     public archiveService: ArchiveService,
+    private cartService: CartService,
   ) {}
 
   ngOnInit() {
@@ -230,12 +250,35 @@ export class CatalogComponent implements OnInit {
   }
 
   onComprar(evt: { producto: ProductOut; cantidad: number }) {
+    // "Comprar ahora": arreglo de una sola linea, throwaway, que nunca lee
+    // ni escribe el carrito real (Requirement "Buy-Now Remains Independent
+    // of the Cart").
     this.selectedProductId.set(null);
-    this.comprandoProducto.set(evt.producto);
-    this.comprandoCantidad.set(evt.cantidad);
+    this.checkoutDesdeCarrito.set(false);
+    this.checkoutLineas.set([{ producto: evt.producto, cantidad: evt.cantidad }]);
+  }
+
+  onAgregarAlCarrito(evt: { producto: ProductOut; cantidad: number }) {
+    this.cartService.agregar(evt.producto, evt.cantidad);
+  }
+
+  onFinalizarCompraCarrito() {
+    const lineas = this.cartService.lineas();
+    if (lineas.length === 0) {
+      return;
+    }
+    this.checkoutDesdeCarrito.set(true);
+    this.checkoutLineas.set(lineas);
+    this.cartService.cerrarPanel();
   }
 
   onCompraCompletada() {
+    // Requirement "Cart Checkout of All Lines" / "Successful multi-line
+    // checkout empties the cart": SOLO se vacia el carrito real cuando el
+    // checkout completado vino del carrito (nunca desde "Comprar ahora").
+    if (this.checkoutDesdeCarrito()) {
+      this.cartService.vaciar();
+    }
     // El modal sigue abierto mostrando el comprobante (<app-receipt-modal>);
     // el usuario lo cierra explicitamente, recien ahi se limpia el estado.
   }

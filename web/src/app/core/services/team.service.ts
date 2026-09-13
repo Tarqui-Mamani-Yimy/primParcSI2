@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { TeamMember, AuditLogEntry } from '../models';
+import { TeamMember, AuditLogEntry, StaffUserIn, ChangeRoleIn, StaffRole } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 
@@ -42,9 +42,25 @@ export class TeamService {
     });
   }
 
-  addMember(member: Omit<TeamMember, 'idUser'>): Promise<TeamMember | null> {
-    this.notificationService.warning('No disponible', 'La creación de miembros estará disponible en Fase 2.');
-    return Promise.resolve(null);
+  createStaffUser(payload: StaffUserIn): Promise<TeamMember> {
+    return firstValueFrom(
+      this.http.post<TeamMember>(`${API_URL}/api/team`, payload)
+    ).then((member) => {
+      this.teamMembersSignal.update((list) => [...list, member]);
+      return member;
+    });
+  }
+
+  changeRole(idUser: number, rol: StaffRole): Promise<TeamMember> {
+    const payload: ChangeRoleIn = { rol };
+    return firstValueFrom(
+      this.http.patch<TeamMember>(`${API_URL}/api/team/${idUser}/role`, payload)
+    ).then((member) => {
+      this.teamMembersSignal.update((list) =>
+        list.map((m) => (m.idUser === idUser ? member : m))
+      );
+      return member;
+    });
   }
 
   togglePermission(userId: string, permission: string): Promise<boolean> {
