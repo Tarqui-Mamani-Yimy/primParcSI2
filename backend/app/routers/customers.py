@@ -4,10 +4,50 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Cliente, Usuario
-from app.schemas.fase2 import ClienteCreate, ClienteFull, ClienteUpdate
-from app.security import require_permiso
+from app.schemas.fase2 import ClienteCreate, ClienteFull, ClienteMeUpdate, ClienteUpdate
+from app.security import get_current_payload, require_permiso
 
 router = APIRouter(prefix="/api/customers", tags=["customers"])
+
+
+async def _cliente_del_caller(session: AsyncSession, payload: dict) -> Cliente | None:
+    return (
+        await session.execute(select(Cliente).where(Cliente.idUser == int(payload["sub"])))
+    ).scalar_one_or_none()
+
+
+# Autogestion: un Cliente autenticado ve/edita SU PROPIO registro. Sin
+# permiso "cliente.ver" (ese es para que staff gestione clientes ajenos) —
+# el gate es "tiene un JWT valido y un Cliente asociado", mismo criterio
+# que ya usan sales.py/reservations.py para el resto de la autocompra.
+# Registrado ANTES de "/{idCliente}" — si no, FastAPI intentaria parsear
+# "me" como el int idCliente de esa ruta y nunca llegaria aca.
+@router.get("/me", response_model=ClienteFull)
+async def get_my_customer(
+    session: AsyncSession = Depends(get_db),
+    payload: dict = Depends(get_current_payload),
+):
+    cliente = await _cliente_del_caller(session, payload)
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="La cuenta no tiene un cliente asociado")
+    return await _serialize(cliente, session)
+
+
+@router.put("/me", response_model=ClienteFull)
+async def update_my_customer(
+    update: ClienteMeUpdate,
+    session: AsyncSession = Depends(get_db),
+    payload: dict = Depends(get_current_payload),
+):
+    cliente = await _cliente_del_caller(session, payload)
+    if cliente is None:
+        raise HTTPException(status_code=404, detail="La cuenta no tiene un cliente asociado")
+    data = update.model_dump(exclude_unset=True)
+    for k, v in data.items():
+        setattr(cliente, k, v)
+    await session.commit()
+    await session.refresh(cliente)
+    return await _serialize(cliente, session)
 
 
 async def _serialize(c: Cliente, session: AsyncSession) -> ClienteFull:

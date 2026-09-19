@@ -42,3 +42,11 @@ class StockAdjustIn(BaseModel):
     tipo: str = "ajuste"
     motivo: Optional[str] = None
     signo: str = Field("set", description="set | add | subtract: como aplicar la cantidad")
+
+
+class StockIngresoIn(BaseModel):
+    idProducto: int
+    codigoSucursal: int
+    cantidad: int = Field(..., gt=0)
+    idProveedor: Optional[int] = None
+    motivo: Optional[str] = None

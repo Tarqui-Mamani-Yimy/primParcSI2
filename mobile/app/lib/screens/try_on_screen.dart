@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
 import '../models/product_model.dart';
+import 'ar_try_on_screen.dart';
+import 'reservation_form_screen.dart';
 
 class TryOnScreen extends StatelessWidget {
   const TryOnScreen({super.key});
@@ -41,81 +43,11 @@ class TryOnScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // 1. Mirror Canvas 3:4
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: AspectRatio(
-              aspectRatio: 3 / 4,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: product.imageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                  if (appState.isSimulatingTryOn)
-                    Container(
-                      color: Colors.black.withOpacity(0.55),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(color: AetherTheme.sandLight, strokeWidth: 2),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Ajustando drapeado IA...',
-                              style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 11, letterSpacing: 1.2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  // HUD Overlay
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(2),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '• Drape Tension: 94%',
-                                style: GoogleFonts.outfit(color: AetherTheme.mutedGold, fontSize: 9.5, fontWeight: FontWeight.w600),
-                              ),
-                              Text(
-                                'Talla Sugerida: ${appState.selectedSize}',
-                                style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: 0.94,
-                            backgroundColor: Colors.white24,
-                            color: AetherTheme.mutedGold,
-                            minHeight: 3,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // 1. Mirror Canvas 3:4 — foto estatica (default) o camara RA real (CU11)
+          _MirrorCanvas(
+            product: product,
+            isSimulatingTryOn: appState.isSimulatingTryOn,
+            selectedSize: appState.selectedSize,
           ),
 
           const SizedBox(height: 14),
@@ -323,8 +255,164 @@ class TryOnScreen extends StatelessWidget {
               },
             ),
           ),
+          const SizedBox(height: 8),
+          // Mobile Fase 3 (CU12): reservar esta prenda con deposito 10% via
+          // Stripe. Mismo lugar donde CU12 vive en la web, junto al flujo
+          // de compra del mismo producto.
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.event_available, size: 16),
+              label: Text('RESERVAR EN SUCURSAL', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AetherTheme.charcoalDark,
+                side: const BorderSide(color: AetherTheme.charcoalDark),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+              ),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ReservationFormScreen(product: product)),
+                );
+              },
+            ),
+          ),
           const SizedBox(height: 30),
         ],
+      ),
+    );
+  }
+}
+
+/// Envuelve el "espejo" 3:4: por defecto muestra la foto estatica del
+/// producto (comportamiento previo, sin camara), con un boton para activar
+/// la camara RA real (CU11, `ArTryOnScreen`). Stateful local únicamente
+/// porque el toggle on/off de la camara no necesita vivir en `AppState` —
+/// nadie mas de la app lee "esta la camara activa ahora mismo".
+class _MirrorCanvas extends StatefulWidget {
+  final Product product;
+  final bool isSimulatingTryOn;
+  final String selectedSize;
+
+  const _MirrorCanvas({
+    required this.product,
+    required this.isSimulatingTryOn,
+    required this.selectedSize,
+  });
+
+  @override
+  State<_MirrorCanvas> createState() => _MirrorCanvasState();
+}
+
+class _MirrorCanvasState extends State<_MirrorCanvas> {
+  bool _arActivo = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: AspectRatio(
+        aspectRatio: 3 / 4,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_arActivo)
+              // Sin Key propia a proposito: si tuviera una Key derivada del
+              // producto, Flutter la tratatia como un widget nuevo al
+              // cambiar de prenda y reiniciaria la camara en cada cambio.
+              // Sin Key, el mismo State persiste y `widget.product` se
+              // actualiza solo — ver el comentario en `ArTryOnScreen.build`.
+              ArTryOnScreen(product: widget.product)
+            else ...[
+              CachedNetworkImage(
+                imageUrl: widget.product.imageUrl,
+                fit: BoxFit.cover,
+              ),
+              if (widget.isSimulatingTryOn)
+                Container(
+                  color: Colors.black.withOpacity(0.55),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(color: AetherTheme.sandLight, strokeWidth: 2),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Ajustando drapeado IA...',
+                          style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 11, letterSpacing: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              // HUD Overlay
+              Positioned(
+                bottom: 10,
+                left: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '• Drape Tension: 94%',
+                            style: GoogleFonts.outfit(color: AetherTheme.mutedGold, fontSize: 9.5, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            'Talla Sugerida: ${widget.selectedSize}',
+                            style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: 0.94,
+                        backgroundColor: Colors.white24,
+                        color: AetherTheme.mutedGold,
+                        minHeight: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // Boton toggle camara RA (CU11) — arriba a la derecha, siempre visible.
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.black.withOpacity(0.6),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => setState(() => _arActivo = !_arActivo),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Icon(
+                      _arActivo ? Icons.photo_camera_back_outlined : Icons.camera_alt_outlined,
+                      color: AetherTheme.sandLight,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ProductOut } from '../../../core/models';
 import { environment } from '../../../../environments/environment';
 import { CANTIDAD_MAXIMA_LINEA } from '../../../core/services/cart.service';
+import { classifyProductDetailError, ProductDetailError } from './product-detail-error';
 
 const API_URL = environment.apiUrl;
 
@@ -28,15 +29,19 @@ const API_URL = environment.apiUrl;
           <p class="text-sm text-gray-400">Cargando producto…</p>
         </div>
 
-        <!-- No encontrado -->
-        <div *ngIf="!loading() && notFound()" class="p-16 flex flex-col items-center justify-center text-center">
-          <span class="material-symbols-outlined text-[40px] text-gray-300">search_off</span>
-          <p class="mt-3 text-sm font-semibold text-gray-700">Producto no encontrado</p>
-          <p class="text-xs text-gray-400 mt-1">Este producto ya no está disponible en el catálogo.</p>
+        <!-- Error de carga -->
+        <div *ngIf="!loading() && loadError() as error" class="p-16 flex flex-col items-center justify-center text-center">
+          <span class="material-symbols-outlined text-[40px] text-gray-300">{{ error === 'not-found' ? 'search_off' : 'error' }}</span>
+          <p class="mt-3 text-sm font-semibold text-gray-700">
+            {{ error === 'not-found' ? 'Producto no encontrado' : 'No se pudo cargar el producto' }}
+          </p>
+          <p class="text-xs text-gray-400 mt-1">
+            {{ error === 'not-found' ? 'Este producto ya no está disponible en el catálogo.' : 'Intenta nuevamente en unos momentos.' }}
+          </p>
         </div>
 
         <!-- Detalle -->
-        <div *ngIf="!loading() && !notFound() && producto() as p" class="overflow-y-auto p-6 md:p-8 space-y-6">
+        <div *ngIf="!loading() && !loadError() && producto() as p" class="overflow-y-auto p-6 md:p-8 space-y-6">
           <div class="flex flex-col md:flex-row gap-6">
             <div class="w-full md:w-1/2 aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
               <img
@@ -148,7 +153,7 @@ export class ProductDetailComponent implements OnChanges {
 
   producto = signal<ProductOut | null>(null);
   loading = signal<boolean>(true);
-  notFound = signal<boolean>(false);
+  loadError = signal<ProductDetailError | null>(null);
   cantidad = signal<number>(1);
 
   // Sin lectura de disponibilidad real por sucursal (el Cliente no tiene
@@ -190,7 +195,7 @@ export class ProductDetailComponent implements OnChanges {
 
   private async fetchProducto() {
     this.loading.set(true);
-    this.notFound.set(false);
+    this.loadError.set(null);
     this.producto.set(null);
 
     try {
@@ -199,12 +204,7 @@ export class ProductDetailComponent implements OnChanges {
       );
       this.producto.set(producto);
     } catch (err: unknown) {
-      const httpErr = err as { status?: number };
-      if (httpErr.status === 404) {
-        this.notFound.set(true);
-      } else {
-        this.notFound.set(true);
-      }
+      this.loadError.set(classifyProductDetailError(err));
     } finally {
       this.loading.set(false);
     }

@@ -2,6 +2,9 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- CU11 (Vestidor Virtual RA): camara para el probador virtual. -->
+	<key>NSCameraUsageDescription</key>
+	<string>YouShop usa la cámara para mostrarte el probador virtual de prendas.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

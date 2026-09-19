@@ -54,7 +54,44 @@ class _CollectionScreenState extends State<CollectionScreen> {
           ),
         ),
 
-        // Product Grid
+        // Product Grid (catalogo real — Mobile Fase 1)
+        if (appState.productsLoading && appState.products.isEmpty)
+          const Expanded(
+            child: Center(child: CircularProgressIndicator(color: AetherTheme.bronze, strokeWidth: 2)),
+          )
+        else if (appState.productsError != null && appState.products.isEmpty)
+          Expanded(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      appState.productsError!,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => appState.loadProducts(),
+                      child: Text('Reintentar', style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.bronze, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else if (filteredProducts.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                'No hay productos en esta categoría.',
+                style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+              ),
+            ),
+          )
+        else
         Expanded(
           child: GridView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

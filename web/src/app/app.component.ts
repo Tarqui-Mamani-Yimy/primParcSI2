@@ -17,6 +17,8 @@ import { CustomerShellComponent } from './features/customer/customer-shell.compo
 import { StaffReservationsComponent } from './features/reservations/staff-reservations.component';
 import { PosComponent } from './features/pos/pos.component';
 import { LocationsComponent } from './features/locations/locations.component';
+import { ReportsComponent } from './features/reports/reports.component';
+import { IndicadoresComponent } from './features/indicadores/indicadores.component';
 
 @Component({
   selector: 'app-root',
@@ -38,7 +40,9 @@ import { LocationsComponent } from './features/locations/locations.component';
     CustomerShellComponent,
     StaffReservationsComponent,
     PosComponent,
-    LocationsComponent
+    LocationsComponent,
+    ReportsComponent,
+    IndicadoresComponent
   ],
   template: `
     <!-- Top Level Screen Router: Show Login/Register or Authenticated Portal -->
@@ -155,6 +159,14 @@ import { LocationsComponent } from './features/locations/locations.component';
             <app-locations
               *ngIf="activeView() === 'locations'"
             ></app-locations>
+
+            <app-reports
+              *ngIf="activeView() === 'reports'"
+            ></app-reports>
+
+            <app-indicadores
+              *ngIf="activeView() === 'indicadores'"
+            ></app-indicadores>
           </main>
         </div>
       </div>
@@ -220,6 +232,10 @@ export class AppComponent {
         return 'Caja — Venta Presencial';
       case 'locations':
         return 'Ciudades y Sucursales';
+      case 'reports':
+        return 'Reportes de Ventas e Inventario';
+      case 'indicadores':
+        return 'Dashboard de Indicadores Empresariales';
       default:
         return 'Operaciones';
     }

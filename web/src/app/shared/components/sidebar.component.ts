@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 
-export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team' | 'reservations' | 'pos' | 'locations';
+export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'suppliers' | 'seasons' | 'team' | 'reservations' | 'pos' | 'locations' | 'reports' | 'indicadores';
 
 @Component({
   selector: 'app-sidebar',
@@ -249,6 +249,52 @@ export type AppView = 'dashboard' | 'archive' | 'inventory' | 'logistics' | 'sup
             </div>
             <span class="font-medium tracking-tight">Ciudades y Sucursales</span>
           </button>
+
+          <!-- Reportes (CU25) — solo con reporte.ver. Primer ítem del sidebar
+               con gating por permiso (todos los demás renderizan siempre). -->
+          <button
+            *ngIf="canViewReports"
+            (click)="selectView('reports')"
+            [class.bg-indigo-50]="currentView === 'reports'"
+            [class.text-indigo-700]="currentView === 'reports'"
+            [class.font-semibold]="currentView === 'reports'"
+            [class.text-gray-600]="currentView !== 'reports'"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+          >
+            <div
+              [class.bg-indigo-600]="currentView === 'reports'"
+              [class.text-white]="currentView === 'reports'"
+              [class.bg-gray-100]="currentView !== 'reports'"
+              [class.text-gray-500]="currentView !== 'reports'"
+              class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">summarize</span>
+            </div>
+            <span class="font-medium tracking-tight">Reportes</span>
+          </button>
+
+          <!-- Indicadores (CU24) — mismo permiso que Reportes (reporte.ver),
+               mismo módulo de analítica, Administrador-only. -->
+          <button
+            *ngIf="canViewIndicadores"
+            (click)="selectView('indicadores')"
+            [class.bg-indigo-50]="currentView === 'indicadores'"
+            [class.text-indigo-700]="currentView === 'indicadores'"
+            [class.font-semibold]="currentView === 'indicadores'"
+            [class.text-gray-600]="currentView !== 'indicadores'"
+            class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+          >
+            <div
+              [class.bg-indigo-600]="currentView === 'indicadores'"
+              [class.text-white]="currentView === 'indicadores'"
+              [class.bg-gray-100]="currentView !== 'indicadores'"
+              [class.text-gray-500]="currentView !== 'indicadores'"
+              class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+            >
+              <span class="material-symbols-outlined text-[18px]">insights</span>
+            </div>
+            <span class="font-medium tracking-tight">Indicadores</span>
+          </button>
         </nav>
       </div>
 
@@ -284,6 +330,14 @@ export class SidebarComponent {
 
   get canOpenPos(): boolean {
     return this.authService.currentUser()?.permisos.includes('venta.crear') ?? false;
+  }
+
+  get canViewReports(): boolean {
+    return this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
+  }
+
+  get canViewIndicadores(): boolean {
+    return this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
   }
 
   selectView(view: AppView) {

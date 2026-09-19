@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import type { CartLine, Venta } from '../../../core/models';
 import { PaymentsService } from '../../../core/services/payments.service';
 import { SalesService } from '../../../core/services/sales.service';
+import { NotificationService } from '../../../core/services/notification.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../../shared/components/receipt-modal.component';
 
@@ -122,6 +123,7 @@ export class PurchaseModalComponent implements OnInit {
   constructor(
     private paymentsService: PaymentsService,
     private salesService: SalesService,
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit(): void {
@@ -189,10 +191,11 @@ export class PurchaseModalComponent implements OnInit {
     await this.intentarVenta();
   }
 
-  onCardFallo(_mensaje: string): void {
-    // El widget (card-payment.component.ts) ya notifico el rechazo. El
-    // clientSecret sigue montado: el usuario puede reintentar el pago sin
-    // crear un intento nuevo.
+  onCardFallo(mensaje: string): void {
+    // El widget (card-payment.component.ts) solo emite el evento, nunca
+    // muestra nada por si solo. El clientSecret sigue montado: el usuario
+    // puede reintentar el pago sin crear un intento nuevo.
+    this.notificationService.error('Pago rechazado', mensaje);
   }
 
   onCardCancelado(): void {

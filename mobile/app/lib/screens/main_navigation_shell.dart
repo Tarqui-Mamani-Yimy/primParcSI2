@@ -6,10 +6,17 @@ import '../providers/app_state.dart';
 import 'home_screen.dart';
 import 'collection_screen.dart';
 import 'try_on_screen.dart';
-import 'appointments_screen.dart';
 import 'profile_screen.dart';
 import 'cart_modal.dart';
+import 'chat_widget.dart';
 
+// "Citas" (appointments_screen.dart) se elimino: mezclaba dos conceptos —
+// "Reserva de Probador y Prendas" (duplicaba CU12, ya resuelto de verdad
+// en try_on_screen.dart/reservation_form_screen.dart desde la Fase 3) y
+// "Personal Shopping en Tienda" (un caso de uso que nunca existio en los
+// 25 CU documentados del proyecto — no era una integracion pendiente,
+// era una pantalla huerfana sin especificacion real detras). Decision del
+// usuario: sacarla en vez de inventar un backend para un CU inexistente.
 class MainNavigationShell extends StatelessWidget {
   const MainNavigationShell({super.key});
 
@@ -17,7 +24,6 @@ class MainNavigationShell extends StatelessWidget {
     HomeScreen(),
     CollectionScreen(),
     TryOnScreen(),
-    AppointmentsScreen(),
     ProfileScreen(),
   ];
 
@@ -86,6 +92,23 @@ class MainNavigationShell extends StatelessWidget {
         index: appState.currentTabIndex,
         children: _screens,
       ),
+      // Mobile Fase 4 (CU23): FAB persistente en el Scaffold unico que
+      // envuelve las 5 tabs via IndexedStack — visible sin importar en que
+      // tab este el usuario, equivalente movil del widget flotante fijo
+      // que ya existe en la web.
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AetherTheme.charcoalDark,
+        foregroundColor: AetherTheme.sandLight,
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const ChatWidget(),
+          );
+        },
+        child: const Icon(Icons.smart_toy_outlined),
+      ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AetherTheme.sandLight,
@@ -116,11 +139,6 @@ class MainNavigationShell extends StatelessWidget {
               icon: Icon(Icons.auto_awesome_outlined),
               activeIcon: Icon(Icons.auto_awesome),
               label: 'Try-On',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month_outlined),
-              activeIcon: Icon(Icons.calendar_month),
-              label: 'Citas',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),

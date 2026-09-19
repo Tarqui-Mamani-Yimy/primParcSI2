@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { InventoryLocation, InventoryStockEntry, StockAdjustIn, DispatchIn } from '../models';
+import { InventoryLocation, InventoryStockEntry, StockAdjustIn, StockIngresoIn, DispatchIn } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 
@@ -66,6 +66,33 @@ export class InventoryService {
       return true;
     }).catch((err) => {
       const msg = err.error?.detail || 'No se pudo ajustar el stock.';
+      this.notificationService.error('Error', msg);
+      return false;
+    });
+  }
+
+  receiveStock(
+    idProducto: number,
+    codigoSucursal: number,
+    cantidad: number,
+    idProveedor: number | null,
+    motivo?: string
+  ): Promise<boolean> {
+    const payload: StockIngresoIn = {
+      idProducto,
+      codigoSucursal,
+      cantidad,
+      idProveedor: idProveedor ?? undefined,
+      motivo: motivo || 'Ingreso de lote',
+    };
+    return firstValueFrom(
+      this.http.post(`${API_URL}/api/inventory/stock/ingreso`, payload)
+    ).then(() => {
+      this.loadStock(this.selectedLocationIdSignal());
+      this.notificationService.success('Ingreso registrado', `Stock inicial asignado (${cantidad} unidades).`);
+      return true;
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo registrar el ingreso de lote.';
       this.notificationService.error('Error', msg);
       return false;
     });

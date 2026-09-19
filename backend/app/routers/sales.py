@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,7 @@ from app.models import (
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut
 from app.security import get_current_payload, require_permiso
 from app.services.disponibilidad import resolver_inventario
+from app.services.recomendaciones_gemini import generar_recomendaciones_post_venta
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 
 router = APIRouter(prefix="/api/sales", tags=["sales"])
@@ -119,6 +120,7 @@ async def get_sale(idVenta: int, session: AsyncSession = Depends(get_db),
 async def create_sale(
     payload: VentaIn,
     request: Request,
+    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_db),
     auth: dict = Depends(require_permiso("venta.crear")),
 ):
@@ -238,6 +240,11 @@ async def create_sale(
     await _registrar_bitacora(session, f"Venta {venta.idVenta} creada", int(auth["sub"]), request.client.host if request.client else "0.0.0.0")
     await session.commit()
     await session.refresh(venta)
+
+    # CU22: recomendaciones generadas en background, DESPUES del commit —
+    # nunca demora la respuesta de la venta, y si Gemini falla la venta ya
+    # quedo persistida de todos modos (ver recomendaciones_gemini.py).
+    background_tasks.add_task(generar_recomendaciones_post_venta, id_cliente=id_cliente)
 
     detalles = (
         await session.execute(select(DetalleVenta).where(DetalleVenta.idVenta == venta.idVenta))

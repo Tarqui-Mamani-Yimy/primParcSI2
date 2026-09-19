@@ -24,6 +24,13 @@ import { InventoryStockEntry } from '../../core/models';
 
         <div class="flex items-center space-x-3">
           <button
+            (click)="openLoteModal()"
+            class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            <span>Ingreso de Lote</span>
+          </button>
+          <button
             (click)="openTransferModal()"
             class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
@@ -137,6 +144,70 @@ import { InventoryStockEntry } from '../../core/models';
 
     </div>
 
+    <!-- Modal: Ingreso de Lote (stock inicial / reabastecimiento) -->
+    <div *ngIf="showLoteModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-lg w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
+        <button (click)="showLoteModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+
+        <div class="mb-5">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Proveedores</span>
+          <h2 class="text-lg font-bold text-gray-900 mt-0.5">Ingreso de Lote</h2>
+          <p class="text-xs text-gray-500">Registre stock inicial o reabastecimiento para un producto en una sucursal.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Producto</label>
+            <select [(ngModel)]="loteProductoId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option *ngFor="let p of archiveService.products()" [ngValue]="p.idProducto">
+                {{ p.nombre }} ({{ p.tipo || 'Sin tipo' }} - {{ p.talla || 'S/T' }})
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal</label>
+              <select [(ngModel)]="loteSucursal" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
+                  {{ loc.nombre }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Cantidad (Piezas)</label>
+              <input type="number" min="1" [(ngModel)]="loteCantidad" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Proveedor (opcional)</label>
+            <select [(ngModel)]="loteProveedor" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option [ngValue]="null">Sin especificar</option>
+              <option *ngFor="let pr of archiveService.proveedores()" [ngValue]="pr.idProveedor">
+                {{ pr.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Motivo</label>
+            <input type="text" [(ngModel)]="loteMotivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Recepción de lote inicial..." />
+          </div>
+
+          <button
+            (click)="executeIngresoLote()"
+            [disabled]="!loteProductoId || !loteSucursal || loteCantidad < 1"
+            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+          >
+            Registrar Ingreso
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal: Transferencia entre sucursales -->
     <div *ngIf="showTransferModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-lg w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
@@ -204,12 +275,19 @@ import { InventoryStockEntry } from '../../core/models';
 export class InventoryComponent implements OnInit {
   selectedLocation = signal<string>('ALL');
   showTransferModal = signal<boolean>(false);
+  showLoteModal = signal<boolean>(false);
 
   transferProductoId: number | null = null;
   transferOrigen: number | null = null;
   transferDestino: number | null = null;
   transferCantidad = 1;
   transferMotivo = '';
+
+  loteProductoId: number | null = null;
+  loteSucursal: number | null = null;
+  loteCantidad = 1;
+  loteProveedor: number | null = null;
+  loteMotivo = '';
 
   constructor(
     public inventoryService: InventoryService,
@@ -220,6 +298,7 @@ export class InventoryComponent implements OnInit {
     this.inventoryService.loadLocations();
     this.inventoryService.loadStock();
     this.archiveService.loadProducts();
+    this.archiveService.loadProveedores();
   }
 
   filteredStock = computed(() => {
@@ -235,6 +314,33 @@ export class InventoryComponent implements OnInit {
     const newCantidad = item.cantidad_actual + delta;
     if (newCantidad < 0) return;
     this.inventoryService.adjustStock(item.idInv, newCantidad, 'Ajuste rápido desde UI');
+  }
+
+  openLoteModal() {
+    this.showLoteModal.set(true);
+    if (this.inventoryService.locations().length > 0 && !this.loteSucursal) {
+      this.loteSucursal = this.inventoryService.locations()[0].codigoSucursal;
+    }
+  }
+
+  executeIngresoLote() {
+    if (!this.loteProductoId || !this.loteSucursal || this.loteCantidad < 1) return;
+
+    this.inventoryService.receiveStock(
+      this.loteProductoId,
+      this.loteSucursal,
+      this.loteCantidad,
+      this.loteProveedor,
+      this.loteMotivo || 'Ingreso de lote'
+    ).then((ok) => {
+      if (ok) {
+        this.showLoteModal.set(false);
+        this.loteProductoId = null;
+        this.loteProveedor = null;
+        this.loteMotivo = '';
+        this.loteCantidad = 1;
+      }
+    });
   }
 
   openTransferModal() {

@@ -277,7 +277,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
             <input type="url" [(ngModel)]="newProduct.imagen_url" name="imagen_url" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://..." />
           </div>
 
-          <button type="submit" [disabled]="!newProduct.nombre || !newProduct.costo || !newProduct.venta || !newProduct.idProveedor || !newProduct.idColeccion" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
+          <button type="submit" [disabled]="!newProduct.nombre || newProduct.costo == null || newProduct.venta == null || !newProduct.idProveedor || !newProduct.idColeccion" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
             Guardar Producto
           </button>
         </form>
@@ -336,7 +336,7 @@ export class ArchiveComponent implements OnInit {
   }
 
   saveNewProduct() {
-    if (!this.newProduct.nombre || !this.newProduct.costo || !this.newProduct.venta || !this.newProduct.idProveedor || !this.newProduct.idColeccion) return;
+    if (!this.newProduct.nombre || this.newProduct.costo == null || this.newProduct.venta == null || !this.newProduct.idProveedor || !this.newProduct.idColeccion) return;
 
     this.archiveService.addProduct({
       nombre: this.newProduct.nombre!,

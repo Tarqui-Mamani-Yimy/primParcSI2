@@ -158,6 +158,14 @@ export interface StockAdjustIn {
   signo: 'set' | 'add' | 'subtract';
 }
 
+export interface StockIngresoIn {
+  idProducto: number;
+  codigoSucursal: number;
+  cantidad: number;
+  idProveedor?: number | null;
+  motivo?: string | null;
+}
+
 // ─────────────────────────────────────────────
 // DISPATCHES (Contrato real backend)
 // ─────────────────────────────────────────────
@@ -355,6 +363,138 @@ export interface SucursalIn {
   nombre: string;
   direccion: string;
   idCiudad: number;
+}
+
+// ─────────────────────────────────────────────
+// REPORTS (CU25 — Contrato real backend)
+// ─────────────────────────────────────────────
+
+export interface ReportFiltrosOut {
+  fecha_desde: string | null;
+  fecha_hasta: string | null;
+  codigoSucursal: number | null;
+  idProducto: number | null;
+}
+
+export interface VentaReporteFila {
+  idProducto: number;
+  producto_nombre: string;
+  codigoSucursal: number;
+  sucursal_nombre: string;
+  cantidad_vendida: number;
+  monto: number;
+}
+
+export interface VentaReporteOut {
+  filas: VentaReporteFila[];
+  total_monto: number;
+  total_items: number;
+  filtros: ReportFiltrosOut;
+}
+
+export interface InventarioReporteFila {
+  idProducto: number;
+  producto_nombre: string;
+  codigoSucursal: number;
+  sucursal_nombre: string;
+  cantidad_actual: number;
+  cantidad_reservada: number;
+}
+
+export interface InventarioReporteOut {
+  filas: InventarioReporteFila[];
+  filtros: ReportFiltrosOut;
+}
+
+// fecha_desde/fecha_hasta son ISO date strings (YYYY-MM-DD). Inventario no
+// admite filtro de fechas (es una foto del stock actual, no un histórico).
+export interface SalesReportFiltros {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  codigoSucursal?: number;
+  idProducto?: number;
+}
+
+export interface InventoryReportFiltros {
+  codigoSucursal?: number;
+  idProducto?: number;
+}
+
+// ─────────────────────────────────────────────
+// INDICADORES / DASHBOARD (CU24 — Contrato real backend)
+// ─────────────────────────────────────────────
+
+export interface KpisOut {
+  total_ventas_monto: number;
+  total_ventas_items: number;
+  stock_total: number;
+  productos_bajo_stock: number;
+}
+
+export interface VentaDiariaFila {
+  fecha: string;
+  monto: number;
+  cantidad: number;
+}
+
+export interface VentasDiariasOut {
+  dias: VentaDiariaFila[];
+}
+
+export interface TopProductoFila {
+  idProducto: number;
+  producto_nombre: string;
+  monto: number;
+  cantidad: number;
+}
+
+export interface TopProductosOut {
+  productos: TopProductoFila[];
+}
+
+export interface StockSucursalFila {
+  codigoSucursal: number;
+  sucursal_nombre: string;
+  stock_total: number;
+}
+
+export interface StockPorSucursalOut {
+  sucursales: StockSucursalFila[];
+}
+
+// fecha_desde/fecha_hasta son ISO date strings (YYYY-MM-DD), opcionales
+// (igual que Reports). stock-por-sucursal no admite fechas (foto actual).
+export interface IndicadoresFiltros {
+  fecha_desde?: string;
+  fecha_hasta?: string;
+}
+
+// ─────────────────────────────────────────────
+// CHAT (CU23 — Contrato real backend)
+// ─────────────────────────────────────────────
+
+export interface ChatMensaje {
+  role: 'user' | 'model';
+  texto: string;
+}
+
+export interface ChatIn {
+  mensaje: string;
+  historial: ChatMensaje[];
+}
+
+export interface ChatOut {
+  respuesta: string;
+  historial: ChatMensaje[];
+}
+
+export interface RecomendacionOut {
+  idRecomendacion: number;
+  nombre: string;
+  importancia: 'Alta' | 'Media' | 'Baja';
+  idCliente: number;
+  idProducto: number | null;
+  producto_nombre: string | null;
 }
 
 // ─────────────────────────────────────────────

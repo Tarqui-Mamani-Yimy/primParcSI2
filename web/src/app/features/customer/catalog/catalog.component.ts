@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../../core/services/archive.service';
 import { CartService } from '../../../core/services/cart.service';
-import { CartLine, ProductOut } from '../../../core/models';
+import { RecommendationsService } from '../../../core/services/recommendations.service';
+import { CartLine, ProductOut, RecomendacionOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
 import { PurchaseModalComponent } from '../checkout/purchase-modal.component';
@@ -30,6 +31,32 @@ const PAGE_SIZE = 12;
         <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Explorar Productos</h1>
         <p class="text-xs text-gray-500 mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
+      </div>
+
+      <!-- Recomendado para vos (CU22, IA) -->
+      <div *ngIf="recomendaciones().length > 0" class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
+        <div class="flex items-center gap-1.5 mb-3">
+          <span class="material-symbols-outlined text-[16px] text-indigo-600">auto_awesome</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-indigo-700">Recomendado para vos</span>
+        </div>
+        <div class="flex gap-3 overflow-x-auto pb-1">
+          <button
+            *ngFor="let r of recomendaciones()"
+            (click)="openRecomendacion(r)"
+            [disabled]="r.idProducto === null"
+            class="shrink-0 w-44 text-left bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all p-3 cursor-pointer disabled:cursor-default disabled:opacity-60"
+          >
+            <span
+              class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider mb-1.5"
+              [ngClass]="{
+                'bg-rose-100 text-rose-700': r.importancia === 'Alta',
+                'bg-amber-100 text-amber-700': r.importancia === 'Media',
+                'bg-gray-100 text-gray-600': r.importancia === 'Baja'
+              }"
+            >{{ r.importancia }}</span>
+            <p class="text-xs font-bold text-gray-900 leading-snug line-clamp-2">{{ r.producto_nombre || r.nombre }}</p>
+          </button>
+        </div>
       </div>
 
       <!-- Filtros -->
@@ -194,6 +221,7 @@ export class CatalogComponent implements OnInit {
   page = signal<number>(1);
   selectedProductId = signal<number | null>(null);
   reservandoProducto = signal<ProductOut | null>(null);
+  recomendaciones = signal<RecomendacionOut[]>([]);
 
   // Foto congelada de las lineas a pagar (CU16 D3): buy-now guarda un
   // arreglo de una sola linea, "Finalizar compra" del carrito guarda
@@ -213,12 +241,19 @@ export class CatalogComponent implements OnInit {
   constructor(
     public archiveService: ArchiveService,
     private cartService: CartService,
+    private recommendationsService: RecommendationsService,
   ) {}
 
   ngOnInit() {
     this.archiveService.loadColecciones();
     this.archiveService.loadProveedores();
     this.fetchProducts();
+    this.recommendationsService.getMisRecomendaciones().then(list => this.recomendaciones.set(list));
+  }
+
+  openRecomendacion(r: RecomendacionOut) {
+    if (r.idProducto === null) return;
+    this.selectedProductId.set(r.idProducto);
   }
 
   onFilterChange() {

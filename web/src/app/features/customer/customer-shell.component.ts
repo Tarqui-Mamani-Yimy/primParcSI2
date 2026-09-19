@@ -5,13 +5,14 @@ import { CartService } from '../../core/services/cart.service';
 import { CustomerProfileComponent } from './profile/customer-profile.component';
 import { CatalogComponent } from './catalog/catalog.component';
 import { CustomerReservationsComponent } from './reservations/customer-reservations.component';
+import { ChatWidgetComponent } from '../../shared/components/chat-widget.component';
 
 export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
 @Component({
   selector: 'app-customer-shell',
   standalone: true,
-  imports: [CommonModule, CustomerProfileComponent, CatalogComponent, CustomerReservationsComponent],
+  imports: [CommonModule, CustomerProfileComponent, CatalogComponent, CustomerReservationsComponent, ChatWidgetComponent],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
 
@@ -125,6 +126,8 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
         <app-customer-profile *ngIf="currentView() === 'profile'"></app-customer-profile>
       </main>
+
+      <app-chat-widget></app-chat-widget>
     </div>
   `
 })

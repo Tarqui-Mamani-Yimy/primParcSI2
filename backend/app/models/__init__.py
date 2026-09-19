@@ -291,6 +291,9 @@ class Recomendaciones(Base):
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     importancia: Mapped[str] = mapped_column(String(30), default="Media")
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    # Migracion 012 (CU22) — nullable: filas creadas por staff antes de esta
+    # migracion no tenian vinculo real al catalogo.
+    idProducto: Mapped[int | None] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"))
 
 
 class Historial(Base):

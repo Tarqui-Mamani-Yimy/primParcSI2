@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- CU11 (Vestidor Virtual RA): camara para el probador virtual. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Mobile Fase 2 (checkout): sin esto, un build que no sea debug no
+         puede garantizar acceso a red (debug lo auto-agrega, release no). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="app"
         android:name="${applicationName}"

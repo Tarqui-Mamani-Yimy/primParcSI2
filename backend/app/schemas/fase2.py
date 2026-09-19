@@ -123,6 +123,14 @@ class ClienteUpdate(BaseModel):
     idUser: Optional[int] = None
 
 
+class ClienteMeUpdate(BaseModel):
+    # Autogestion (GET/PUT /api/customers/me): nunca acepta idUser ni correo
+    # — esos cambian por otro flujo (o nunca), no por edicion de perfil.
+    nombre: Optional[str] = None
+    telefono: Optional[str] = None
+    direccion: Optional[str] = None
+
+
 class MetodoPagoOut(ORMModel):
     idMetPago: int
     tipo: str
@@ -213,18 +221,22 @@ class RecomendacionOut(ORMModel):
     nombre: str
     importancia: Optional[str] = None
     idCliente: int
+    idProducto: Optional[int] = None
+    producto_nombre: Optional[str] = None
 
 
 class RecomendacionIn(BaseModel):
     nombre: str
     importancia: str = "Media"
     idCliente: int
+    idProducto: Optional[int] = None
 
 
 class RecomendacionUpdate(BaseModel):
     nombre: Optional[str] = None
     importancia: Optional[str] = None
     idCliente: Optional[int] = None
+    idProducto: Optional[int] = None
 
 
 class PurchaseHistoryItem(BaseModel):

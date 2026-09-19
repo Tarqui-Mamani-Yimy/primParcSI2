@@ -14,6 +14,21 @@ dependencies:
   cached_network_image: ^3.3.1
   intl: ^0.19.0
   cupertino_icons: ^1.0.6
+  # CU11 (Vestidor Virtual RA) — version numbers are a best estimate, NOT
+  # verified against pub.dev in this session (no Flutter toolchain
+  # available here). Run `flutter pub outdated` before trusting these.
+  camera: ^0.11.0
+  google_mlkit_pose_detection: ^0.13.0
+  # Mobile Fase 1 (infra + auth + catalogo real) — mismo aviso: versiones
+  # estimadas, no verificadas contra pub.dev.
+  http: ^1.2.0
+  flutter_secure_storage: ^9.2.0
+  # Mobile Fase 2 (checkout real con Stripe) — mismo aviso: versiones
+  # estimadas, no verificadas contra pub.dev. `uuid` se agrega porque el
+  # backend espera `claveIntento` como un UUID valido (pydantic `UUID`) y
+  # no habia ningun generador de UUID en el proyecto todavia.
+  flutter_stripe: ^11.1.0
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:
