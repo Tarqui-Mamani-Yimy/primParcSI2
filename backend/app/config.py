@@ -31,6 +31,12 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str | None = None
 
+    # Storage de imagenes de producto via Supabase Storage (bucket publico
+    # "primSI2") — storage_supabase.py usa la service role key para subir.
+    SUPABASE_URL: str | None = None
+    SUPABASE_SERVICE_ROLE_KEY: str | None = None
+    SUPABASE_STORAGE_BUCKET: str = "primSI2"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

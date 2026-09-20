@@ -83,6 +83,10 @@ class ProductoOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ImagenUploadOut(BaseModel):
+    imagen_url: str
+
+
 class PaginatedProductos(BaseModel):
     items: list[ProductoOut]
     total: int

@@ -67,6 +67,19 @@ export class ArchiveService {
     });
   }
 
+  uploadImagen(file: File): Promise<string | null> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return firstValueFrom(
+      this.http.post<{ imagen_url: string }>(`${API_URL}/api/products/upload-imagen`, formData)
+    ).then((res) => res.imagen_url).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo subir la imagen.';
+      this.notificationService.error('Error', msg);
+      return null;
+    });
+  }
+
   addProduct(newProduct: ProductoIn): Promise<ProductOut | null> {
     return firstValueFrom(
       this.http.post<ProductOut>(`${API_URL}/api/products`, newProduct)

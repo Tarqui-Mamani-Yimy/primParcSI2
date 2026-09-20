@@ -273,11 +273,18 @@ import { ProductOut, ProductoIn } from '../../core/models';
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">URL de Imagen</label>
-            <input type="url" [(ngModel)]="newProduct.imagen_url" name="imagen_url" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="https://..." />
+            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Imagen del Producto</label>
+            <div class="mt-1 flex items-center gap-3">
+              <img *ngIf="newProduct.imagen_url" [src]="newProduct.imagen_url" class="w-14 h-14 rounded-lg object-cover border border-gray-200" />
+              <label class="flex-1 cursor-pointer px-3.5 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 text-center hover:border-indigo-400 hover:text-indigo-600 transition-colors">
+                <span *ngIf="uploadingImagen()">Subiendo...</span>
+                <span *ngIf="!uploadingImagen()">{{ newProduct.imagen_url ? 'Cambiar imagen' : 'Seleccionar imagen (JPEG, PNG o WEBP)' }}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImagenSelected($event)" [disabled]="uploadingImagen()" class="hidden" />
+              </label>
+            </div>
           </div>
 
-          <button type="submit" [disabled]="!newProduct.nombre || newProduct.costo == null || newProduct.venta == null || !newProduct.idProveedor || !newProduct.idColeccion" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
+          <button type="submit" [disabled]="!newProduct.nombre || newProduct.costo == null || newProduct.venta == null || !newProduct.idProveedor || !newProduct.idColeccion || uploadingImagen()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
             Guardar Producto
           </button>
         </form>
@@ -288,6 +295,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
 export class ArchiveComponent implements OnInit {
   inspectingItem = signal<ProductOut | null>(null);
   showCreateModal = signal<boolean>(false);
+  uploadingImagen = signal<boolean>(false);
 
   searchQuery = '';
   filterTipo = '';
@@ -333,6 +341,21 @@ export class ArchiveComponent implements OnInit {
 
   openCreateModal() {
     this.showCreateModal.set(true);
+  }
+
+  async onImagenSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.uploadingImagen.set(true);
+    const url = await this.archiveService.uploadImagen(file);
+    this.uploadingImagen.set(false);
+    input.value = '';
+
+    if (url) {
+      this.newProduct.imagen_url = url;
+    }
   }
 
   saveNewProduct() {

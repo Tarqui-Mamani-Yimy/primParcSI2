@@ -1,20 +1,30 @@
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Colecciones, Producto, Proveedor, Temporada
 from app.schemas.products import (
+    ImagenUploadOut,
     PaginatedProductos,
     ProductoIn,
     ProductoOut,
     ProductoUpdate,
 )
 from app.security import require_permiso
+from app.services.storage_supabase import (
+    SupabaseNoConfigurado,
+    SupabaseStorageError,
+    subir_imagen_producto,
+    supabase_configurado,
+)
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+
+_TIPOS_IMAGEN_PERMITIDOS = {"image/jpeg", "image/png", "image/webp"}
+_TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024
 
 
 async def _serialize(producto: Producto, session: AsyncSession) -> ProductoOut:
@@ -85,6 +95,37 @@ async def list_products(
         size=size,
         pages=ceil(total / size) if total else 0,
     )
+
+
+@router.post("/upload-imagen", response_model=ImagenUploadOut)
+async def upload_imagen_producto(
+    file: UploadFile = File(...),
+    _=Depends(require_permiso("producto.crear")),
+):
+    if not supabase_configurado():
+        raise HTTPException(
+            status_code=503, detail="Almacenamiento de imagenes no configurado"
+        )
+    if file.content_type not in _TIPOS_IMAGEN_PERMITIDOS:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de imagen no soportado (solo JPEG, PNG o WEBP)",
+        )
+
+    contenido = await file.read()
+    if len(contenido) > _TAMANO_MAXIMO_BYTES:
+        raise HTTPException(status_code=400, detail="La imagen supera los 5MB")
+
+    try:
+        url = await subir_imagen_producto(file.filename or "imagen", contenido)
+    except SupabaseNoConfigurado:
+        raise HTTPException(
+            status_code=503, detail="Almacenamiento de imagenes no configurado"
+        )
+    except SupabaseStorageError as exc:
+        raise HTTPException(status_code=502, detail=f"Error subiendo imagen: {exc}")
+
+    return ImagenUploadOut(imagen_url=url)
 
 
 @router.get("/{idProducto}", response_model=ProductoOut)
