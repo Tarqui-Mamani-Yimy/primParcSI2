@@ -88,3 +88,34 @@ on a device/emulator themselves before trusting this is correct.**
 T1-T5 implementation (delegated), then hand off T6 verification to the
 user explicitly — this is the first CU this session that cannot be
 self-verified before declaring done.
+
+## Update 2026-09-20 — primer build real, encontrado y arreglado un bug real
+Usuario corrió `flutter run` de verdad. `google_mlkit_pose_detection: ^0.13.0`
+compiló sin errores (solo un warning de "unchecked operations", no
+bloqueante). `camera: ^0.11.0` SÍ rompió el build:
+
+```
+error: Cannot attach type annotations @org.jspecify.annotations.NonNull to
+SurfaceRequest.mSurfaceRecreationCompleter: class file for
+androidx.concurrent.futures.CallbackToFutureAdapter not found
+Execution failed for task ':camera_android_camerax:compileDebugJavaWithJavac'.
+```
+
+Causa raíz (verificada con WebSearch/WebFetch contra pub.dev y
+github.com/flutter/flutter/issues/177972, no adivinada): Gradle 9.x (el
+proyecto usa AGP 9.1.0/Gradle 9.3.1) dejó de promover dependencias
+transitivas automáticamente — `camera_android_camerax` necesitaba una
+versión >= 0.7.4+6 (donde se agregó la dependencia explícita a
+`androidx.concurrent:concurrent-futures`) para compilar bajo Gradle 9. El
+pin `camera: ^0.11.0` resolvía a una versión más vieja de
+`camera_android_camerax` sin ese fix.
+
+**Fix aplicado**: `pubspec.yaml` — `camera: ^0.11.0` → `^0.12.1` (versión
+real actual confirmada en pub.dev, depende de `camera_android_camerax ^0.7.4`
+que sí resuelve al fix). Sin cambios de código Dart — las APIs de `camera`
+usadas en `ar_try_on_screen.dart` (`CameraController`, `availableCameras()`,
+`CameraLensDirection`, `CameraImage`, `ImageFormatGroup`, `CameraPreview`,
+`CameraException`) son estables entre 0.11.x y 0.12.x.
+
+**Siguiente paso del usuario**: `flutter pub get` (para bajar la versión
+nueva) y `flutter run` de nuevo.

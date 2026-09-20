@@ -10,7 +10,14 @@
 /// nunca `localhost` ni `10.0.2.2` (esos solo tienen sentido en el
 /// emulador).
 class ApiConfig {
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  // Cambiado a la IP LAN real de la maquina que corre el backend: el
+  // dispositivo de prueba resulto ser FISICO (ID de adb "22021211RG", no
+  // un emulador), asi que `10.0.2.2` (que solo el emulador entiende) nunca
+  // iba a conectar — de ahi el "No se pudo conectar con el servidor".
+  // Si volves a probar en el EMULADOR de Android, cambiar de nuevo a
+  // 'http://10.0.2.2:8000'. Esta IP puede cambiar si la maquina se
+  // reconecta al WiFi — verificar con `ip -4 addr show` si deja de andar.
+  static const String baseUrl = 'http://192.168.100.13:8000';
 
   // Claves de flutter_secure_storage. Compartidas entre ApiClient (lee el
   // token para el header Authorization) y AuthService (lo escribe/borra) —

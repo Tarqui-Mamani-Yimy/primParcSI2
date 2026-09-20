@@ -38,8 +38,8 @@ class ApiClient {
   Uri _uri(String path, [Map<String, dynamic>? query]) {
     final cleanQuery = query == null
         ? null
-        : query.map((k, v) => MapEntry(k, v.toString()))
-          ..removeWhere((k, v) => v == 'null');
+        : (query.map((k, v) => MapEntry(k, v.toString()))
+          ..removeWhere((k, v) => v == 'null'));
     return Uri.parse('${ApiConfig.baseUrl}$path').replace(
       queryParameters: cleanQuery != null && cleanQuery.isNotEmpty ? cleanQuery : null,
     );

@@ -14,10 +14,18 @@ dependencies:
   cached_network_image: ^3.3.1
   intl: ^0.19.0
   cupertino_icons: ^1.0.6
-  # CU11 (Vestidor Virtual RA) — version numbers are a best estimate, NOT
-  # verified against pub.dev in this session (no Flutter toolchain
-  # available here). Run `flutter pub outdated` before trusting these.
-  camera: ^0.11.0
+  # CU11 (Vestidor Virtual RA). `camera` estaba pineado a ^0.11.0 (estimado
+  # sin verificar) y eso resolvia una version de `camera_android_camerax`
+  # ANTERIOR a la 0.7.4+6, que es donde se agrego la dependencia explicita
+  # a `androidx.concurrent:concurrent-futures` que Gradle 9.x necesita para
+  # compilar `camera-core` (Gradle 9 dejo de promover dependencias
+  # transitivas — ver github.com/flutter/flutter/issues/177972). Confirmado
+  # via WebFetch/WebSearch a pub.dev: `camera` 0.12.1 (version real actual)
+  # ya depende de `camera_android_camerax ^0.7.4`, que resuelve a 0.7.4+6+
+  # con el fix. `google_mlkit_pose_detection` 0.13.0 ya compilo bien en el
+  # build real del usuario (sin errores, solo un warning de "unchecked
+  # operations") — no se toca.
+  camera: ^0.12.1
   google_mlkit_pose_detection: ^0.13.0
   # Mobile Fase 1 (infra + auth + catalogo real) — mismo aviso: versiones
   # estimadas, no verificadas contra pub.dev.

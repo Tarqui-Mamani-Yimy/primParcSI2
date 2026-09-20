@@ -82,6 +82,42 @@ debug sin esto. Se agrega en esta fase.
 - Fallo de venta post-cobro: nunca cobra dos veces, retiene `idMetPago`,
   botón de reintento explícito.
 
+## Update 2026-09-20 — crash real al arrancar, arreglado
+Con el fix de CU11 (`camera ^0.12.1`) aplicado, el build compiló y se
+instaló, pero la app abría en pantalla negra. Log real:
+
+```
+E/flutter: Unhandled Exception: PlatformException(flutter_stripe
+initialization failed, The plugin failed to initialize:
+Your Main Activity class com.example.app.MainActivity is not a subclass
+FlutterFragmentActivity...)
+#4 main (package:aether_fashion/main.dart:22:3)
+```
+
+Causa: la excepción ocurre DENTRO de `main()` (en
+`Stripe._initialise`, llamado desde el `main.dart` que la Fase 2 agregó),
+antes de que se dibuje cualquier widget — de ahí la pantalla negra, no un
+problema de layout. `flutter_stripe` requiere que `MainActivity` extienda
+`FlutterFragmentActivity` (PaymentSheet usa el Support Fragment Manager
+para su UI) y que el tema Android debajo descienda de
+`Theme.AppCompat`/`Theme.MaterialComponents` — ninguna de las dos cosas se
+había tocado cuando se agregó Stripe en esta fase (son archivos nativos de
+Android, fuera del `pubspec.yaml`/código Dart que se venía editando).
+Verificado contra la documentacion oficial de flutter_stripe (no adivinado).
+
+**Fix aplicado** (3 archivos nativos de Android, sin tocar Dart):
+- `android/app/src/main/kotlin/com/example/app/MainActivity.kt`:
+  `FlutterActivity` → `FlutterFragmentActivity`.
+- `android/app/src/main/res/values/styles.xml` y `values-night/styles.xml`:
+  `LaunchTheme`/`NormalTheme` pasan de
+  `@android:style/Theme.Light.NoTitleBar` (nativo, sin AppCompat) a
+  `Theme.AppCompat...NoActionBar`/`Theme.MaterialComponents...NoActionBar`
+  (`.NoActionBar` en ambos para no meter una toolbar nativa encima de la
+  UI que ya arma Flutter).
+
+**Siguiente paso del usuario**: `flutter run` de nuevo (no hace falta
+`pub get`, no cambió ninguna dependencia).
+
 ## Progress
 - 2026-09-19: Fase 1 (infra+auth+catálogo) completada. Usuario confirmó
   Fase 2 = Checkout. Contrato de pagos/ventas ya verificado contra el

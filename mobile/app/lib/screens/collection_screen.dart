@@ -151,7 +151,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '$${product.price.toInt()}',
+                      '\$${product.price.toInt()}',
                       style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
                     ),
                     const SizedBox(height: 8),

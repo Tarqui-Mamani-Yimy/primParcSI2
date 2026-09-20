@@ -132,7 +132,7 @@ class TryOnScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 9)),
-                        Text('$${p.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 9, color: const Color(0xFF7B776E))),
+                        Text('\$${p.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 9, color: const Color(0xFF7B776E))),
                       ],
                     ),
                   ),
@@ -221,7 +221,7 @@ class TryOnScreen extends StatelessWidget {
             height: 48,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.shopping_bag_outlined, size: 16),
-              label: Text('ANADIR A LA BOLSA ($${product.price.toInt()})', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              label: Text('ANADIR A LA BOLSA (\$${product.price.toInt()})', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AetherTheme.charcoalDark,
                 foregroundColor: AetherTheme.sandLight,
