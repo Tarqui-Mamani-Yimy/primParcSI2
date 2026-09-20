@@ -20,11 +20,11 @@ class Settings(BaseSettings):
 
     DEBUG: bool = False
 
-    SMTP_HOST: str | None = None
-    SMTP_PORT: int = 587
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    SMTP_FROM: str | None = None
+    # Recuperacion de contrasena via la API transaccional de Brevo (no SMTP
+    # — email_utils.py llama a api.brevo.com directamente con esta key).
+    BREVO_API_KEY: str | None = None
+    BREVO_SENDER_EMAIL: str | None = None
+    BREVO_SENDER_NAME: str = "YouShop"
 
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_PUBLISHABLE_KEY: str | None = None
