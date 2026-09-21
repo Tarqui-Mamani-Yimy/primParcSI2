@@ -59,6 +59,10 @@ async def _serialize(c: Cliente, session: AsyncSession) -> ClienteFull:
         direccion=c.direccion,
         idUser=c.idUser,
         correo=u.correo if u else None,
+        altura=c.altura,
+        pecho=c.pecho,
+        cintura=c.cintura,
+        tiro=c.tiro,
     )
 
 

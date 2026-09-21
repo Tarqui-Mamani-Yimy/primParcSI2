@@ -12,9 +12,11 @@ import 'purchase_history_screen.dart';
 
 /// Mobile Fase 6: perfil real (`GET/PUT /api/customers/me`). El header
 /// (nombre/correo/telefono/direccion) pasa a ser el Cliente real
-/// autenticado; Medidas Biometricas / AI Style Insights / Looks Guardados
-/// siguen mock (`appState.userProfile`) — no tienen modelo en el backend,
-/// limitacion ya documentada esta sesion, fuera de alcance de esta fase.
+/// autenticado. CU11 (determinar ajuste de prenda): Medidas Biometricas
+/// tambien pasa a ser real (`ClienteMe.altura/pecho/cintura/tiro`,
+/// persistidas en el backend). AI Style Insights / Looks Guardados siguen
+/// mock (`appState.userProfile`) — no tienen modelo en el backend, fuera
+/// de alcance.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -132,45 +134,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showRecalibrateDialog(BuildContext context, AppState appState) {
-    final m = appState.userProfile.measurements;
-    final hCtrl = TextEditingController(text: '${m.height}');
-    final cCtrl = TextEditingController(text: '${m.chest}');
-    final wCtrl = TextEditingController(text: '${m.waist}');
-    final iCtrl = TextEditingController(text: '${m.inseam}');
+  void _showRecalibrateDialog(BuildContext context) {
+    final perfil = _miPerfil;
+    if (perfil == null) return;
+    final hCtrl = TextEditingController(text: perfil.altura?.toString() ?? '');
+    final cCtrl = TextEditingController(text: perfil.pecho?.toString() ?? '');
+    final wCtrl = TextEditingController(text: perfil.cintura?.toString() ?? '');
+    final iCtrl = TextEditingController(text: perfil.tiro?.toString() ?? '');
+    bool guardando = false;
+    String? error;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AetherTheme.sandLight,
-        title: Text('Recalibrar Medidas', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: hCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Altura (cm)')),
-              TextField(controller: cCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Pecho (cm)')),
-              TextField(controller: wCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cintura (cm)')),
-              TextField(controller: iCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Tiro (cm)')),
-            ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AetherTheme.sandLight,
+          title: Text('Recalibrar Medidas', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(controller: hCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Altura (cm)')),
+                TextField(controller: cCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Pecho (cm)')),
+                TextField(controller: wCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cintura (cm)')),
+                TextField(controller: iCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Tiro (cm)')),
+                if (error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(error!, style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700)),
+                ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: guardando ? null : () => Navigator.of(ctx).pop(), child: const Text('CANCELAR')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AetherTheme.charcoalDark, foregroundColor: AetherTheme.sandLight),
+              onPressed: guardando
+                  ? null
+                  : () async {
+                      setDialogState(() {
+                        guardando = true;
+                        error = null;
+                      });
+                      try {
+                        final actualizado = await _customerService.actualizarPerfil(
+                          altura: int.tryParse(hCtrl.text),
+                          pecho: int.tryParse(cCtrl.text),
+                          cintura: int.tryParse(wCtrl.text),
+                          tiro: int.tryParse(iCtrl.text),
+                        );
+                        if (!mounted) return;
+                        setState(() => _miPerfil = actualizado);
+                        if (ctx.mounted) Navigator.of(ctx).pop();
+                      } on ApiException catch (e) {
+                        setDialogState(() {
+                          guardando = false;
+                          error = e.message;
+                        });
+                      } catch (_) {
+                        setDialogState(() {
+                          guardando = false;
+                          error = 'No se pudieron guardar las medidas.';
+                        });
+                      }
+                    },
+              child: Text(guardando ? 'GUARDANDO…' : 'GUARDAR'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('CANCELAR')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AetherTheme.charcoalDark, foregroundColor: AetherTheme.sandLight),
-            onPressed: () {
-              appState.updateMeasurements(
-                int.tryParse(hCtrl.text) ?? m.height,
-                int.tryParse(cCtrl.text) ?? m.chest,
-                int.tryParse(wCtrl.text) ?? m.waist,
-                int.tryParse(iCtrl.text) ?? m.inseam,
-              );
-              Navigator.of(ctx).pop();
-            },
-            child: const Text('GUARDAR'),
-          ),
-        ],
       ),
     );
   }
@@ -325,10 +356,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _measureItem('ALTURA', '${profile.measurements.height} cm'),
-                    _measureItem('PECHO', '${profile.measurements.chest} cm'),
-                    _measureItem('CINTURA', '${profile.measurements.waist} cm'),
-                    _measureItem('TIRO', '${profile.measurements.inseam} cm'),
+                    _measureItem('ALTURA', _miPerfil?.altura != null ? '${_miPerfil!.altura} cm' : '—'),
+                    _measureItem('PECHO', _miPerfil?.pecho != null ? '${_miPerfil!.pecho} cm' : '—'),
+                    _measureItem('CINTURA', _miPerfil?.cintura != null ? '${_miPerfil!.cintura} cm' : '—'),
+                    _measureItem('TIRO', _miPerfil?.tiro != null ? '${_miPerfil!.tiro} cm' : '—'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -343,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       side: const BorderSide(color: AetherTheme.charcoalDark),
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
-                    onPressed: () => _showRecalibrateDialog(context, appState),
+                    onPressed: _miPerfil == null ? null : () => _showRecalibrateDialog(context),
                   ),
                 ),
               ],

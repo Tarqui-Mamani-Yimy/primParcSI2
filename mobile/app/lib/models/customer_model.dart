@@ -9,6 +9,12 @@ class ClienteMe {
   final String? direccion;
   final int idUser;
   final String? correo;
+  // Medidas biometricas (CU11 — determinar si una prenda le queda al
+  // cliente), en cm. `null` = el cliente todavia no las cargo.
+  final int? altura;
+  final int? pecho;
+  final int? cintura;
+  final int? tiro;
 
   const ClienteMe({
     required this.idCliente,
@@ -17,6 +23,10 @@ class ClienteMe {
     this.direccion,
     required this.idUser,
     this.correo,
+    this.altura,
+    this.pecho,
+    this.cintura,
+    this.tiro,
   });
 
   factory ClienteMe.fromJson(Map<String, dynamic> json) {
@@ -27,6 +37,10 @@ class ClienteMe {
       direccion: json['direccion'] as String?,
       idUser: json['idUser'] as int,
       correo: json['correo'] as String?,
+      altura: json['altura'] as int?,
+      pecho: json['pecho'] as int?,
+      cintura: json['cintura'] as int?,
+      tiro: json['tiro'] as int?,
     );
   }
 }

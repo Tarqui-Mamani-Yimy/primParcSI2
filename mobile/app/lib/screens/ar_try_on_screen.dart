@@ -7,6 +7,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 import '../models/product_model.dart';
+import '../services/api_client.dart';
+import '../services/customer_service.dart';
+import '../services/size_chart.dart';
 import '../theme/aether_theme.dart';
 
 /// CU11 — Vestidor Virtual (RA), version acotada: camara real en vivo +
@@ -31,12 +34,24 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
   bool _permissionDenied = false;
   String? _errorMessage;
   Pose? _lastPose;
+  final CustomerService _customerService = CustomerService(ApiClient());
+  int? _pecho;
+  int? _cintura;
 
   @override
   void initState() {
     super.initState();
     _poseDetector = PoseDetector(options: PoseDetectorOptions());
     _initCamera();
+    // CU11 — mismo veredicto de ajuste que la vista estatica, no depende
+    // de la deteccion de pose (la talla ya viene del producto elegido).
+    _customerService.getMiPerfil().then((perfil) {
+      if (!mounted) return;
+      setState(() {
+        _pecho = perfil.pecho;
+        _cintura = perfil.cintura;
+      });
+    }).catchError((_) {});
   }
 
   Future<void> _initCamera() async {
@@ -179,10 +194,27 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
 
     final pose = _lastPose;
 
+    final talla = widget.product.sizes.isNotEmpty ? widget.product.sizes.first : null;
+    final resultado = determinarAjuste(talla: talla, pecho: _pecho, cintura: _cintura);
+
     return Stack(
       fit: StackFit.expand,
       children: [
         CameraPreview(controller),
+        if (resultado != null)
+          Positioned(
+            top: 8,
+            left: 8,
+            right: 56,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(2)),
+              child: Text(
+                resultado.mensaje,
+                style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 10.5, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
         if (pose != null)
           _GarmentOverlay(previewSize: controller.value.previewSize, pose: pose, imageUrl: widget.product.imageUrl)
         else

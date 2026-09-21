@@ -5,6 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
 import '../models/product_model.dart';
+import '../services/api_client.dart';
+import '../services/customer_service.dart';
+import '../services/size_chart.dart';
 import 'ar_try_on_screen.dart';
 import 'reservation_form_screen.dart';
 
@@ -306,6 +309,24 @@ class _MirrorCanvas extends StatefulWidget {
 
 class _MirrorCanvasState extends State<_MirrorCanvas> {
   bool _arActivo = false;
+  final CustomerService _customerService = CustomerService(ApiClient());
+  int? _pecho;
+  int? _cintura;
+
+  @override
+  void initState() {
+    super.initState();
+    // CU11 — determinar ajuste real: se piden las medidas del cliente una
+    // sola vez al entrar al probador. Si falla (ej. sin conexion), el HUD
+    // simplemente cae al estado "sin medidas" — nunca bloquea la pantalla.
+    _customerService.getMiPerfil().then((perfil) {
+      if (!mounted) return;
+      setState(() {
+        _pecho = perfil.pecho;
+        _cintura = perfil.cintura;
+      });
+    }).catchError((_) {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,44 +370,48 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                     ),
                   ),
                 ),
-              // HUD Overlay
+              // HUD Overlay — CU11: veredicto real de ajuste (talla del
+              // producto vs. medidas cargadas por el cliente en su perfil),
+              // ya no un numero decorativo fijo.
               Positioned(
                 bottom: 10,
                 left: 10,
                 right: 10,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(2),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '• Drape Tension: 94%',
-                            style: GoogleFonts.outfit(color: AetherTheme.mutedGold, fontSize: 9.5, fontWeight: FontWeight.w600),
+                child: Builder(builder: (context) {
+                  final resultado = determinarAjuste(
+                    talla: widget.selectedSize,
+                    pecho: _pecho,
+                    cintura: _cintura,
+                  );
+                  final color = switch (resultado?.nivel) {
+                    NivelAjuste.perfecto => AetherTheme.mutedGold,
+                    NivelAjuste.ajustado || NivelAjuste.holgado => Colors.orangeAccent,
+                    _ => Colors.white70,
+                  };
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(2),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            resultado?.mensaje ?? 'Calculando ajuste...',
+                            style: GoogleFonts.outfit(color: color, fontSize: 9.5, fontWeight: FontWeight.w600),
                           ),
-                          Text(
-                            'Talla Sugerida: ${widget.selectedSize}',
-                            style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: 0.94,
-                        backgroundColor: Colors.white24,
-                        color: AetherTheme.mutedGold,
-                        minHeight: 3,
-                      ),
-                    ],
-                  ),
-                ),
+                        ),
+                        Text(
+                          'Talla: ${widget.selectedSize}',
+                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ),
             ],
 

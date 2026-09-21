@@ -103,6 +103,10 @@ class ClienteOut(ORMModel):
     telefono: Optional[str] = None
     direccion: Optional[str] = None
     idUser: int
+    altura: Optional[int] = None
+    pecho: Optional[int] = None
+    cintura: Optional[int] = None
+    tiro: Optional[int] = None
 
 
 class ClienteFull(ClienteOut):
@@ -129,6 +133,13 @@ class ClienteMeUpdate(BaseModel):
     nombre: Optional[str] = None
     telefono: Optional[str] = None
     direccion: Optional[str] = None
+    # Medidas biometricas (CU11 — determinar si una prenda le queda al
+    # cliente). En cm. `None`/ausente nunca borra un valor ya guardado
+    # (mismo criterio exclude_unset que el resto del perfil).
+    altura: Optional[int] = None
+    pecho: Optional[int] = None
+    cintura: Optional[int] = None
+    tiro: Optional[int] = None
 
 
 class MetodoPagoOut(ORMModel):

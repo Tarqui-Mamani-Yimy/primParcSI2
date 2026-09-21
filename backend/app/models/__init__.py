@@ -162,6 +162,10 @@ class Cliente(Base):
     telefono: Mapped[str | None] = mapped_column(String(20))
     direccion: Mapped[str | None] = mapped_column(String(255))
     idUser: Mapped[int] = mapped_column(ForeignKey("Usuario.idUser", ondelete="CASCADE", onupdate="CASCADE"), unique=True, nullable=False)
+    altura: Mapped[int | None] = mapped_column(Integer)
+    pecho: Mapped[int | None] = mapped_column(Integer)
+    cintura: Mapped[int | None] = mapped_column(Integer)
+    tiro: Mapped[int | None] = mapped_column(Integer)
 
 
 class Inventario(Base):

@@ -10,14 +10,15 @@
 /// nunca `localhost` ni `10.0.2.2` (esos solo tienen sentido en el
 /// emulador).
 class ApiConfig {
-  // Cambiado a la IP LAN real de la maquina que corre el backend: el
-  // dispositivo de prueba resulto ser FISICO (ID de adb "22021211RG", no
-  // un emulador), asi que `10.0.2.2` (que solo el emulador entiende) nunca
-  // iba a conectar — de ahi el "No se pudo conectar con el servidor".
-  // Si volves a probar en el EMULADOR de Android, cambiar de nuevo a
-  // 'http://10.0.2.2:8000'. Esta IP puede cambiar si la maquina se
-  // reconecta al WiFi — verificar con `ip -4 addr show` si deja de andar.
-  static const String baseUrl = 'http://192.168.100.13:8000';
+  // Apunta al backend en produccion (Render) — el APK distribuible se
+  // conecta a esta URL desde cualquier red, no solo la LAN local.
+  //
+  // Para volver a probar contra el backend local durante desarrollo:
+  //   - Emulador Android: 'http://10.0.2.2:8000'
+  //   - Dispositivo fisico en la misma WiFi que la maquina del backend:
+  //     la IP LAN de esa maquina (ej. 'http://192.168.1.50:8000',
+  //     verificar con `ip -4 addr show` si cambia de red).
+  static const String baseUrl = 'https://primparcsi2.onrender.com';
 
   // Claves de flutter_secure_storage. Compartidas entre ApiClient (lee el
   // token para el header Authorization) y AuthService (lo escribe/borra) —
