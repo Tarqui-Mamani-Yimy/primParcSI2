@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import (
     Bitacora,
     Cliente,
@@ -16,12 +16,12 @@ from app.models import (
     Venta,
 )
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut
-from app.security import get_current_payload, require_permiso
+from app.security import require_feature, get_current_payload, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.recomendaciones_gemini import generar_recomendaciones_post_venta
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 
-router = APIRouter(prefix="/api/sales", tags=["sales"])
+router = APIRouter(prefix="/api/sales", tags=["sales"], dependencies=[Depends(require_feature("ventas"))])
 
 
 async def _registrar_bitacora(session: AsyncSession, accion: str, idUser: int, ip: str):
@@ -70,7 +70,7 @@ async def _serialize_venta(v: Venta, session: AsyncSession, detalles: list[Detal
 @router.get("", response_model=list[VentaOut])
 async def list_sales(
     idCliente: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     permisos = payload.get("permisos", [])
@@ -105,7 +105,7 @@ async def list_sales(
 
 
 @router.get("/{idVenta}", response_model=VentaOut)
-async def get_sale(idVenta: int, session: AsyncSession = Depends(get_db),
+async def get_sale(idVenta: int, session: AsyncSession = Depends(get_tenant_db),
                    _=Depends(require_permiso("venta.ver"))):
     v = await session.get(Venta, idVenta)
     if not v:
@@ -121,8 +121,9 @@ async def create_sale(
     payload: VentaIn,
     request: Request,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("venta.crear")),
+    _pos=Depends(require_feature("pos")),
 ):
     if not payload.items:
         raise HTTPException(status_code=400, detail="Debe enviar al menos un item")
@@ -244,7 +245,11 @@ async def create_sale(
     # CU22: recomendaciones generadas en background, DESPUES del commit —
     # nunca demora la respuesta de la venta, y si Gemini falla la venta ya
     # quedo persistida de todos modos (ver recomendaciones_gemini.py).
-    background_tasks.add_task(generar_recomendaciones_post_venta, id_cliente=id_cliente)
+    background_tasks.add_task(
+        generar_recomendaciones_post_venta,
+        id_cliente=id_cliente,
+        tenant_id=session.info["tenant_id"],
+    )
 
     detalles = (
         await session.execute(select(DetalleVenta).where(DetalleVenta.idVenta == venta.idVenta))

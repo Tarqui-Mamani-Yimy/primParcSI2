@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Cliente, Producto, Recomendaciones
 from app.schemas.fase2 import RecomendacionIn, RecomendacionOut, RecomendacionUpdate
-from app.security import get_current_payload, require_permiso
+from app.security import require_feature, get_current_payload, require_permiso
 
-router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
+router = APIRouter(prefix="/api/recommendations", tags=["recommendations"], dependencies=[Depends(require_feature("ia"))])
 
 
 async def _serialize(r: Recomendaciones, session: AsyncSession) -> RecomendacionOut:
@@ -25,7 +25,7 @@ async def _serialize(r: Recomendaciones, session: AsyncSession) -> Recomendacion
 @router.get("", response_model=list[RecomendacionOut])
 async def list_recommendations(
     idCliente: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     permisos = payload.get("permisos", [])
@@ -48,7 +48,7 @@ async def list_recommendations(
 
 
 @router.get("/{idRecomendacion}", response_model=RecomendacionOut)
-async def get_recommendation(idRecomendacion: int, session: AsyncSession = Depends(get_db),
+async def get_recommendation(idRecomendacion: int, session: AsyncSession = Depends(get_tenant_db),
                              _=Depends(require_permiso("recomendacion.gestionar"))):
     r = await session.get(Recomendaciones, idRecomendacion)
     if not r:
@@ -59,7 +59,7 @@ async def get_recommendation(idRecomendacion: int, session: AsyncSession = Depen
 @router.post("", response_model=RecomendacionOut, status_code=201)
 async def create_recommendation(
     payload: RecomendacionIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("recomendacion.gestionar")),
 ):
     if not await session.get(Cliente, payload.idCliente):
@@ -77,7 +77,7 @@ async def create_recommendation(
 async def update_recommendation(
     idRecomendacion: int,
     payload: RecomendacionUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("recomendacion.gestionar")),
 ):
     r = await session.get(Recomendaciones, idRecomendacion)
@@ -98,7 +98,7 @@ async def update_recommendation(
 @router.delete("/{idRecomendacion}", status_code=204)
 async def delete_recommendation(
     idRecomendacion: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("recomendacion.gestionar")),
 ):
     r = await session.get(Recomendaciones, idRecomendacion)

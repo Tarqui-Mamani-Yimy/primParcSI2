@@ -12,7 +12,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import DetalleVenta, Inventario, Producto, Sucursal, Venta
 from app.schemas.reports import (
     InventarioReporteFila,
@@ -21,9 +21,9 @@ from app.schemas.reports import (
     VentaReporteFila,
     VentaReporteOut,
 )
-from app.security import require_permiso
+from app.security import require_feature, require_permiso
 
-router = APIRouter(prefix="/api/reports", tags=["reports"])
+router = APIRouter(prefix="/api/reports", tags=["reports"], dependencies=[Depends(require_feature("reportes"))])
 
 
 # --- Helpers puros (sin DB, sin I/O) -----------------------------------
@@ -267,7 +267,7 @@ async def sales_report(
     fecha_hasta: date | None = None,
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_ventas(session, fecha_desde, fecha_hasta, codigoSucursal, idProducto)
@@ -280,13 +280,13 @@ async def sales_report(
     )
 
 
-@router.get("/sales/csv")
+@router.get("/sales/csv", dependencies=[Depends(require_feature("reportes_export"))])
 async def sales_report_csv(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_ventas(session, fecha_desde, fecha_hasta, codigoSucursal, idProducto)
@@ -298,13 +298,13 @@ async def sales_report_csv(
     )
 
 
-@router.get("/sales/pdf")
+@router.get("/sales/pdf", dependencies=[Depends(require_feature("reportes_export"))])
 async def sales_report_pdf(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_ventas(session, fecha_desde, fecha_hasta, codigoSucursal, idProducto)
@@ -321,7 +321,7 @@ async def sales_report_pdf(
 async def inventory_report(
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_inventario(session, codigoSucursal, idProducto)
@@ -331,11 +331,11 @@ async def inventory_report(
     )
 
 
-@router.get("/inventory/csv")
+@router.get("/inventory/csv", dependencies=[Depends(require_feature("reportes_export"))])
 async def inventory_report_csv(
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_inventario(session, codigoSucursal, idProducto)
@@ -347,11 +347,11 @@ async def inventory_report_csv(
     )
 
 
-@router.get("/inventory/pdf")
+@router.get("/inventory/pdf", dependencies=[Depends(require_feature("reportes_export"))])
 async def inventory_report_pdf(
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     filas = await _consultar_inventario(session, codigoSucursal, idProducto)

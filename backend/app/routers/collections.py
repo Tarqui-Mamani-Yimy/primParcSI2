@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Colecciones, Temporada
 from app.schemas.fase2 import ColeccionIn, ColeccionOut, ColeccionUpdate
 from app.security import require_permiso
@@ -21,13 +21,13 @@ async def _serialize(c: Colecciones, session: AsyncSession) -> ColeccionOut:
 
 
 @router.get("", response_model=list[ColeccionOut])
-async def list_collections(session: AsyncSession = Depends(get_db)):
+async def list_collections(session: AsyncSession = Depends(get_tenant_db)):
     rows = (await session.execute(select(Colecciones).order_by(Colecciones.nombre_coleccion))).scalars().all()
     return [await _serialize(c, session) for c in rows]
 
 
 @router.get("/{idColeccion}", response_model=ColeccionOut)
-async def get_collection(idColeccion: int, session: AsyncSession = Depends(get_db)):
+async def get_collection(idColeccion: int, session: AsyncSession = Depends(get_tenant_db)):
     c = await session.get(Colecciones, idColeccion)
     if not c:
         raise HTTPException(status_code=404, detail="Coleccion no encontrada")
@@ -37,7 +37,7 @@ async def get_collection(idColeccion: int, session: AsyncSession = Depends(get_d
 @router.post("", response_model=ColeccionOut, status_code=201)
 async def create_collection(
     payload: ColeccionIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.crear")),
 ):
     if not await session.get(Temporada, payload.idTemporada):
@@ -53,7 +53,7 @@ async def create_collection(
 async def update_collection(
     idColeccion: int,
     payload: ColeccionUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.editar")),
 ):
     c = await session.get(Colecciones, idColeccion)
@@ -72,7 +72,7 @@ async def update_collection(
 @router.delete("/{idColeccion}", status_code=204)
 async def delete_collection(
     idColeccion: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.eliminar")),
 ):
     c = await session.get(Colecciones, idColeccion)

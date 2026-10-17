@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Colecciones, Producto, Proveedor, Temporada
 from app.schemas.products import (
     ImagenUploadOut,
@@ -13,7 +13,7 @@ from app.schemas.products import (
     ProductoOut,
     ProductoUpdate,
 )
-from app.security import require_permiso
+from app.security import check_limit, get_tenant, require_permiso
 from app.services.storage_supabase import (
     SupabaseNoConfigurado,
     SupabaseStorageError,
@@ -58,9 +58,12 @@ async def list_products(
     idColeccion: int | None = None,
     idProveedor: int | None = None,
     query: str | None = Query(None, alias="q"),
-    session: AsyncSession = Depends(get_db),
+    tenant_id: int | None = Depends(get_tenant),
+    session: AsyncSession = Depends(get_tenant_db),
 ):
-    filters = []
+    if tenant_id is None:
+        raise HTTPException(status_code=403, detail="Tenant requerido")
+    filters = [Producto.idEmpresa == tenant_id]
     if tipo:
         filters.append(Producto.tipo.ilike(f"%{tipo}%"))
     if talla:
@@ -129,8 +132,20 @@ async def upload_imagen_producto(
 
 
 @router.get("/{idProducto}", response_model=ProductoOut)
-async def get_product(idProducto: int, session: AsyncSession = Depends(get_db)):
-    producto = await session.get(Producto, idProducto)
+async def get_product(
+    idProducto: int,
+    tenant_id: int | None = Depends(get_tenant),
+    session: AsyncSession = Depends(get_tenant_db),
+):
+    if tenant_id is None:
+        raise HTTPException(status_code=403, detail="Tenant requerido")
+    producto = (
+        await session.execute(
+            select(Producto).where(
+                Producto.idProducto == idProducto, Producto.idEmpresa == tenant_id
+            )
+        )
+    ).scalar_one_or_none()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return await _serialize(producto, session)
@@ -139,8 +154,9 @@ async def get_product(idProducto: int, session: AsyncSession = Depends(get_db)):
 @router.post("", response_model=ProductoOut, status_code=201)
 async def create_product(
     payload: ProductoIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.crear")),
+    _limit=Depends(check_limit("productos")),
 ):
     if not await session.get(Proveedor, payload.idProveedor):
         raise HTTPException(status_code=400, detail="Proveedor inexistente")
@@ -158,7 +174,7 @@ async def create_product(
 async def update_product(
     idProducto: int,
     payload: ProductoUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.editar")),
 ):
     producto = await session.get(Producto, idProducto)
@@ -182,7 +198,7 @@ async def update_product(
 @router.delete("/{idProducto}", status_code=204)
 async def delete_product(
     idProducto: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.eliminar")),
 ):
     producto = await session.get(Producto, idProducto)

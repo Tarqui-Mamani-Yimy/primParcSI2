@@ -69,10 +69,12 @@ def _client() -> "genai.Client":
     return genai.Client(api_key=settings.GEMINI_API_KEY)
 
 
-async def generar_recomendaciones_post_venta(id_cliente: int) -> None:
+async def generar_recomendaciones_post_venta(id_cliente: int, tenant_id: int) -> None:
     """Punto de entrada para `BackgroundTasks`. Nunca propaga excepciones."""
     try:
-        await _generar(id_cliente)
+        if tenant_id is None:
+            raise ValueError("tenant_id is required for recommendation generation")
+        await _generar(id_cliente, tenant_id)
     except Exception:
         logger.error(
             "Fallo generando recomendaciones para idCliente=%s:\n%s",
@@ -81,8 +83,9 @@ async def generar_recomendaciones_post_venta(id_cliente: int) -> None:
         )
 
 
-async def _generar(id_cliente: int) -> None:
+async def _generar(id_cliente: int, tenant_id: int) -> None:
     async with AsyncSessionLocal() as session:
+        session.info.update(tenant_scoped=True, tenant_id=tenant_id)
         # Historial de compras: mismo criterio que purchase_history.py, pero
         # solo se necesita nombre/tipo/color, no el detalle completo.
         comprados_stmt = (
@@ -90,13 +93,22 @@ async def _generar(id_cliente: int) -> None:
             .select_from(Venta)
             .join(DetalleVenta, DetalleVenta.idVenta == Venta.idVenta)
             .join(Producto, Producto.idProducto == DetalleVenta.idProducto)
-            .where(Venta.idCliente == id_cliente)
+            .where(
+                Venta.idCliente == id_cliente,
+                Venta.idEmpresa == tenant_id,
+                Producto.idEmpresa == tenant_id,
+            )
             .distinct()
         )
         comprados = (await session.execute(comprados_stmt)).all()
         ids_comprados = {row.idProducto for row in comprados}
 
-        candidatos_stmt = select(Producto).order_by(Producto.idProducto.desc()).limit(MAX_CANDIDATOS)
+        candidatos_stmt = (
+            select(Producto)
+            .where(Producto.idEmpresa == tenant_id)
+            .order_by(Producto.idProducto.desc())
+            .limit(MAX_CANDIDATOS)
+        )
         if ids_comprados:
             candidatos_stmt = candidatos_stmt.where(Producto.idProducto.notin_(ids_comprados))
         candidatos = (await session.execute(candidatos_stmt)).scalars().all()
@@ -159,7 +171,12 @@ async def _generar(id_cliente: int) -> None:
 
         # Reemplazar, no acumular: estas filas representan las
         # recomendaciones VIGENTES del cliente, no un historial.
-        await session.execute(delete(Recomendaciones).where(Recomendaciones.idCliente == id_cliente))
+        await session.execute(
+            delete(Recomendaciones).where(
+                Recomendaciones.idCliente == id_cliente,
+                Recomendaciones.idEmpresa == tenant_id,
+            )
+        )
         for s in validas[:MAX_RECOMENDACIONES]:
             producto = productos_por_id[s.idProducto]
             session.add(

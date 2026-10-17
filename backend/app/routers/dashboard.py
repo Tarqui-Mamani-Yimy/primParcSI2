@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import DetalleVenta, Inventario, Producto, Sucursal, Venta
 from app.schemas.dashboard import (
     KpisOut,
@@ -35,7 +35,7 @@ UMBRAL_STOCK_BAJO = 10
 async def kpis(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     ventas_stmt = select(
@@ -72,7 +72,7 @@ async def kpis(
 async def ventas_diarias(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     dia = func.date(Venta.fecha).label("dia")
@@ -106,7 +106,7 @@ async def top_productos(
     fecha_desde: date | None = None,
     fecha_hasta: date | None = None,
     limit: int = Query(5, ge=1, le=20),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     monto = func.sum(DetalleVenta.cantidad * DetalleVenta.precio_unitario).label("monto")
@@ -145,7 +145,7 @@ async def top_productos(
 
 @router.get("/stock-por-sucursal", response_model=StockPorSucursalOut)
 async def stock_por_sucursal(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("reporte.ver")),
 ):
     stmt = (

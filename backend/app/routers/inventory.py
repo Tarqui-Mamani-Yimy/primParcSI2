@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Ciudad, Inventario, Movimiento, Producto, Proveedor, Sucursal
 from app.schemas.inventory import (
     LocationOut,
@@ -10,9 +10,9 @@ from app.schemas.inventory import (
     StockIngresoIn,
     StockOut,
 )
-from app.security import require_permiso
+from app.security import require_feature, require_permiso
 
-router = APIRouter(prefix="/api/inventory", tags=["inventory"])
+router = APIRouter(prefix="/api/inventory", tags=["inventory"], dependencies=[Depends(require_feature("inventario"))])
 
 
 async def _serialize_stock(inv: Inventario, session: AsyncSession) -> StockOut:
@@ -34,7 +34,7 @@ async def _serialize_stock(inv: Inventario, session: AsyncSession) -> StockOut:
 
 
 @router.get("/locations", response_model=list[LocationOut])
-async def list_locations(session: AsyncSession = Depends(get_db)):
+async def list_locations(session: AsyncSession = Depends(get_tenant_db)):
     stmt = (
         select(Sucursal, Ciudad)
         .join(Ciudad, Ciudad.idCiudad == Sucursal.idCiudad)
@@ -48,7 +48,7 @@ async def list_locations(session: AsyncSession = Depends(get_db)):
 async def list_stock(
     codigoSucursal: int | None = None,
     idProducto: int | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("inventario.ver")),
 ):
     stmt = (
@@ -86,7 +86,7 @@ async def list_stock(
 async def adjust_stock(
     idInv: int,
     payload: StockAdjustIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("inventario.ajustar")),
 ):
     inv = await session.get(Inventario, idInv)
@@ -125,7 +125,7 @@ async def adjust_stock(
 @router.post("/stock/ingreso", response_model=StockOut, status_code=201)
 async def ingreso_lote(
     payload: StockIngresoIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("inventario.ajustar")),
 ):
     # Unico camino para darle stock INICIAL a un producto: adjust_stock

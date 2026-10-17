@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Colecciones, Temporada
 from app.schemas.fase2 import TemporadaIn, TemporadaOut, TemporadaUpdate
 from app.security import require_permiso
@@ -11,13 +11,13 @@ router = APIRouter(prefix="/api/seasons", tags=["seasons"])
 
 
 @router.get("", response_model=list[TemporadaOut])
-async def list_seasons(session: AsyncSession = Depends(get_db)):
+async def list_seasons(session: AsyncSession = Depends(get_tenant_db)):
     rows = (await session.execute(select(Temporada).order_by(Temporada.fecha_ini))).scalars().all()
     return rows
 
 
 @router.get("/{idTemporada}", response_model=TemporadaOut)
-async def get_season(idTemporada: int, session: AsyncSession = Depends(get_db)):
+async def get_season(idTemporada: int, session: AsyncSession = Depends(get_tenant_db)):
     t = await session.get(Temporada, idTemporada)
     if not t:
         raise HTTPException(status_code=404, detail="Temporada no encontrada")
@@ -27,7 +27,7 @@ async def get_season(idTemporada: int, session: AsyncSession = Depends(get_db)):
 @router.post("", response_model=TemporadaOut, status_code=201)
 async def create_season(
     payload: TemporadaIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.crear")),
 ):
     if payload.fecha_fin < payload.fecha_ini:
@@ -43,7 +43,7 @@ async def create_season(
 async def update_season(
     idTemporada: int,
     payload: TemporadaUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.editar")),
 ):
     t = await session.get(Temporada, idTemporada)
@@ -64,7 +64,7 @@ async def update_season(
 @router.delete("/{idTemporada}", status_code=204)
 async def delete_season(
     idTemporada: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.eliminar")),
 ):
     t = await session.get(Temporada, idTemporada)

@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Numeric,
     String,
     Text,
@@ -73,8 +74,41 @@ class Usuario(Base):
     bloqueadoHasta: Mapped[datetime | None] = mapped_column(TIMESTAMP)
     vecesBloqueado: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     requiereActivacion: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    idEmpresa: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     rol: Mapped["Rol"] = relationship()
+
+
+class Empresa(Base):
+    __tablename__ = "Empresa"
+
+    idEmpresa: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(150), nullable=False)
+    slug: Mapped[str] = mapped_column(String(100), nullable=False)
+    logoUrl: Mapped[str | None] = mapped_column(Text)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False)
+
+
+class Plan(Base):
+    __tablename__ = "Plan"
+
+    idPlan: Mapped[int] = mapped_column(Integer, primary_key=True)
+    codigo: Mapped[str] = mapped_column(String(30), nullable=False)
+    nombre: Mapped[str] = mapped_column(String(50), nullable=False)
+    precioMensual: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    features: Mapped[list] = mapped_column(JSON, nullable=False)
+    limites: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
+class Suscripcion(Base):
+    __tablename__ = "Suscripcion"
+
+    idSuscripcion: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idPlan: Mapped[int] = mapped_column(Integer, nullable=False)
+    estado: Mapped[str] = mapped_column(String(20), nullable=False)
+    fechaInicio: Mapped[date] = mapped_column(Date, nullable=False)
+    fechaFin: Mapped[date | None] = mapped_column(Date)
 
 
 class Sucursal(Base):
@@ -82,6 +116,7 @@ class Sucursal(Base):
     __table_args__ = (Index("idx_sucursal_ciudad", "idCiudad"),)
 
     codigoSucursal: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     direccion: Mapped[str] = mapped_column(String(255), nullable=False)
     idCiudad: Mapped[int] = mapped_column(ForeignKey("Ciudad.idCiudad", onupdate="CASCADE"), nullable=False)
@@ -98,6 +133,7 @@ class Temporada(Base):
     )
 
     idTemporada: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombreTemporada: Mapped[str] = mapped_column(String(100), nullable=False)
     fecha_ini: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_fin: Mapped[date] = mapped_column(Date, nullable=False)
@@ -108,6 +144,7 @@ class Colecciones(Base):
     __table_args__ = (Index("idx_coleccion_temporada", "idTemporada"),)
 
     idColeccion: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombre_coleccion: Mapped[str] = mapped_column(String(100), nullable=False)
     idTemporada: Mapped[int] = mapped_column(ForeignKey("Temporada.idTemporada", ondelete="RESTRICT", onupdate="CASCADE"), nullable=False)
 
@@ -119,6 +156,7 @@ class Proveedor(Base):
     __table_args__ = (Index("idx_proveedor_nombre", "nombre"),)
 
     idProveedor: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     telefono: Mapped[str | None] = mapped_column(String(20))
     correo: Mapped[str | None] = mapped_column(String(100))
@@ -136,6 +174,7 @@ class Producto(Base):
     )
 
     idProducto: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombre: Mapped[str] = mapped_column(String(150), nullable=False)
     descripcion: Mapped[str | None] = mapped_column(Text)
     costo: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
@@ -162,6 +201,7 @@ class Cliente(Base):
     telefono: Mapped[str | None] = mapped_column(String(20))
     direccion: Mapped[str | None] = mapped_column(String(255))
     idUser: Mapped[int] = mapped_column(ForeignKey("Usuario.idUser", ondelete="CASCADE", onupdate="CASCADE"), unique=True, nullable=False)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     altura: Mapped[int | None] = mapped_column(Integer)
     pecho: Mapped[int | None] = mapped_column(Integer)
     cintura: Mapped[int | None] = mapped_column(Integer)
@@ -176,6 +216,7 @@ class Inventario(Base):
     )
 
     idInv: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     cantidad_actual: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cantidad_reservada: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     codigoSucursal: Mapped[int] = mapped_column(ForeignKey("Sucursal.codigoSucursal", onupdate="CASCADE"), nullable=False)
@@ -191,6 +232,7 @@ class Movimiento(Base):
     __table_args__ = (Index("idx_movimiento_inv_fecha", "idInv", "fecha"),)
 
     idMov: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     tipo: Mapped[str] = mapped_column(String(50), nullable=False)
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
@@ -205,6 +247,7 @@ class MetodoPago(Base):
     __tablename__ = "metodo_pago"
 
     idMetPago: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     tipo: Mapped[str] = mapped_column(String(50), nullable=False)
     estado: Mapped[str] = mapped_column(String(30), default="Activo", nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
@@ -230,6 +273,7 @@ class Reserva(Base):
     )
 
     codigoReserva: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     fecha: Mapped[date] = mapped_column(Date, nullable=False)
     horario: Mapped[time] = mapped_column(Time, nullable=False)
     estado: Mapped[str] = mapped_column(String(30), default="Pendiente", nullable=False)
@@ -253,6 +297,7 @@ class Venta(Base):
     )
 
     idVenta: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
     total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)
@@ -268,6 +313,7 @@ class DetalleVenta(Base):
     )
 
     codigoVenta: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     precio_unitario: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
@@ -280,6 +326,7 @@ class Bitacora(Base):
     __table_args__ = (Index("idx_bitacora_fecha_user", "fecha", "idUser"),)
 
     idBitacora: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     accion: Mapped[str] = mapped_column(String(150), nullable=False)
     hora: Mapped[time] = mapped_column(Time, nullable=False)
     fecha: Mapped[date] = mapped_column(Date, nullable=False)
@@ -292,6 +339,7 @@ class Recomendaciones(Base):
     __table_args__ = (Index("idx_recomendacion_cliente", "idCliente"),)
 
     idRecomendacion: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     importancia: Mapped[str] = mapped_column(String(30), default="Media")
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
@@ -305,6 +353,7 @@ class Historial(Base):
     __table_args__ = (Index("idx_historial_busqueda", "idCliente", "idProducto"),)
 
     codigoHistorial: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)

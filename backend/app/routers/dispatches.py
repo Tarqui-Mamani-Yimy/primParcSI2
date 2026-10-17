@@ -4,16 +4,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Inventario, Movimiento, Producto, Sucursal
 from app.schemas.dispatches import (
     DispatchIn,
     DispatchOut,
     MovimientoOut,
 )
-from app.security import require_permiso
+from app.security import require_feature, require_permiso
 
-router = APIRouter(prefix="/api/dispatches", tags=["dispatches"])
+router = APIRouter(prefix="/api/dispatches", tags=["dispatches"], dependencies=[Depends(require_feature("despachos"))])
 
 
 def _generar_referencia() -> str:
@@ -40,7 +40,7 @@ async def _serialize_movimiento(mov: Movimiento, session: AsyncSession) -> Movim
 @router.post("", response_model=DispatchOut, status_code=201)
 async def create_dispatch(
     payload: DispatchIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("inventario.traspasar")),
 ):
     if payload.origen == payload.destino:
@@ -131,7 +131,7 @@ async def create_dispatch(
 
 
 @router.get("", response_model=list[DispatchOut])
-async def list_dispatches(session: AsyncSession = Depends(get_db),
+async def list_dispatches(session: AsyncSession = Depends(get_tenant_db),
                           _=Depends(require_permiso("inventario.ver"))):
     stmt = (
         select(Movimiento)

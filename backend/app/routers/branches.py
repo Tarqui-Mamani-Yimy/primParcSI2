@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Ciudad, Sucursal
 from app.schemas.fase2 import SucursalIn, SucursalOut, SucursalUpdate
-from app.security import require_permiso
+from app.security import check_limit, require_permiso
 
 router = APIRouter(prefix="/api/branches", tags=["branches"])
 
@@ -22,14 +22,14 @@ async def _serialize(s: Sucursal, session: AsyncSession) -> SucursalOut:
 
 
 @router.get("", response_model=list[SucursalOut])
-async def list_branches(session: AsyncSession = Depends(get_db),
+async def list_branches(session: AsyncSession = Depends(get_tenant_db),
                         _=Depends(require_permiso("inventario.ver"))):
     rows = (await session.execute(select(Sucursal).order_by(Sucursal.nombre))).scalars().all()
     return [await _serialize(s, session) for s in rows]
 
 
 @router.get("/{codigoSucursal}", response_model=SucursalOut)
-async def get_branch(codigoSucursal: int, session: AsyncSession = Depends(get_db),
+async def get_branch(codigoSucursal: int, session: AsyncSession = Depends(get_tenant_db),
                      _=Depends(require_permiso("inventario.ver"))):
     s = await session.get(Sucursal, codigoSucursal)
     if not s:
@@ -40,8 +40,9 @@ async def get_branch(codigoSucursal: int, session: AsyncSession = Depends(get_db
 @router.post("", response_model=SucursalOut, status_code=201)
 async def create_branch(
     payload: SucursalIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
+    _limit=Depends(check_limit("sucursales")),
 ):
     if not await session.get(Ciudad, payload.idCiudad):
         raise HTTPException(status_code=400, detail="Ciudad inexistente")
@@ -56,7 +57,7 @@ async def create_branch(
 async def update_branch(
     codigoSucursal: int,
     payload: SucursalUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     s = await session.get(Sucursal, codigoSucursal)
@@ -75,7 +76,7 @@ async def update_branch(
 @router.delete("/{codigoSucursal}", status_code=204)
 async def delete_branch(
     codigoSucursal: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     s = await session.get(Sucursal, codigoSucursal)

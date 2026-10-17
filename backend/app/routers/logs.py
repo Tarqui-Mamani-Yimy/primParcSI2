@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Bitacora, Usuario
 from app.schemas.fase2 import LogOut
 from app.security import require_permiso
@@ -15,7 +15,7 @@ async def list_logs(
     idUser: int | None = None,
     fecha: str | None = None,
     limit: int = Query(100, ge=1, le=500),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("bitacora.ver")),
 ):
     stmt = (

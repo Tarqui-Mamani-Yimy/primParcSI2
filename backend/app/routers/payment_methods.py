@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import MetodoPago
 from app.schemas.fase2 import MetodoPagoIn, MetodoPagoOut, MetodoPagoUpdate
 from app.security import require_permiso
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/payment-methods", tags=["payment-methods"])
 
 
 @router.get("", response_model=list[MetodoPagoOut])
-async def list_payment_methods(session: AsyncSession = Depends(get_db),
+async def list_payment_methods(session: AsyncSession = Depends(get_tenant_db),
                                _=Depends(require_permiso("venta.ver"))):
     rows = (await session.execute(select(MetodoPago).order_by(MetodoPago.idMetPago))).scalars().all()
     return rows
@@ -20,7 +20,7 @@ async def list_payment_methods(session: AsyncSession = Depends(get_db),
 @router.post("", response_model=MetodoPagoOut, status_code=201)
 async def create_payment_method(
     payload: MetodoPagoIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("venta.crear")),
 ):
     if payload.monto < 0:
@@ -36,7 +36,7 @@ async def create_payment_method(
 async def update_payment_method(
     idMetPago: int,
     payload: MetodoPagoUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("venta.crear")),
 ):
     m = await session.get(MetodoPago, idMetPago)
@@ -55,7 +55,7 @@ async def update_payment_method(
 @router.delete("/{idMetPago}", status_code=204)
 async def delete_payment_method(
     idMetPago: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     m = await session.get(MetodoPago, idMetPago)

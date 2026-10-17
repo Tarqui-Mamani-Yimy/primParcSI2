@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Bitacora, Rol, Usuario
 from app.schemas.team import ActivateAccountResponse, AuditLogOut, ChangeRoleIn, StaffUserIn, TeamMemberOut
-from app.security import hash_password, require_permiso
+from app.security import check_limit, hash_password, require_permiso
 from app.services.bitacora import registrar_bitacora
 from app.services.usuarios import build_user_claims
 
@@ -15,7 +15,7 @@ ROLES_STAFF = ("Administrador", "Encargado de Sucursal", "Cajero")
 
 
 @router.get("", response_model=list[TeamMemberOut])
-async def list_team(session: AsyncSession = Depends(get_db),
+async def list_team(session: AsyncSession = Depends(get_tenant_db),
                     _=Depends(require_permiso("equipo.ver"))):
     roles_staff = (
         await session.execute(
@@ -52,7 +52,7 @@ async def audit_log(
     idUser: int | None = None,
     fecha: str | None = None,
     limit: int = Query(50, ge=1, le=500),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("equipo.ver")),
 ):
     stmt = (
@@ -91,7 +91,7 @@ async def audit_log(
 async def activate_account(
     idUser: int,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     usuario = await session.get(Usuario, idUser)
@@ -112,8 +112,9 @@ async def activate_account(
 async def create_staff_user(
     payload: StaffUserIn,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
+    _limit=Depends(check_limit("usuarios")),
 ):
     existing = (
         await session.execute(select(Usuario).where(Usuario.correo == payload.email))
@@ -158,7 +159,7 @@ async def change_staff_role(
     idUser: int,
     payload: ChangeRoleIn,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     current: dict = Depends(require_permiso("usuario.admin")),
 ):
     usuario = await session.get(Usuario, idUser)

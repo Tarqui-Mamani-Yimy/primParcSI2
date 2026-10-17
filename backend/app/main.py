@@ -28,6 +28,7 @@ from app.routers import (
     seasons,
     suppliers,
     team,
+    tenant_platform,
 )
 
 settings = get_settings()
@@ -100,5 +101,6 @@ for router in (
     reservations.router,
     purchase_history.router,
     logs.router,
+    tenant_platform.router,
 ):
     app.include_router(router)

@@ -2,19 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Cliente
 from app.schemas.chat import ChatIn, ChatOut
-from app.security import get_current_payload
+from app.security import require_feature, get_current_payload
 from app.services.chat_gemini import GeminiNoConfigurado, responder_chat
 
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(prefix="/api/chat", tags=["chat"], dependencies=[Depends(require_feature("ia"))])
 
 
 @router.post("", response_model=ChatOut)
 async def chat(
     payload: ChatIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(get_current_payload),
 ):
     cliente = (

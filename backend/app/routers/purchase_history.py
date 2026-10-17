@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Cliente, DetalleVenta, Historial, Producto, Venta
 from app.schemas.fase2 import PurchaseHistoryItem
 from app.security import get_current_payload
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/purchase-history", tags=["purchase-history"])
 
 @router.get("", response_model=list[PurchaseHistoryItem])
 async def purchase_history(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     permisos = payload.get("permisos", [])

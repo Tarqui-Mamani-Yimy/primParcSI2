@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import Cliente, Usuario
 from app.schemas.fase2 import ClienteCreate, ClienteFull, ClienteMeUpdate, ClienteUpdate
 from app.security import get_current_payload, require_permiso
@@ -24,7 +24,7 @@ async def _cliente_del_caller(session: AsyncSession, payload: dict) -> Cliente |
 # "me" como el int idCliente de esa ruta y nunca llegaria aca.
 @router.get("/me", response_model=ClienteFull)
 async def get_my_customer(
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     cliente = await _cliente_del_caller(session, payload)
@@ -36,7 +36,7 @@ async def get_my_customer(
 @router.put("/me", response_model=ClienteFull)
 async def update_my_customer(
     update: ClienteMeUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     cliente = await _cliente_del_caller(session, payload)
@@ -67,14 +67,14 @@ async def _serialize(c: Cliente, session: AsyncSession) -> ClienteFull:
 
 
 @router.get("", response_model=list[ClienteFull])
-async def list_customers(session: AsyncSession = Depends(get_db),
+async def list_customers(session: AsyncSession = Depends(get_tenant_db),
                          _=Depends(require_permiso("cliente.ver"))):
     rows = (await session.execute(select(Cliente).order_by(Cliente.nombre))).scalars().all()
     return [await _serialize(c, session) for c in rows]
 
 
 @router.get("/{idCliente}", response_model=ClienteFull)
-async def get_customer(idCliente: int, session: AsyncSession = Depends(get_db),
+async def get_customer(idCliente: int, session: AsyncSession = Depends(get_tenant_db),
                        _=Depends(require_permiso("cliente.ver"))):
     c = await session.get(Cliente, idCliente)
     if not c:
@@ -85,7 +85,7 @@ async def get_customer(idCliente: int, session: AsyncSession = Depends(get_db),
 @router.post("", response_model=ClienteFull, status_code=201)
 async def create_customer(
     payload: ClienteCreate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     if not await session.get(Usuario, payload.idUser):
@@ -101,7 +101,7 @@ async def create_customer(
 async def update_customer(
     idCliente: int,
     payload: ClienteUpdate,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("cliente.ver")),
 ):
     c = await session.get(Cliente, idCliente)
@@ -120,7 +120,7 @@ async def update_customer(
 @router.delete("/{idCliente}", status_code=204)
 async def delete_customer(
     idCliente: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("usuario.admin")),
 ):
     c = await session.get(Cliente, idCliente)

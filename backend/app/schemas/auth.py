@@ -34,6 +34,28 @@ class TokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user: "UserSummary"
+    empresa: "EmpresaInfo | None" = None
+    plan: "PlanInfo | None" = None
+    suscripcion: "SuscripcionInfo | None" = None
+
+
+class EmpresaInfo(BaseModel):
+    idEmpresa: int
+    nombre: str
+    slug: str
+    logoUrl: str | None
+
+
+class PlanInfo(BaseModel):
+    codigo: str
+    nombre: str
+    features: list[str]
+    limites: dict
+
+
+class SuscripcionInfo(BaseModel):
+    estado: str
+    fechaFin: date | None
 
 
 class RefreshRequest(BaseModel):
@@ -70,6 +92,9 @@ class MeResponse(BaseModel):
     correo: str
     rol: str
     permisos: list[str]
+    empresa: EmpresaInfo | None = None
+    plan: PlanInfo | None = None
+    suscripcion: SuscripcionInfo | None = None
 
 
 class PasswordUpdate(BaseModel):

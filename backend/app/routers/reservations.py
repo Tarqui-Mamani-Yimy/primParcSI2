@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import (
     Bitacora,
     Cliente,
@@ -23,10 +23,10 @@ from app.schemas.fase2 import (
     ReservaOut,
     VentaOut,
 )
-from app.security import get_current_payload, require_permiso
+from app.security import require_feature, get_current_payload, require_permiso
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 
-router = APIRouter(prefix="/api/reservations", tags=["reservations"])
+router = APIRouter(prefix="/api/reservations", tags=["reservations"], dependencies=[Depends(require_feature("reservas"))])
 
 
 def _parse_hora(valor) -> time:
@@ -72,7 +72,7 @@ async def _cliente_del_caller(session: AsyncSession, auth: dict) -> Cliente | No
 async def list_reservations(
     idCliente: int | None = None,
     estado: str | None = None,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
     permisos = payload.get("permisos", [])
@@ -97,7 +97,7 @@ async def list_reservations(
 @router.post("", response_model=ReservaOut, status_code=201)
 async def create_reservation(
     payload: ReservaIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("reserva.crear")),
 ):
     if "reserva.gestionar" not in auth.get("permisos", []):
@@ -165,7 +165,7 @@ async def create_reservation(
 async def prepare_reservation(
     codigoReserva: int,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("reserva.gestionar")),
 ):
     reserva = await session.get(Reserva, codigoReserva)
@@ -194,7 +194,7 @@ async def confirm_reservation(
     codigoReserva: int,
     payload: ReservaConfirmarIn,
     request: Request,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("reserva.gestionar")),
 ):
     reserva = await session.get(Reserva, codigoReserva)
@@ -287,7 +287,7 @@ async def confirm_reservation(
 @router.put("/{codigoReserva}/cancel", response_model=ReservaOut)
 async def cancel_reservation(
     codigoReserva: int,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(get_current_payload),
 ):
     reserva = await session.get(Reserva, codigoReserva)

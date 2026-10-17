@@ -13,10 +13,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_tenant_db
 from app.models import MetodoPago, Producto
 from app.schemas.fase2 import PagoIntentIn, PagoIntentOut, PagoIntentVerificadoOut
-from app.security import require_permiso
+from app.security import require_feature, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.pagos_stripe import (
     StripeNoConfigurado,
@@ -26,7 +26,7 @@ from app.services.pagos_stripe import (
     stripe_configurado,
 )
 
-router = APIRouter(prefix="/api/payments", tags=["payments"])
+router = APIRouter(prefix="/api/payments", tags=["payments"], dependencies=[Depends(require_feature("pagos_online"))])
 
 # CU12: anticipo de reserva = 10% de una sola unidad, con un piso minimo
 # cobrable por Stripe (D4 en design.md). Por debajo del piso, el producto
@@ -54,7 +54,7 @@ def _requerir_stripe_configurado() -> None:
 @router.post("/intents", response_model=PagoIntentOut, status_code=201)
 async def create_payment_intent(
     payload: PagoIntentIn,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("venta.crear")),
 ):
     _requerir_stripe_configurado()
@@ -165,7 +165,7 @@ async def create_payment_intent(
 @router.post("/intents/{payment_intent_id}/verify", response_model=PagoIntentVerificadoOut)
 async def verify_payment_intent(
     payment_intent_id: str,
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
     _auth: dict = Depends(require_permiso("venta.crear")),
 ):
     id_user = int(_auth["sub"])

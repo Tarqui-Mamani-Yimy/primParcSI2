@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.database import get_db
+from app.database import bind_session_tenant, get_auth_db, get_tenant_db
 from app.email_utils import send_reset_email
 from app.models import Cliente, Usuario
 from app.services.bitacora import registrar_bitacora
@@ -26,6 +26,7 @@ from app.schemas.auth import (
     UserSummary,
 )
 from app.security import (
+    check_limit,
     create_access_token,
     create_pwd_reset_token,
     create_refresh_token,
@@ -52,6 +53,10 @@ MENSAJE_REQUIERE_ACTIVACION = (
 )
 
 
+def _jwt_claims(claims: dict) -> dict:
+    return {key: claims[key] for key in ("correo", "rol", "permisos", "empresa", "plan")}
+
+
 async def _find_usuario_by_email(session: AsyncSession, email: str) -> Usuario | None:
     result = await session.execute(select(Usuario).where(Usuario.correo == email))
     return result.scalar_one_or_none()
@@ -75,19 +80,23 @@ def _mensaje_bloqueado(bloqueado_hasta: datetime) -> str:
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, request: Request, session: AsyncSession = Depends(get_db)):
+async def login(payload: LoginRequest, request: Request, session: AsyncSession = Depends(get_auth_db)):
     ip = request.client.host if request.client else "0.0.0.0"
     usuario = await _find_usuario_by_email(session, payload.email)
 
     if usuario is None:
         raise HTTPException(status_code=401, detail="Credenciales invalidas")
 
+    if usuario.idEmpresa is not None:
+        await bind_session_tenant(session, usuario.idEmpresa)
+
     ahora = _ahora_naive()
 
     if usuario.requiereActivacion:
-        await registrar_bitacora(
-            session, "Intento de inicio de sesion con cuenta bloqueada permanentemente", usuario.idUser, ip
-        )
+        if usuario.idEmpresa is not None:
+            await registrar_bitacora(
+                session, "Intento de inicio de sesion con cuenta bloqueada permanentemente", usuario.idUser, ip
+            )
         await session.commit()
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
@@ -95,9 +104,10 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
         )
 
     if usuario.bloqueadoHasta is not None and usuario.bloqueadoHasta > ahora:
-        await registrar_bitacora(
-            session, "Intento de inicio de sesion con cuenta bloqueada temporalmente", usuario.idUser, ip
-        )
+        if usuario.idEmpresa is not None:
+            await registrar_bitacora(
+                session, "Intento de inicio de sesion con cuenta bloqueada temporalmente", usuario.idUser, ip
+            )
         await session.commit()
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
@@ -106,7 +116,8 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
 
     if not verify_password(payload.password, usuario.contraseña):
         usuario.intentosFallidos = (usuario.intentosFallidos or 0) + 1
-        await registrar_bitacora(session, "Intento de inicio de sesion fallido", usuario.idUser, ip)
+        if usuario.idEmpresa is not None:
+            await registrar_bitacora(session, "Intento de inicio de sesion fallido", usuario.idUser, ip)
         if usuario.intentosFallidos >= MAX_INTENTOS_FALLIDOS:
             usuario.intentosFallidos = 0
             usuario.vecesBloqueado = (usuario.vecesBloqueado or 0) + 1
@@ -116,12 +127,13 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
                 usuario.bloqueadoHasta = ahora + timedelta(
                     seconds=DURACIONES_BLOQUEO_SEGUNDOS[indice]
                 )
-                await registrar_bitacora(
-                    session,
-                    "Cuenta bloqueada temporalmente tras multiples intentos fallidos",
-                    usuario.idUser,
-                    ip,
-                )
+                if usuario.idEmpresa is not None:
+                    await registrar_bitacora(
+                        session,
+                        "Cuenta bloqueada temporalmente tras multiples intentos fallidos",
+                        usuario.idUser,
+                        ip,
+                    )
                 await session.commit()
                 raise HTTPException(
                     status_code=status.HTTP_423_LOCKED,
@@ -130,12 +142,13 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
 
             usuario.requiereActivacion = True
             usuario.bloqueadoHasta = None
-            await registrar_bitacora(
-                session,
-                "Cuenta bloqueada permanentemente - requiere activacion de administrador",
-                usuario.idUser,
-                ip,
-            )
+            if usuario.idEmpresa is not None:
+                await registrar_bitacora(
+                    session,
+                    "Cuenta bloqueada permanentemente - requiere activacion de administrador",
+                    usuario.idUser,
+                    ip,
+                )
             await session.commit()
             raise HTTPException(
                 status_code=status.HTTP_423_LOCKED,
@@ -155,11 +168,12 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
     usuario.intentosFallidos = 0
     usuario.bloqueadoHasta = None
     usuario.vecesBloqueado = 0
-    await registrar_bitacora(session, "Inicio de sesion exitoso", usuario.idUser, ip)
+    if usuario.idEmpresa is not None:
+        await registrar_bitacora(session, "Inicio de sesion exitoso", usuario.idUser, ip)
     await session.commit()
 
     claims = await build_user_claims(session, usuario)
-    access_token = create_access_token(usuario.idUser, claims)
+    access_token = create_access_token(usuario.idUser, _jwt_claims(claims))
     refresh_token = create_refresh_token(usuario.idUser)
 
     return TokenResponse(
@@ -172,11 +186,18 @@ async def login(payload: LoginRequest, request: Request, session: AsyncSession =
             rol=claims["rol"],
             permisos=claims["permisos"],
         ),
+        empresa=claims["empresa_info"],
+        plan=claims["plan_info"],
+        suscripcion=claims["suscripcion"],
     )
 
 
 @router.post("/register", response_model=TokenResponse)
-async def register(payload: RegisterRequest, request: Request, session: AsyncSession = Depends(get_db)):
+async def register(payload: RegisterRequest, request: Request, session: AsyncSession = Depends(get_auth_db),
+                   _limit=Depends(check_limit("usuarios", public_signup=True))):
+    # Public signup remains pinned to the legacy tenant; the auth-only policy
+    # never grants access to other business tables or tenants.
+    await bind_session_tenant(session, 1)
     existing = await _find_usuario_by_email(session, payload.email)
     if existing:
         raise HTTPException(status_code=409, detail="El correo ya esta registrado")
@@ -194,18 +215,20 @@ async def register(payload: RegisterRequest, request: Request, session: AsyncSes
         correo=payload.email,
         contraseña=hash_password(payload.password),
         codigoRol=codigo_cliente,
+        # Public self-registration is intentionally restricted to the legacy tenant.
+        idEmpresa=1,
     )
     session.add(nuevo)
     await session.flush()
 
-    session.add(Cliente(nombre=payload.nombre, idUser=nuevo.idUser))
+    session.add(Cliente(nombre=payload.nombre, idUser=nuevo.idUser, idEmpresa=1))
     ip = request.client.host if request.client else "0.0.0.0"
     await registrar_bitacora(session, "Cuenta registrada", nuevo.idUser, ip)
     await session.commit()
     await session.refresh(nuevo)
 
     claims = await build_user_claims(session, nuevo)
-    access_token = create_access_token(nuevo.idUser, claims)
+    access_token = create_access_token(nuevo.idUser, _jwt_claims(claims))
     refresh_token = create_refresh_token(nuevo.idUser)
 
     return TokenResponse(
@@ -218,11 +241,14 @@ async def register(payload: RegisterRequest, request: Request, session: AsyncSes
             rol=claims["rol"],
             permisos=claims["permisos"],
         ),
+        empresa=claims["empresa_info"],
+        plan=claims["plan_info"],
+        suscripcion=claims["suscripcion"],
     )
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_db)):
+async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_auth_db)):
     decoded = decode_token(payload.refresh_token)
     try:
         user_id = int(decoded["sub"])
@@ -233,8 +259,11 @@ async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_d
     if not usuario:
         raise HTTPException(status_code=401, detail="Usuario no existe")
 
+    if usuario.idEmpresa is not None:
+        await bind_session_tenant(session, usuario.idEmpresa)
+
     claims = await build_user_claims(session, usuario)
-    access_token = create_access_token(usuario.idUser, claims)
+    access_token = create_access_token(usuario.idUser, _jwt_claims(claims))
     refresh_token = create_refresh_token(usuario.idUser)
 
     return TokenResponse(
@@ -247,22 +276,29 @@ async def refresh(payload: RefreshRequest, session: AsyncSession = Depends(get_d
             rol=claims["rol"],
             permisos=claims["permisos"],
         ),
+        empresa=claims["empresa_info"],
+        plan=claims["plan_info"],
+        suscripcion=claims["suscripcion"],
     )
 
 
 @router.get("/me", response_model=MeResponse)
-async def me(payload: dict = Depends(get_current_payload), session: AsyncSession = Depends(get_db)):
+async def me(payload: dict = Depends(get_current_payload), session: AsyncSession = Depends(get_tenant_db)):
     user_id = int(payload["sub"])
     usuario = await session.get(Usuario, user_id)
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+    claims = await build_user_claims(session, usuario)
     return MeResponse(
         idUser=usuario.idUser,
         nombre=usuario.nombre,
         correo=usuario.correo,
-        rol=payload.get("rol", ""),
-        permisos=payload.get("permisos", []),
+        rol=claims["rol"],
+        permisos=claims["permisos"],
+        empresa=claims["empresa_info"],
+        plan=claims["plan_info"],
+        suscripcion=claims["suscripcion"],
     )
 
 
@@ -271,7 +307,7 @@ async def change_password(
     payload: PasswordUpdate,
     request: Request,
     current: dict = Depends(get_current_payload),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_tenant_db),
 ):
     user_id = int(current["sub"])
     usuario = await session.get(Usuario, user_id)
@@ -289,11 +325,14 @@ async def change_password(
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)
-async def forgot_password(payload: ForgotPasswordRequest, session: AsyncSession = Depends(get_db)):
+async def forgot_password(payload: ForgotPasswordRequest, session: AsyncSession = Depends(get_auth_db)):
     mensaje = "Si el correo esta registrado, recibiras instrucciones para restablecer tu contrasena."
     usuario = await _find_usuario_by_email(session, payload.email)
     if usuario is None:
         return ForgotPasswordResponse(message=mensaje, reset_token_dev=None)
+
+    if usuario.idEmpresa is not None:
+        await bind_session_tenant(session, usuario.idEmpresa)
 
     reset_token = create_pwd_reset_token(usuario.idUser)
     reset_link = f"{settings.FRONTEND_URL}/?reset_token={reset_token}"
@@ -308,7 +347,7 @@ async def forgot_password(payload: ForgotPasswordRequest, session: AsyncSession 
 
 
 @router.post("/reset-password", response_model=PasswordChangedResponse)
-async def reset_password(payload: ResetPasswordRequest, request: Request, session: AsyncSession = Depends(get_db)):
+async def reset_password(payload: ResetPasswordRequest, request: Request, session: AsyncSession = Depends(get_auth_db)):
     try:
         decoded = jwt.decode(
             payload.token,
@@ -341,6 +380,9 @@ async def reset_password(payload: ResetPasswordRequest, request: Request, sessio
             status_code=400,
             detail="El enlace de recuperacion es invalido o expiro",
         )
+
+    if usuario.idEmpresa is not None:
+        await bind_session_tenant(session, usuario.idEmpresa)
 
     usuario.contraseña = hash_password(payload.new_password)
     usuario.intentosFallidos = 0
