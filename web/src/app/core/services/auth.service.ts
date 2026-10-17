@@ -108,7 +108,9 @@ export class AuthService {
       } catch {
         // Ignorar fallos de deserialización
       }
-      this.fetchCurrentUser();
+      // Deferred: this runs inside the constructor, and authInterceptor injects
+      // AuthService, so a synchronous request would hit a circular DI error.
+      queueMicrotask(() => this.fetchCurrentUser());
     }
   }
 
@@ -246,14 +248,20 @@ export class AuthService {
       this.isAuthenticatedSignal.set(true);
     }).catch((err) => {
       // Si la app está offline o hay error de red temporal, no cerramos sesión
-      if (typeof navigator !== 'undefined' && !navigator.onLine) {
-        return;
-      }
-      if (err?.status === 0) {
+      // mientras haya un usuario guardado con el que mostrar la app.
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if ((offline || err?.status === 0) && this.currentUserSignal() !== null) {
         return;
       }
       if (err?.status === 401) {
         this.notificationService.error('Sesión no válida', 'No pudimos validar tu sesión. Volvé a iniciar sesión.');
+        this.logout();
+        return;
+      }
+      // Without a cached user the shell cannot render, so never leave the app
+      // stuck on the loading screen: send the user back to log in.
+      if (this.currentUserSignal() === null) {
+        this.notificationService.error('No pudimos cargar tu sesión', 'Volvé a iniciar sesión.');
         this.logout();
       }
     });
