@@ -28,6 +28,7 @@ from app.routers import (
     sales,
     seasons,
     suppliers,
+    sync,
     team,
     tenant_platform,
 )
@@ -105,5 +106,6 @@ for router in (
     purchase_history.router,
     logs.router,
     tenant_platform.router,
+    sync.router,
 ):
     app.include_router(router)

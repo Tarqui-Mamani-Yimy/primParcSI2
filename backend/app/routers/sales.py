@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,11 +15,12 @@ from app.models import (
     Producto,
     Venta,
 )
-from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut
+from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut, ResolveDiscrepancyIn
 from app.security import require_feature, get_current_payload, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.recomendaciones_gemini import generar_recomendaciones_post_venta
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
+from app.services.idempotency import replay_if_present, save_result
 
 router = APIRouter(prefix="/api/sales", tags=["sales"], dependencies=[Depends(require_feature("ventas"))])
 
@@ -64,12 +65,18 @@ async def _serialize_venta(v: Venta, session: AsyncSession, detalles: list[Detal
         idCliente=v.idCliente,
         idMetPago=v.idMetPago,
         detalles=[await _serialize_detalle(d, session) for d in detalles],
+        origen=v.origen,
+        comprobanteLocal=v.comprobanteLocal,
+        discrepanciaStock=v.discrepanciaStock,
+        discrepanciaResueltaEn=v.discrepanciaResueltaEn,
+        discrepanciaNota=v.discrepanciaNota,
     )
 
 
 @router.get("", response_model=list[VentaOut])
 async def list_sales(
     idCliente: int | None = None,
+    discrepancia: bool | None = Query(default=None),
     session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
@@ -79,6 +86,8 @@ async def list_sales(
         stmt = select(Venta).order_by(Venta.fecha.desc())
         if idCliente is not None:
             stmt = stmt.where(Venta.idCliente == idCliente)
+        if discrepancia is not None:
+            stmt = stmt.where(Venta.discrepanciaStock.is_(discrepancia))
         ventas = (await session.execute(stmt)).scalars().all()
     else:
         if idCliente is not None and "cliente.ver" not in permisos:
@@ -91,7 +100,8 @@ async def list_sales(
             return []
         ventas = (
             await session.execute(
-                select(Venta).where(Venta.idCliente == cliente.idCliente).order_by(Venta.fecha.desc())
+                select(Venta).where(Venta.idCliente == cliente.idCliente,
+                                    *([Venta.discrepanciaStock.is_(discrepancia)] if discrepancia is not None else [])).order_by(Venta.fecha.desc())
             )
         ).scalars().all()
 
@@ -116,15 +126,35 @@ async def get_sale(idVenta: int, session: AsyncSession = Depends(get_tenant_db),
     return await _serialize_venta(v, session, detalles)
 
 
+@router.patch("/{idVenta}/resolve-discrepancy")
+async def resolve_discrepancy(idVenta: int, payload: ResolveDiscrepancyIn,
+                              session: AsyncSession = Depends(get_tenant_db),
+                              _=Depends(require_permiso("inventario.ajustar"))):
+    venta = await session.get(Venta, idVenta)
+    if venta is None:
+        raise HTTPException(status_code=404, detail="Venta no encontrada")
+    if not venta.discrepanciaStock:
+        raise HTTPException(status_code=409, detail={"code": "no_stock_discrepancy"})
+    venta.discrepanciaResueltaEn = datetime.now()
+    venta.discrepanciaNota = payload.nota
+    await session.commit()
+    return {"idVenta": venta.idVenta, "discrepanciaStock": venta.discrepanciaStock,
+            "discrepanciaResueltaEn": venta.discrepanciaResueltaEn, "discrepanciaNota": venta.discrepanciaNota}
+
+
 @router.post("", response_model=VentaOut, status_code=201)
 async def create_sale(
     payload: VentaIn,
     request: Request,
+    response: Response,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("venta.crear")),
     _pos=Depends(require_feature("pos")),
 ):
+    pending = await replay_if_present(request, session, auth, response, payload.model_dump(mode="json"))
+    if pending is not None and not isinstance(pending, tuple):
+        return pending
     if not payload.items:
         raise HTTPException(status_code=400, detail="Debe enviar al menos un item")
 
@@ -239,8 +269,7 @@ async def create_sale(
 
     venta.total = total
     await _registrar_bitacora(session, f"Venta {venta.idVenta} creada", int(auth["sub"]), request.client.host if request.client else "0.0.0.0")
-    await session.commit()
-    await session.refresh(venta)
+    await session.flush()
 
     # CU22: recomendaciones generadas en background, DESPUES del commit —
     # nunca demora la respuesta de la venta, y si Gemini falla la venta ya
@@ -254,4 +283,8 @@ async def create_sale(
     detalles = (
         await session.execute(select(DetalleVenta).where(DetalleVenta.idVenta == venta.idVenta))
     ).scalars().all()
-    return await _serialize_venta(venta, session, detalles)
+    serialized = await _serialize_venta(venta, session, detalles)
+    result = serialized.model_dump(mode="json")
+    await save_result(session, pending, auth, request, 201, result)
+    await session.commit()
+    return serialized

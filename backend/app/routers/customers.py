@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,7 @@ from app.database import get_tenant_db
 from app.models import Cliente, Usuario
 from app.schemas.fase2 import ClienteCreate, ClienteFull, ClienteMeUpdate, ClienteUpdate
 from app.security import get_current_payload, require_permiso
+from app.services.idempotency import replay_if_present, save_result
 
 router = APIRouter(prefix="/api/customers", tags=["customers"])
 
@@ -36,18 +37,26 @@ async def get_my_customer(
 @router.put("/me", response_model=ClienteFull)
 async def update_my_customer(
     update: ClienteMeUpdate,
+    request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_tenant_db),
     payload: dict = Depends(get_current_payload),
 ):
+    pending = await replay_if_present(request, session, payload, response, update.model_dump(exclude_unset=True, mode="json"))
+    if pending is not None and not isinstance(pending, tuple):
+        return pending
     cliente = await _cliente_del_caller(session, payload)
     if cliente is None:
         raise HTTPException(status_code=404, detail="La cuenta no tiene un cliente asociado")
     data = update.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(cliente, k, v)
+    await session.flush()
+    serialized = await _serialize(cliente, session)
+    result = serialized.model_dump(mode="json")
+    await save_result(session, pending, payload, request, 200, result)
     await session.commit()
-    await session.refresh(cliente)
-    return await _serialize(cliente, session)
+    return serialized
 
 
 async def _serialize(c: Cliente, session: AsyncSession) -> ClienteFull:

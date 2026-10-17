@@ -1,6 +1,6 @@
 from datetime import date, datetime, time
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +25,7 @@ from app.schemas.fase2 import (
 )
 from app.security import require_feature, get_current_payload, require_permiso
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
+from app.services.idempotency import replay_if_present, save_result
 
 router = APIRouter(prefix="/api/reservations", tags=["reservations"], dependencies=[Depends(require_feature("reservas"))])
 
@@ -97,9 +98,14 @@ async def list_reservations(
 @router.post("", response_model=ReservaOut, status_code=201)
 async def create_reservation(
     payload: ReservaIn,
+    request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("reserva.crear")),
 ):
+    pending = await replay_if_present(request, session, auth, response, payload.model_dump(mode="json"))
+    if pending is not None and not isinstance(pending, tuple):
+        return pending
     if "reserva.gestionar" not in auth.get("permisos", []):
         cliente = await _cliente_del_caller(session, auth)
         if cliente is None:
@@ -141,7 +147,7 @@ async def create_reservation(
         )
     ).scalar_one_or_none()
     if inv is None or inv.cantidad_actual - inv.cantidad_reservada <= 0:
-        raise HTTPException(status_code=400, detail="No hay stock disponible para reservar")
+        raise HTTPException(status_code=400, detail={"code": "stock_insufficient", "idProducto": payload.idProducto})
 
     inv.cantidad_reservada += 1
 
@@ -156,9 +162,12 @@ async def create_reservation(
         montoDeposito=metodo.monto,
     )
     session.add(reserva)
+    await session.flush()
+    serialized = await _serialize_reserva(reserva, session)
+    result = serialized.model_dump(mode="json")
+    await save_result(session, pending, auth, request, 201, result)
     await session.commit()
-    await session.refresh(reserva)
-    return await _serialize_reserva(reserva, session)
+    return serialized
 
 
 @router.put("/{codigoReserva}/prepare", response_model=ReservaOut)

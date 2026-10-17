@@ -194,6 +194,35 @@ class VentaOut(ORMModel):
     idCliente: int
     idMetPago: int
     detalles: list[DetalleVentaOut] = []
+    origen: str = "online"
+    comprobanteLocal: Optional[str] = None
+    discrepanciaStock: bool = False
+    discrepanciaResueltaEn: Optional[datetime] = None
+    discrepanciaNota: Optional[str] = None
+
+
+class OfflineSalePayment(BaseModel):
+    tipo: str
+    monto: float
+
+
+class OfflineSaleItem(BaseModel):
+    idProducto: int
+    cantidad: int
+
+
+class OfflineSaleIn(BaseModel):
+    idLocal: UUID
+    comprobanteLocal: str
+    fechaLocal: datetime
+    codigoSucursal: int
+    idCliente: int | None = None
+    pago: OfflineSalePayment
+    items: list[OfflineSaleItem]
+
+
+class ResolveDiscrepancyIn(BaseModel):
+    nota: str
 
 
 class ReservaIn(BaseModel):

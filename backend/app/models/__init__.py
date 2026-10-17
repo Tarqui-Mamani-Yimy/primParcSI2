@@ -127,6 +127,7 @@ class Sucursal(Base):
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     direccion: Mapped[str] = mapped_column(String(255), nullable=False)
     idCiudad: Mapped[int] = mapped_column(ForeignKey("Ciudad.idCiudad", onupdate="CASCADE"), nullable=False)
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
 
     ciudad: Mapped["Ciudad"] = relationship(back_populates="sucursales")
     inventarios: Mapped[list["Inventario"]] = relationship(back_populates="sucursal")
@@ -194,6 +195,7 @@ class Producto(Base):
 
     imagen_url: Mapped[str | None] = mapped_column(Text)
     imagenes_secundarias: Mapped[list[str] | None] = mapped_column(ARRAY(Text), default=lambda: [])
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
 
     proveedor: Mapped["Proveedor"] = relationship(back_populates="productos")
     coleccion: Mapped["Colecciones"] = relationship()
@@ -213,12 +215,13 @@ class Cliente(Base):
     pecho: Mapped[int | None] = mapped_column(Integer)
     cintura: Mapped[int | None] = mapped_column(Integer)
     tiro: Mapped[int | None] = mapped_column(Integer)
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
 
 
 class Inventario(Base):
     __tablename__ = "Inventario"
     __table_args__ = (
-        CheckConstraint("cantidad_actual >= 0 AND cantidad_reservada >= 0", name="chk_inv_cantidades"),
+        CheckConstraint("cantidad_reservada >= 0", name="chk_inv_cantidades"),
         UniqueConstraint("codigoSucursal", "idProducto", name="uq_sucursal_producto"),
     )
 
@@ -228,6 +231,7 @@ class Inventario(Base):
     cantidad_reservada: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     codigoSucursal: Mapped[int] = mapped_column(ForeignKey("Sucursal.codigoSucursal", onupdate="CASCADE"), nullable=False)
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
 
     sucursal: Mapped["Sucursal"] = relationship(back_populates="inventarios")
     producto: Mapped["Producto"] = relationship(back_populates="inventarios")
@@ -293,6 +297,7 @@ class Reserva(Base):
     # migracion 009 y D3 en design.md).
     idMetPago: Mapped[int | None] = mapped_column(ForeignKey("metodo_pago.idMetPago", onupdate="CASCADE"))
     montoDeposito: Mapped[float | None] = mapped_column(Numeric(10, 2))
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
 
 
 class Venta(Base):
@@ -309,6 +314,38 @@ class Venta(Base):
     total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)
     idMetPago: Mapped[int] = mapped_column(ForeignKey("metodo_pago.idMetPago", onupdate="CASCADE"), nullable=False)
+    fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
+    origen: Mapped[str] = mapped_column(String(20), default="online", nullable=False)
+    comprobanteLocal: Mapped[str | None] = mapped_column(String(100))
+    discrepanciaStock: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    discrepanciaResueltaEn: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    discrepanciaNota: Mapped[str | None] = mapped_column(Text)
+
+
+class OperacionIdempotente(Base):
+    __tablename__ = "operacion_idempotente"
+    __table_args__ = (UniqueConstraint("idEmpresa", "idUser", "clave", name="uq_operacion_idempotente_scope"),)
+
+    idOperacion: Mapped[int] = mapped_column(Integer, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idUser: Mapped[int] = mapped_column(Integer, nullable=False)
+    clave: Mapped[str] = mapped_column(String(255), nullable=False)
+    metodo: Mapped[str] = mapped_column(String(10), nullable=False)
+    ruta: Mapped[str] = mapped_column(String(255), nullable=False)
+    hashBody: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[int] = mapped_column(Integer, nullable=False)
+    respuesta: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
+class SyncBorrado(Base):
+    __tablename__ = "sync_borrado"
+
+    idBorrado: Mapped[int] = mapped_column("idborrado", BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    tabla: Mapped[str] = mapped_column(String(40), nullable=False)
+    idRegistro: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    borradoEn: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
+    idCliente: Mapped[int | None] = mapped_column(Integer)
 
 
 class DetalleVenta(Base):
