@@ -23,7 +23,7 @@ export class LocationsAdminService {
   ) {}
 
   private deleteConflictMessage(err: any, fallback: string): string {
-    if (err.error?.detail) return err.error.detail;
+    if (typeof err.error?.detail === 'string') return err.error.detail;
     if (err.status === 409 || err.status === 500) {
       return 'No se pudo eliminar: aún existen registros que dependen de este elemento.';
     }
@@ -50,7 +50,8 @@ export class LocationsAdminService {
       this.notificationService.success('Ciudad creada', `"${ciudad.nombCiudad}" fue agregada.`);
       return ciudad;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo crear la ciudad.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo crear la ciudad.';
       this.notificationService.error('Error', msg);
       return null;
     });
@@ -64,7 +65,8 @@ export class LocationsAdminService {
       this.notificationService.success('Ciudad actualizada', `"${ciudad.nombCiudad}" fue actualizada.`);
       return ciudad;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo actualizar la ciudad.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo actualizar la ciudad.';
       this.notificationService.error('Error', msg);
       return null;
     });
@@ -78,6 +80,7 @@ export class LocationsAdminService {
       this.notificationService.warning('Ciudad eliminada', `ID ${idCiudad} removida.`);
       return true;
     }).catch((err) => {
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return false;
       const msg = this.deleteConflictMessage(err, 'No se pudo eliminar la ciudad.');
       this.notificationService.error('Error', msg);
       return false;
@@ -92,7 +95,8 @@ export class LocationsAdminService {
     ).then((list) => {
       this.branchesSignal.set(list);
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo cargar la lista de sucursales.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo cargar la lista de sucursales.';
       this.notificationService.error('Error', msg);
     });
   }
@@ -105,7 +109,8 @@ export class LocationsAdminService {
       this.notificationService.success('Sucursal creada', `"${sucursal.nombre}" fue agregada.`);
       return sucursal;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo crear la sucursal.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo crear la sucursal.';
       this.notificationService.error('Error', msg);
       return null;
     });
@@ -119,7 +124,8 @@ export class LocationsAdminService {
       this.notificationService.success('Sucursal actualizada', `"${sucursal.nombre}" fue actualizada.`);
       return sucursal;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo actualizar la sucursal.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo actualizar la sucursal.';
       this.notificationService.error('Error', msg);
       return null;
     });
@@ -133,6 +139,7 @@ export class LocationsAdminService {
       this.notificationService.warning('Sucursal eliminada', `ID ${codigoSucursal} removida.`);
       return true;
     }).catch((err) => {
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return false;
       const msg = this.deleteConflictMessage(err, 'No se pudo eliminar la sucursal.');
       this.notificationService.error('Error', msg);
       return false;

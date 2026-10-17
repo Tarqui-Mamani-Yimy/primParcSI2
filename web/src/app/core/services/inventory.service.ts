@@ -65,7 +65,8 @@ export class InventoryService {
       this.notificationService.success('Stock ajustado', `Stock actualizado a ${newCantidad} unidades.`);
       return true;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo ajustar el stock.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return false;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo ajustar el stock.';
       this.notificationService.error('Error', msg);
       return false;
     });
@@ -92,7 +93,8 @@ export class InventoryService {
       this.notificationService.success('Ingreso registrado', `Stock inicial asignado (${cantidad} unidades).`);
       return true;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo registrar el ingreso de lote.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return false;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo registrar el ingreso de lote.';
       this.notificationService.error('Error', msg);
       return false;
     });
@@ -118,7 +120,8 @@ export class InventoryService {
       this.notificationService.success('Transferencia programada', `Despacho de transferencia registrado.`);
       return true;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo completar la transferencia.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return false;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo completar la transferencia.';
       this.notificationService.error('Error', msg);
       return false;
     });

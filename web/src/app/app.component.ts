@@ -1,8 +1,10 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
+import { TenantBannerService } from './core/services/tenant-banner.service';
 import { LoginComponent } from './features/auth/login.component';
 import { RegisterComponent } from './features/auth/register.component';
+import { LandingComponent } from './components/landing/landing.component';
 import { HeaderComponent } from './shared/components/header.component';
 import { SidebarComponent, AppView } from './shared/components/sidebar.component';
 import { ToastContainerComponent } from './shared/components/toast-container.component';
@@ -19,12 +21,15 @@ import { PosComponent } from './features/pos/pos.component';
 import { LocationsComponent } from './features/locations/locations.component';
 import { ReportsComponent } from './features/reports/reports.component';
 import { IndicadoresComponent } from './features/indicadores/indicadores.component';
+import { SubscriptionComponent } from './features/subscription/subscription.component';
+import { PlatformComponent } from './features/platform/platform.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    LandingComponent,
     LoginComponent,
     RegisterComponent,
     HeaderComponent,
@@ -42,20 +47,30 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
     PosComponent,
     LocationsComponent,
     ReportsComponent,
-    IndicadoresComponent
+    IndicadoresComponent,
+    SubscriptionComponent,
+    PlatformComponent
   ],
   template: `
-    <!-- Top Level Screen Router: Show Login/Register or Authenticated Portal -->
+    <!-- Top Level Screen Router: Show Landing/Login/Register or Authenticated Portal -->
     <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else authGate">
+      <app-landing
+        *ngIf="publicScreen() === 'landing' && !showAuthScreen()"
+        (login)="goToLogin()"
+      ></app-landing>
+
       <app-login
-        *ngIf="authMode() === 'login'"
+        *ngIf="publicScreen() === 'login' || (publicScreen() === 'landing' && showAuthScreen())"
         (loggedIn)="onLoginSuccess()"
-        (showRegister)="authMode.set('register')"
+        (showRegister)="goToRegister()"
+        (backToLanding)="goToLanding()"
       ></app-login>
+
       <app-register
-        *ngIf="authMode() === 'register'"
+        *ngIf="publicScreen() === 'register'"
         (registered)="onRegisterSuccess()"
-        (backToLogin)="authMode.set('login')"
+        (backToLogin)="goToLogin()"
+        (backToLanding)="goToLanding()"
       ></app-register>
     </ng-container>
 
@@ -86,6 +101,7 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
             [currentView]="activeView()"
             (viewChange)="onViewChange($event)"
             (viewAuthScreen)="toggleAuthScreen()"
+            (logout)="onLogout()"
           ></app-sidebar>
         </div>
 
@@ -103,6 +119,7 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
               [currentView]="activeView()"
               (viewChange)="onViewChange($event); mobileMenuOpen.set(false)"
               (viewAuthScreen)="toggleAuthScreen(); mobileMenuOpen.set(false)"
+              (logout)="onLogout(); mobileMenuOpen.set(false)"
             ></app-sidebar>
           </div>
         </div>
@@ -116,6 +133,33 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
             (toggleMobileMenu)="mobileMenuOpen.set(true)"
             (logout)="onLogout()"
           ></app-header>
+
+          <!-- Banner Global de Tenant / Suscripción -->
+          <div
+            *ngIf="tenantBannerService.banner() as b"
+            class="px-6 py-2.5 text-xs flex items-center justify-between border-b shrink-0 transition-all duration-200"
+            [ngClass]="b.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-amber-50 border-amber-200 text-amber-800'"
+          >
+            <div class="flex items-center space-x-2">
+              <span class="material-symbols-outlined text-[18px]">
+                {{ b.type === 'error' ? 'error' : 'warning' }}
+              </span>
+              <span>
+                <strong>{{ b.title }}:</strong> {{ b.message }}
+              </span>
+            </div>
+
+            <button
+              *ngIf="b.dismissible"
+              (click)="tenantBannerService.dismiss()"
+              class="p-1 hover:bg-black/5 rounded text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+              title="Cerrar aviso"
+            >
+              <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
 
           <!-- Scrollable View Container -->
           <main class="flex-1 overflow-y-auto bg-gray-50">
@@ -167,6 +211,14 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
             <app-indicadores
               *ngIf="activeView() === 'indicadores'"
             ></app-indicadores>
+
+            <app-subscription
+              *ngIf="activeView() === 'subscription'"
+            ></app-subscription>
+
+            <app-platform
+              *ngIf="activeView() === 'platform'"
+            ></app-platform>
           </main>
         </div>
       </div>
@@ -180,29 +232,63 @@ export class AppComponent {
   activeView = signal<AppView>('dashboard');
   showAuthScreen = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
-  authMode = signal<'login' | 'register'>('login');
+
+  // Si la URL contiene ?reset_token=..., ir directamente a login sin pasar por landing
+  private hasResetToken(): boolean {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).has('reset_token');
+  }
+
+  publicScreen = signal<'landing' | 'login' | 'register'>(this.hasResetToken() ? 'login' : 'landing');
 
   isCustomer = computed(() => this.authService.currentUser()?.rol === 'Cliente');
 
-  constructor(public authService: AuthService) {}
+  constructor(
+    public authService: AuthService,
+    public tenantBannerService: TenantBannerService
+  ) {
+    effect(() => {
+      if (this.authService.isSuperAdmin()) {
+        if (this.activeView() !== 'platform') {
+          this.activeView.set('platform');
+        }
+      } else if (this.activeView() === 'platform') {
+        this.activeView.set('dashboard');
+      }
+    });
+  }
+
+  goToLogin() {
+    this.publicScreen.set('login');
+  }
+
+  goToRegister() {
+    this.publicScreen.set('register');
+  }
+
+  goToLanding() {
+    this.showAuthScreen.set(false);
+    this.publicScreen.set('landing');
+  }
 
   onLoginSuccess() {
     this.showAuthScreen.set(false);
-    this.authMode.set('login');
+    this.publicScreen.set('landing');
   }
 
   onRegisterSuccess() {
     this.showAuthScreen.set(false);
-    this.authMode.set('login');
+    this.publicScreen.set('landing');
   }
 
   onLogout() {
-    this.showAuthScreen.set(true);
-    this.authMode.set('login');
+    this.showAuthScreen.set(false);
+    this.publicScreen.set('landing');
   }
 
   toggleAuthScreen() {
     this.showAuthScreen.set(true);
+    this.publicScreen.set('login');
   }
 
   onViewChange(view: AppView) {
@@ -236,6 +322,10 @@ export class AppComponent {
         return 'Reportes de Ventas e Inventario';
       case 'indicadores':
         return 'Dashboard de Indicadores Empresariales';
+      case 'subscription':
+        return 'Mi Suscripción y Capacidad de Plan';
+      case 'platform':
+        return 'Panel de Plataforma — Gestión Global';
       default:
         return 'Operaciones';
     }

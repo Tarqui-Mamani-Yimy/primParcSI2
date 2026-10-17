@@ -88,7 +88,8 @@ export class ArchiveService {
       this.notificationService.success('Producto agregado', `"${product.nombre}" añadido al catálogo.`);
       return product;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo agregar el producto.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo agregar el producto.';
       this.notificationService.error('Error', msg);
       return null;
     });
@@ -102,7 +103,8 @@ export class ArchiveService {
       this.notificationService.info('Producto actualizado', `${product.nombre}`);
       return product;
     }).catch((err) => {
-      const msg = err.error?.detail || 'No se pudo actualizar el producto.';
+      if (err.status === 403 && (err.multitenantHandled || err.error?.detail?.code)) return null;
+      const msg = (typeof err.error?.detail === 'string' ? err.error.detail : null) || 'No se pudo actualizar el producto.';
       this.notificationService.error('Error', msg);
       return null;
     });

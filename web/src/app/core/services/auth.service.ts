@@ -1,7 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
-import { AuthUser, LoginResponse, RegisterRequest } from '../models';
+import { AuthUser, EmpresaInfo, LoginResponse, PlanInfo, RegisterRequest, SuscripcionInfo, UserRole } from '../models';
 import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 
@@ -18,12 +18,26 @@ interface LoginBackendResponse {
   refresh_token: string;
   token_type: string;
   user: {
-    idUser: string;
+    idUser: string | number;
     nombre: string;
     correo: string;
     rol: string;
     permisos: string[];
   };
+  empresa?: EmpresaInfo | null;
+  plan?: PlanInfo | null;
+  suscripcion?: SuscripcionInfo | null;
+}
+
+interface MeBackendResponse {
+  idUser: string | number;
+  nombre: string;
+  correo: string;
+  rol: string;
+  permisos: string[];
+  empresa?: EmpresaInfo | null;
+  plan?: PlanInfo | null;
+  suscripcion?: SuscripcionInfo | null;
 }
 
 @Injectable({
@@ -33,9 +47,16 @@ export class AuthService {
   private currentUserSignal = signal<AuthUser | null>(null);
   private isAuthenticatedSignal = signal<boolean>(false);
   private accessTokenSignal = signal<string | null>(null);
+  private empresaSignal = signal<EmpresaInfo | null>(null);
+  private planSignal = signal<PlanInfo | null>(null);
+  private suscripcionSignal = signal<SuscripcionInfo | null>(null);
 
   public currentUser = this.currentUserSignal.asReadonly();
   public isAuthenticated = this.isAuthenticatedSignal.asReadonly();
+  public empresa = this.empresaSignal.asReadonly();
+  public plan = this.planSignal.asReadonly();
+  public suscripcion = this.suscripcionSignal.asReadonly();
+  public isSuperAdmin = computed(() => this.currentUserSignal()?.rol === 'SuperAdmin');
 
   constructor(
     private http: HttpClient,
@@ -44,22 +65,64 @@ export class AuthService {
     this.loadTokenFromStorage();
   }
 
+  hasFeature(key: string): boolean {
+    if (this.isSuperAdmin()) return true;
+    return this.planSignal()?.features?.includes(key) ?? false;
+  }
+
+  private setTenantState(
+    empresa?: EmpresaInfo | null,
+    plan?: PlanInfo | null,
+    suscripcion?: SuscripcionInfo | null
+  ): void {
+    this.empresaSignal.set(empresa ?? null);
+    this.planSignal.set(plan ?? null);
+    this.suscripcionSignal.set(suscripcion ?? null);
+
+    if (empresa) localStorage.setItem('empresa', JSON.stringify(empresa));
+    else localStorage.removeItem('empresa');
+
+    if (plan) localStorage.setItem('plan', JSON.stringify(plan));
+    else localStorage.removeItem('plan');
+
+    if (suscripcion) localStorage.setItem('suscripcion', JSON.stringify(suscripcion));
+    else localStorage.removeItem('suscripcion');
+  }
+
   private loadTokenFromStorage() {
     const token = localStorage.getItem('access_token');
     if (token) {
       this.accessTokenSignal.set(token);
       this.isAuthenticatedSignal.set(true);
+      try {
+        const emp = localStorage.getItem('empresa');
+        if (emp) this.empresaSignal.set(JSON.parse(emp));
+        const pl = localStorage.getItem('plan');
+        if (pl) this.planSignal.set(JSON.parse(pl));
+        const sub = localStorage.getItem('suscripcion');
+        if (sub) this.suscripcionSignal.set(JSON.parse(sub));
+      } catch {
+        // Ignorar fallos de deserialización
+      }
       this.fetchCurrentUser();
     }
   }
 
-  private mapBackendUser(u: LoginBackendResponse['user']): AuthUser {
+  private mapBackendUser(
+    u: LoginBackendResponse['user'],
+    empresa?: EmpresaInfo | null,
+    plan?: PlanInfo | null,
+    suscripcion?: SuscripcionInfo | null
+  ): AuthUser {
     return {
-      id: u.idUser,
+      id: String(u.idUser),
       nombre: u.nombre,
       email: u.correo,
-      rol: u.rol as AuthUser['rol'],
+      rol: u.rol as UserRole,
       permisos: u.permisos,
+      empresa: empresa ?? null,
+      plan: plan ?? null,
+      suscripcion: suscripcion ?? null,
     };
   }
 
@@ -70,7 +133,8 @@ export class AuthService {
       this.accessTokenSignal.set(res.access_token);
       localStorage.setItem('access_token', res.access_token);
       localStorage.setItem('refresh_token', res.refresh_token);
-      this.currentUserSignal.set(this.mapBackendUser(res.user));
+      this.setTenantState(res.empresa, res.plan, res.suscripcion);
+      this.currentUserSignal.set(this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion));
       this.isAuthenticatedSignal.set(true);
       this.notificationService.success('Acceso concedido', `Bienvenido, ${res.user.nombre}`);
       return true;
@@ -94,7 +158,8 @@ export class AuthService {
       this.accessTokenSignal.set(res.access_token);
       localStorage.setItem('access_token', res.access_token);
       localStorage.setItem('refresh_token', res.refresh_token);
-      this.currentUserSignal.set(this.mapBackendUser(res.user));
+      this.setTenantState(res.empresa, res.plan, res.suscripcion);
+      this.currentUserSignal.set(this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion));
       this.isAuthenticatedSignal.set(true);
       this.notificationService.success('Registro exitoso', `Bienvenido, ${res.user.nombre}`);
       return { ok: true } as RegisterResult;
@@ -154,15 +219,19 @@ export class AuthService {
   fetchCurrentUser(): Promise<void> {
     return firstValueFrom(
       this.http
-        .get<{ idUser: string; nombre: string; correo: string; rol: string; permisos: string[] }>(`${API_URL}/api/auth/me`)
+        .get<MeBackendResponse>(`${API_URL}/api/auth/me`)
         .pipe(timeout(10000))
     ).then((u) => {
+      this.setTenantState(u.empresa, u.plan, u.suscripcion);
       this.currentUserSignal.set({
-        id: u.idUser,
+        id: String(u.idUser),
         nombre: u.nombre,
         email: u.correo,
-        rol: u.rol as AuthUser['rol'],
+        rol: u.rol as UserRole,
         permisos: u.permisos,
+        empresa: u.empresa ?? null,
+        plan: u.plan ?? null,
+        suscripcion: u.suscripcion ?? null,
       });
       this.isAuthenticatedSignal.set(true);
     }).catch(() => {
@@ -238,8 +307,14 @@ export class AuthService {
     this.currentUserSignal.set(null);
     this.isAuthenticatedSignal.set(false);
     this.accessTokenSignal.set(null);
+    this.empresaSignal.set(null);
+    this.planSignal.set(null);
+    this.suscripcionSignal.set(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('empresa');
+    localStorage.removeItem('plan');
+    localStorage.removeItem('suscripcion');
     this.notificationService.info('Sesión cerrada', 'Tu sesión administrativa ha terminado de forma segura.');
   }
 

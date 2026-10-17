@@ -8,9 +8,23 @@ export class NotificationService {
   private toastsSignal = signal<ToastMessage[]>([]);
   public toasts = this.toastsSignal.asReadonly();
 
-  show(type: 'success' | 'info' | 'warning' | 'error', title: string, message: string, durationMs = 4000) {
+  show(type: 'success' | 'info' | 'warning' | 'error', title: string, message: any, durationMs = 4000) {
+    let msgStr = '';
+    if (typeof message === 'string') {
+      msgStr = message;
+    } else if (message && typeof message === 'object') {
+      if (typeof message.message === 'string') {
+        msgStr = message.message;
+      } else if (typeof message.detail === 'string') {
+        msgStr = message.detail;
+      } else {
+        msgStr = JSON.stringify(message);
+      }
+    } else {
+      msgStr = String(message ?? '');
+    }
     const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
-    const toast: ToastMessage = { id, type, title, message };
+    const toast: ToastMessage = { id, type, title, message: msgStr };
     this.toastsSignal.update(toasts => [...toasts, toast]);
 
     setTimeout(() => {

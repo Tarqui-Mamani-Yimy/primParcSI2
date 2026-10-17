@@ -2,7 +2,7 @@
 // AUTH
 // ─────────────────────────────────────────────
 
-export type UserRole = 'Administrador' | 'Encargado de Sucursal' | 'Cajero' | 'Proveedor' | 'Cliente';
+export type UserRole = 'Administrador' | 'Encargado de Sucursal' | 'Cajero' | 'Proveedor' | 'Cliente' | 'SuperAdmin';
 
 export interface LoginRequest {
   email: string;
@@ -22,6 +22,9 @@ export interface AuthUser {
   email: string;
   rol: UserRole;
   permisos: string[];
+  empresa?: EmpresaInfo | null;
+  plan?: PlanInfo | null;
+  suscripcion?: SuscripcionInfo | null;
 }
 
 export interface RegisterRequest {
@@ -507,3 +510,125 @@ export interface ToastMessage {
   title: string;
   message: string;
 }
+
+// ─────────────────────────────────────────────
+// MULTITENANT & SUBSCRIPTIONS
+// ─────────────────────────────────────────────
+
+export interface EmpresaInfo {
+  idEmpresa: number;
+  nombre: string;
+  slug: string;
+  logoUrl: string | null;
+}
+
+export interface PlanLimites {
+  sucursales: number | null;
+  usuarios: number | null;
+  productos: number | null;
+}
+
+export interface PlanInfo {
+  codigo: 'basico' | 'intermedio' | 'avanzado' | string;
+  nombre: string;
+  features: string[];
+  limites: PlanLimites;
+}
+
+export interface SuscripcionInfo {
+  estado: 'activa' | 'vencida' | 'suspendida' | string;
+  fechaFin: string | null;
+}
+
+export interface TenantUso {
+  sucursales: number;
+  usuarios: number;
+  productos: number;
+}
+
+export interface TenantMeResponse {
+  empresa: EmpresaInfo;
+  plan: PlanInfo;
+  suscripcion: SuscripcionInfo;
+  uso: TenantUso;
+}
+
+// ─────────────────────────────────────────────
+// PLATFORM (SUPERADMIN)
+// ─────────────────────────────────────────────
+
+export interface PlatformPlan {
+  idPlan: number;
+  codigo: string;
+  nombre: string;
+  precioMensual: number;
+  features: string[];
+  limites: PlanLimites;
+}
+
+export interface PlatformEmpresa {
+  idEmpresa: number;
+  nombre: string;
+  slug: string;
+  logoUrl: string | null;
+  estado: string;
+  plan: {
+    codigo: string;
+    nombre: string;
+  };
+  suscripcion: {
+    estado: string;
+    fechaFin: string | null;
+  };
+  uso: TenantUso;
+}
+
+export interface CreateEmpresaIn {
+  nombre: string;
+  slug: string;
+  codigoPlan: string;
+  admin: {
+    nombre: string;
+    correo: string;
+    password: string;
+  };
+}
+
+export interface UpdateEmpresaIn {
+  nombre?: string;
+  logoUrl?: string | null;
+}
+
+export interface ChangePlanIn {
+  codigoPlan: string;
+}
+
+export interface ChangeEstadoIn {
+  estado: 'activa' | 'suspendida';
+}
+
+// ─────────────────────────────────────────────
+// MULTITENANT HTTP ERRORS (403)
+// ─────────────────────────────────────────────
+
+export interface FeatureNotInPlanErrorDetail {
+  code: 'feature_not_in_plan';
+  feature: string;
+}
+
+export interface PlanLimitReachedErrorDetail {
+  code: 'plan_limit_reached';
+  recurso: string;
+  limite: number;
+}
+
+export interface SubscriptionInactiveErrorDetail {
+  code: 'subscription_inactive';
+  estado: 'suspendida' | string;
+}
+
+export type MultitenantErrorDetail =
+  | FeatureNotInPlanErrorDetail
+  | PlanLimitReachedErrorDetail
+  | SubscriptionInactiveErrorDetail;
+

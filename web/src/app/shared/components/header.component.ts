@@ -21,9 +21,13 @@ import { AuthService } from '../../core/services/auth.service';
         </button>
 
         <div class="flex items-center space-x-2 text-sm">
-          <span class="font-bold text-gray-900 tracking-tight">YouShop</span>
+          <span class="font-bold text-gray-900 tracking-tight">
+            {{ authService.isSuperAdmin() ? 'Plataforma SaaS' : (authService.empresa()?.nombre || 'YouShop') }}
+          </span>
           <span class="text-gray-300">/</span>
-          <span class="text-gray-400 hidden sm:inline">Operaciones</span>
+          <span class="text-gray-400 hidden sm:inline">
+            {{ authService.isSuperAdmin() ? 'SuperAdmin' : 'Operaciones' }}
+          </span>
           <span class="text-gray-300 hidden sm:inline">/</span>
           <span class="font-medium text-gray-900">{{ activeViewTitle }}</span>
         </div>
@@ -62,9 +66,14 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="px-3 py-2 border-b border-gray-100">
               <p class="text-xs font-bold text-gray-900">{{ user.nombre }}</p>
               <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
-              <span class="inline-block mt-1 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
-                {{ user.rol }}
-              </span>
+              <div class="flex items-center gap-1.5 mt-1.5">
+                <span class="inline-block px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
+                  {{ user.rol }}
+                </span>
+                <span *ngIf="authService.plan() as p" class="inline-block px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold uppercase border border-purple-100">
+                  {{ p.nombre }}
+                </span>
+              </div>
             </div>
 
             <div class="py-1">
