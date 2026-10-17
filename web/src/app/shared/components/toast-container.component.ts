@@ -15,16 +15,16 @@ import { NotificationService } from '../../core/services/notification.service';
           'border-emerald-200 text-emerald-950': toast.type === 'success',
           'border-amber-200 text-amber-950': toast.type === 'warning',
           'border-rose-200 text-rose-950': toast.type === 'error',
-          'border-gray-200 text-gray-900': toast.type === 'info'
+          'border-[#E8E2DA] text-[#17141A]': toast.type === 'info'
         }"
       >
         <span
           class="material-symbols-outlined text-[20px] shrink-0 mt-0.5"
           [ngClass]="{
-            'text-emerald-600': toast.type === 'success',
+            'text-[#16A34A]': toast.type === 'success',
             'text-amber-600': toast.type === 'warning',
             'text-rose-600': toast.type === 'error',
-            'text-indigo-600': toast.type === 'info'
+            'text-[#38133E]': toast.type === 'info'
           }"
         >
           {{
@@ -38,14 +38,14 @@ import { NotificationService } from '../../core/services/notification.service';
           <p class="text-xs font-bold leading-tight">
             {{ toast.title }}
           </p>
-          <p class="text-xs text-gray-500 mt-0.5 leading-snug">
+          <p class="text-xs text-[#5A5561] mt-0.5 leading-snug">
             {{ toast.message }}
           </p>
         </div>
 
         <button
           (click)="notificationService.remove(toast.id)"
-          class="text-gray-400 hover:text-gray-700 p-1 -mr-1 -mt-1 transition-colors"
+          class="text-[#9B94A3] hover:text-[#17141A] p-1 -mr-1 -mt-1 transition-colors"
         >
           <span class="material-symbols-outlined text-[16px]">close</span>
         </button>

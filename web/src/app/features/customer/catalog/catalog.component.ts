@@ -27,55 +27,55 @@ const PAGE_SIZE = 12;
     <div class="p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
 
       <!-- Encabezado -->
-      <div class="pb-5 border-b border-gray-200">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Explorar Productos</h1>
-        <p class="text-xs text-gray-500 mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
+      <div class="pb-5 border-b border-[#E8E2DA]">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
+        <h1 class="text-2xl font-bold text-[#17141A] tracking-tight mt-0.5">Explorar Productos</h1>
+        <p class="text-xs text-[#5A5561] mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
       </div>
 
       <!-- Recomendado para vos (CU22, IA) -->
-      <div *ngIf="recomendaciones().length > 0" class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-4">
+      <div *ngIf="recomendaciones().length > 0" class="bg-[#F5EBF7]/60 border border-[#E8E2DA] rounded-xl p-4">
         <div class="flex items-center gap-1.5 mb-3">
-          <span class="material-symbols-outlined text-[16px] text-indigo-600">auto_awesome</span>
-          <span class="text-xs font-bold uppercase tracking-wider text-indigo-700">Recomendado para vos</span>
+          <span class="material-symbols-outlined text-[16px] text-[#38133E]">auto_awesome</span>
+          <span class="text-xs font-bold uppercase tracking-wider text-[#38133E]">Recomendado para vos</span>
         </div>
         <div class="flex gap-3 overflow-x-auto pb-1">
           <button
             *ngFor="let r of recomendaciones()"
             (click)="openRecomendacion(r)"
             [disabled]="r.idProducto === null"
-            class="shrink-0 w-44 text-left bg-white rounded-lg border border-gray-200 hover:border-indigo-300 hover:shadow-sm transition-all p-3 cursor-pointer disabled:cursor-default disabled:opacity-60"
+            class="shrink-0 w-44 text-left bg-white rounded-lg border border-[#E8E2DA] hover:border-[#38133E] hover:shadow-sm transition-all p-3 cursor-pointer disabled:cursor-default disabled:opacity-60"
           >
             <span
               class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider mb-1.5"
               [ngClass]="{
                 'bg-rose-100 text-rose-700': r.importancia === 'Alta',
                 'bg-amber-100 text-amber-700': r.importancia === 'Media',
-                'bg-gray-100 text-gray-600': r.importancia === 'Baja'
+                'bg-[#F3EFEA] text-[#5A5561]': r.importancia === 'Baja'
               }"
             >{{ r.importancia }}</span>
-            <p class="text-xs font-bold text-gray-900 leading-snug line-clamp-2">{{ r.producto_nombre || r.nombre }}</p>
+            <p class="text-xs font-bold text-[#17141A] leading-snug line-clamp-2">{{ r.producto_nombre || r.nombre }}</p>
           </button>
         </div>
       </div>
 
       <!-- Filtros -->
-      <div class="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-xl border border-gray-200 shadow-xs">
+      <div class="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-xl border border-[#E8E2DA] shadow-xs">
         <div class="relative min-w-[200px] flex-1">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-gray-400">search</span>
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-[#9B94A3]">search</span>
           <input
             type="text"
             [(ngModel)]="q"
             (ngModelChange)="onFilterChange()"
             placeholder="Buscar por nombre..."
-            class="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+            class="w-full pl-9 pr-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs text-[#17141A] placeholder:text-[#9B94A3] focus:outline-none focus:ring-2 focus:ring-[#38133E] focus:bg-white transition-all"
           />
         </div>
 
         <select
           [(ngModel)]="tipo"
           (ngModelChange)="onFilterChange()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option value="">Todos los tipos</option>
           <option value="Camisa">Camisa</option>
@@ -91,13 +91,13 @@ const PAGE_SIZE = 12;
           [(ngModel)]="talla"
           (ngModelChange)="onFilterChange()"
           placeholder="Talla (ej. M)"
-          class="w-28 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+          class="w-28 px-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs text-[#17141A] placeholder:text-[#9B94A3] focus:outline-none focus:ring-2 focus:ring-[#38133E] focus:bg-white transition-all"
         />
 
         <select
           [(ngModel)]="color"
           (ngModelChange)="onFilterChange()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option value="">Todos los colores</option>
           <option value="Negro">Negro</option>
@@ -110,7 +110,7 @@ const PAGE_SIZE = 12;
         <select
           [(ngModel)]="idColeccion"
           (ngModelChange)="onFilterChange()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option [ngValue]="null">Todas las colecciones</option>
           <option *ngFor="let c of archiveService.colecciones()" [ngValue]="c.idColeccion">
@@ -121,7 +121,7 @@ const PAGE_SIZE = 12;
         <select
           [(ngModel)]="idProveedor"
           (ngModelChange)="onFilterChange()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option [ngValue]="null">Todos los proveedores</option>
           <option *ngFor="let pr of archiveService.proveedores()" [ngValue]="pr.idProveedor">
@@ -135,32 +135,32 @@ const PAGE_SIZE = 12;
         <div
           *ngFor="let item of archiveService.products()"
           (click)="openDetail(item)"
-          class="bg-white rounded-xl overflow-hidden border border-gray-200 shadow-xs hover:shadow-sm hover:border-indigo-300 transition-all flex flex-col cursor-pointer group"
+          class="bg-white rounded-xl overflow-hidden border border-[#E8E2DA] shadow-xs hover:shadow-sm hover:border-[#38133E] transition-all flex flex-col cursor-pointer group"
         >
-          <div class="aspect-[4/3] w-full bg-gray-100 overflow-hidden relative">
+          <div class="aspect-[4/3] w-full bg-[#FAF8F5] overflow-hidden relative">
             <img
               [src]="item.imagen_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80'"
               [alt]="item.nombre"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
-            <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-gray-200/80 shadow-xs text-right">
-              <p class="text-xs font-bold text-gray-900">{{ item.venta.toLocaleString() }} Bs</p>
+            <div class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-[#E8E2DA] shadow-xs text-right">
+              <p class="text-xs font-bold text-[#17141A]">{{ item.venta.toLocaleString() }} Bs</p>
             </div>
           </div>
 
           <div class="p-4 flex-1 flex flex-col justify-between space-y-2">
             <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">
                 {{ item.tipo || 'Sin tipo' }} {{ item.talla ? '• ' + item.talla : '' }}
               </span>
-              <h3 class="text-sm font-bold text-gray-900 leading-snug mt-0.5">{{ item.nombre }}</h3>
+              <h3 class="text-sm font-bold text-[#17141A] leading-snug mt-0.5">{{ item.nombre }}</h3>
             </div>
-            <p class="text-xs text-gray-500">{{ item.color || '' }}</p>
+            <p class="text-xs text-[#5A5561]">{{ item.color || '' }}</p>
           </div>
         </div>
       </div>
 
-      <div *ngIf="archiveService.products().length === 0" class="text-center py-12 text-gray-400 text-sm">
+      <div *ngIf="archiveService.products().length === 0" class="text-center py-12 text-[#9B94A3] text-sm">
         No se encontraron productos con los filtros seleccionados.
       </div>
 

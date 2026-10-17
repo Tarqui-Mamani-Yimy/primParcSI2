@@ -2,6 +2,7 @@ import { Component, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../core/services/archive.service';
+import { SyncService } from '../../core/services/sync.service';
 import { ProductOut, ProductoIn } from '../../core/models';
 
 @Component({
@@ -14,7 +15,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo de Productos</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo de Productos</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Archivo y Catálogo Esencial YouShop</h1>
           <p class="text-xs text-gray-500 mt-1">Gestión del catálogo de productos, proveedores y colecciones.</p>
         </div>
@@ -22,7 +23,9 @@ import { ProductOut, ProductoIn } from '../../core/models';
         <div class="flex items-center space-x-3">
           <button
             (click)="openCreateModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            [disabled]="!syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Agregar Producto</span>
@@ -39,13 +42,13 @@ import { ProductOut, ProductoIn } from '../../core/models';
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearch()"
             placeholder="Buscar por nombre..."
-            class="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+            class="w-full pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#38133E] focus:bg-white transition-all"
           />
         </div>
         <select
           [(ngModel)]="filterTipo"
           (ngModelChange)="onFilter()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option value="">Todos los tipos</option>
           <option value="Camisa">Camisa</option>
@@ -57,7 +60,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
         <select
           [(ngModel)]="filterColor"
           (ngModelChange)="onFilter()"
-          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+          class="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none"
         >
           <option value="">Todos los colores</option>
           <option value="Negro">Negro</option>
@@ -94,7 +97,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
           <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">
                   {{ item.tipo || 'Sin tipo' }} {{ item.talla ? '• ' + item.talla : '' }}
                 </span>
                 <span class="text-xs text-gray-500">{{ item.color || '' }}</span>
@@ -109,7 +112,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
               </div>
               <button
                 (click)="inspectProduct(item)"
-                class="px-3 py-1.5 bg-gray-900 text-white hover:bg-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
+                class="px-3 py-1.5 bg-[#17141A] text-white hover:bg-[#38133E] rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
               >Inspeccionar</button>
             </div>
           </div>
@@ -122,11 +125,11 @@ import { ProductOut, ProductoIn } from '../../core/models';
     </div>
 
     <!-- Modal: Inspección detallada de producto -->
-    <div *ngIf="inspectingItem()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="inspectingItem()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-3xl w-full rounded-2xl border border-gray-200 shadow-xl overflow-hidden max-h-[90vh] flex flex-col relative">
         <button
           (click)="inspectingItem.set(null)"
-          class="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 shadow-sm text-gray-700 flex items-center justify-center hover:bg-gray-900 hover:text-white transition-colors"
+          class="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/90 shadow-sm text-gray-700 flex items-center justify-center hover:bg-gray-900 hover:text-white transition-colors cursor-pointer"
         >
           <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
@@ -139,7 +142,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
               </div>
               <div class="w-full md:w-1/2 flex flex-col justify-between">
                 <div>
-                  <span class="text-[11px] font-bold tracking-wider text-indigo-600 uppercase">
+                  <span class="text-[11px] font-bold tracking-wider text-[#38133E] uppercase">
                     ID {{ p.idProducto }} • {{ p.tipo || 'Sin tipo' }}
                   </span>
                   <h2 class="text-xl font-bold text-gray-900 mt-1 leading-snug">{{ p.nombre }}</h2>
@@ -151,9 +154,9 @@ import { ProductOut, ProductoIn } from '../../core/models';
                     <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Costo</p>
                     <p class="text-lg font-bold text-gray-900 mt-0.5">{{ p.costo.toLocaleString() }} Bs</p>
                   </div>
-                  <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-200">
-                    <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-500">Venta</p>
-                    <p class="text-lg font-bold text-indigo-700 mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
+                  <div class="p-3 bg-[#F5EBF7] rounded-xl border border-[#E8E2DA]">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">Venta</p>
+                    <p class="text-lg font-bold text-[#38133E] mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
                   </div>
                 </div>
               </div>
@@ -200,14 +203,14 @@ import { ProductOut, ProductoIn } from '../../core/models';
     </div>
 
     <!-- Modal: Agregar nuevo producto -->
-    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-xl w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 max-h-[90vh] overflow-y-auto relative">
-        <button (click)="showCreateModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showCreateModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">Agregar Nuevo Producto</h2>
           <p class="text-xs text-gray-500">Registre una nueva prenda en el catálogo maestro.</p>
         </div>
@@ -216,45 +219,45 @@ import { ProductOut, ProductoIn } from '../../core/models';
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre *</label>
-              <input type="text" [(ngModel)]="newProduct.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <input type="text" [(ngModel)]="newProduct.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Tipo</label>
-              <input type="text" [(ngModel)]="newProduct.tipo" name="tipo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. Camisa" />
+              <input type="text" [(ngModel)]="newProduct.tipo" name="tipo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="ej. Camisa" />
             </div>
           </div>
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Descripción</label>
-            <textarea [(ngModel)]="newProduct.descripcion" name="descripcion" rows="2" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+            <textarea [(ngModel)]="newProduct.descripcion" name="descripcion" rows="2" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none"></textarea>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Costo (Bs) *</label>
-              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.costo" name="costo" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.costo" name="costo" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Precio de Venta (Bs) *</label>
-              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.venta" name="venta" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <input type="number" min="0" step="0.01" [(ngModel)]="newProduct.venta" name="venta" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Talla</label>
-              <input type="text" [(ngModel)]="newProduct.talla" name="talla" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. M" />
+              <input type="text" [(ngModel)]="newProduct.talla" name="talla" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="ej. M" />
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Color</label>
-              <input type="text" [(ngModel)]="newProduct.color" name="color" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="ej. Negro" />
+              <input type="text" [(ngModel)]="newProduct.color" name="color" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="ej. Negro" />
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Proveedor *</label>
-              <select [(ngModel)]="newProduct.idProveedor" name="idProveedor" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="newProduct.idProveedor" name="idProveedor" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option [ngValue]="null" disabled>Seleccionar proveedor</option>
                 <option *ngFor="let pr of archiveService.proveedores()" [ngValue]="pr.idProveedor">
                   {{ pr.nombre }}
@@ -263,7 +266,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Colección *</label>
-              <select [(ngModel)]="newProduct.idColeccion" name="idColeccion" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="newProduct.idColeccion" name="idColeccion" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option [ngValue]="null" disabled>Seleccionar colección</option>
                 <option *ngFor="let c of archiveService.colecciones()" [ngValue]="c.idColeccion">
                   {{ c.nombre_coleccion }}
@@ -276,7 +279,7 @@ import { ProductOut, ProductoIn } from '../../core/models';
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Imagen del Producto</label>
             <div class="mt-1 flex items-center gap-3">
               <img *ngIf="newProduct.imagen_url" [src]="newProduct.imagen_url" class="w-14 h-14 rounded-lg object-cover border border-gray-200" />
-              <label class="flex-1 cursor-pointer px-3.5 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 text-center hover:border-indigo-400 hover:text-indigo-600 transition-colors">
+              <label class="flex-1 cursor-pointer px-3.5 py-2 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 text-center hover:border-[#38133E] hover:text-[#38133E] transition-colors">
                 <span *ngIf="uploadingImagen()">Subiendo...</span>
                 <span *ngIf="!uploadingImagen()">{{ newProduct.imagen_url ? 'Cambiar imagen' : 'Seleccionar imagen (JPEG, PNG o WEBP)' }}</span>
                 <input type="file" accept="image/jpeg,image/png,image/webp" (change)="onImagenSelected($event)" [disabled]="uploadingImagen()" class="hidden" />
@@ -284,7 +287,12 @@ import { ProductOut, ProductoIn } from '../../core/models';
             </div>
           </div>
 
-          <button type="submit" [disabled]="!newProduct.nombre || newProduct.costo == null || newProduct.venta == null || !newProduct.idProveedor || !newProduct.idColeccion || uploadingImagen()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
+          <button
+            type="submit"
+            [disabled]="!newProduct.nombre || newProduct.costo == null || newProduct.venta == null || !newProduct.idProveedor || !newProduct.idColeccion || uploadingImagen() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
+          >
             Guardar Producto
           </button>
         </form>
@@ -315,7 +323,10 @@ export class ArchiveComponent implements OnInit {
     imagenes_secundarias: [],
   };
 
-  constructor(public archiveService: ArchiveService) {}
+  constructor(
+    public archiveService: ArchiveService,
+    public syncService: SyncService
+  ) {}
 
   ngOnInit() {
     this.archiveService.loadProducts();

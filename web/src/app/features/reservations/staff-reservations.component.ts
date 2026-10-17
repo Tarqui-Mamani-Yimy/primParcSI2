@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MetodoPago, Reserva } from '../../core/models';
 import { ReservationsService } from '../../core/services/reservations.service';
+import { SyncService } from '../../core/services/sync.service';
 
 @Component({
   selector: 'app-staff-reservations',
@@ -13,7 +14,7 @@ import { ReservationsService } from '../../core/services/reservations.service';
 
       <div class="pb-5 border-b border-gray-200 flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Reservas</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Reservas</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Reservas y Atención en Sucursal</h1>
           <p class="text-xs text-gray-500 mt-1">
             El filtro de sucursal es solo una ayuda visual: no restringe qué reservas puede gestionar el personal.
@@ -85,8 +86,9 @@ import { ReservationsService } from '../../core/services/reservations.service';
                   <button
                     *ngIf="r.estado === 'Pendiente'"
                     (click)="onPreparar(r.codigoReserva)"
-                    [disabled]="busyId() === r.codigoReserva"
-                    class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer disabled:opacity-50"
+                    [disabled]="busyId() === r.codigoReserva || !syncService.isOnline()"
+                    [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-[#38133E] border border-[#E8E2DA] hover:bg-[#F5EBF7] transition-colors cursor-pointer disabled:opacity-50"
                   >
                     {{ busyId() === r.codigoReserva ? 'Preparando...' : 'Preparar' }}
                   </button>
@@ -94,7 +96,8 @@ import { ReservationsService } from '../../core/services/reservations.service';
                   <button
                     *ngIf="r.estado === 'Preparada en Sucursal'"
                     (click)="onAbrirConfirmar(r)"
-                    [disabled]="busyId() === r.codigoReserva"
+                    [disabled]="busyId() === r.codigoReserva || !syncService.isOnline()"
+                    [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
                     class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-emerald-600 border border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Confirmar atención
@@ -103,7 +106,8 @@ import { ReservationsService } from '../../core/services/reservations.service';
                   <button
                     *ngIf="r.estado === 'Pendiente' || r.estado === 'Preparada en Sucursal'"
                     (click)="onCancelar(r.codigoReserva)"
-                    [disabled]="busyId() === r.codigoReserva"
+                    [disabled]="busyId() === r.codigoReserva || !syncService.isOnline()"
+                    [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
                     class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-rose-600 border border-rose-200 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50"
                   >
                     {{ busyId() === r.codigoReserva ? 'Cancelando...' : 'Cancelar' }}
@@ -154,7 +158,8 @@ import { ReservationsService } from '../../core/services/reservations.service';
             </button>
             <button
               (click)="onConfirmarPago()"
-              [disabled]="!selectedMetodoPago() || confirmando()"
+              [disabled]="!selectedMetodoPago() || confirmando() || !syncService.isOnline()"
+              [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
               class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
             >
               {{ confirmando() ? 'Confirmando...' : 'Confirmar' }}
@@ -189,7 +194,10 @@ export class StaffReservationsComponent implements OnInit {
     return branch === null ? list : list.filter(r => r.codigoSucursal === branch);
   });
 
-  constructor(public reservationsService: ReservationsService) {}
+  constructor(
+    public reservationsService: ReservationsService,
+    public syncService: SyncService,
+  ) {}
 
   ngOnInit() {
     this.reservationsService.loadAllReservations();

@@ -18,7 +18,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Gobernanza de Seguridad y RBAC</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Gobernanza de Seguridad y RBAC</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Directorio de Personal y Nodos de Acceso</h1>
           <p class="text-xs text-gray-500 mt-1">
             Permisos basados en roles, registros de actividad y autorización de nodos administrativos.
@@ -28,7 +28,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
         <div class="flex items-center space-x-3">
           <button
             (click)="openCreateModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nuevo Usuario</span>
@@ -45,7 +45,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
           <div>
             <div class="flex items-start justify-between mb-3.5">
               <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm border border-indigo-200">
+                <div class="w-10 h-10 rounded-full bg-[#F5EBF7] flex items-center justify-center text-[#38133E] font-bold text-sm border border-[#E8E2DA]">
                   {{ member.nombre.substring(0, 2).toUpperCase() }}
                 </div>
                 <div>
@@ -80,7 +80,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
                 [disabled]="savingRoleFor() === member.idUser"
                 [value]="member.rol"
                 (change)="onRoleChange(member, $event)"
-                class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
+                class="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none disabled:bg-gray-50 disabled:text-gray-400"
               >
                 <option *ngFor="let rol of staffRoles" [value]="rol">{{ rol }}</option>
               </select>
@@ -102,7 +102,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
         <div class="divide-y divide-gray-100 mt-1">
           <div *ngFor="let log of teamService.auditLogs()" class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div class="flex items-start space-x-2.5">
-              <span class="material-symbols-outlined text-[18px] text-indigo-600 mt-0.5">verified_user</span>
+              <span class="material-symbols-outlined text-[18px] text-[#38133E] mt-0.5">verified_user</span>
               <div>
                 <span class="font-bold text-gray-900">{{ log.usuario_nombre }}</span>
                 <span class="text-gray-400 mx-1.5">•</span>
@@ -119,33 +119,33 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
     </div>
 
     <!-- Modal: Crear usuario de personal -->
-    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="closeCreateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="closeCreateModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Gobernanza de Seguridad</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Gobernanza de Seguridad</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">Nuevo Usuario de Personal</h2>
         </div>
 
         <form (ngSubmit)="submitCreate()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="form.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="form.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Correo</label>
-            <input type="email" [(ngModel)]="form.email" name="email" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="email" [(ngModel)]="form.email" name="email" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Contraseña</label>
-            <input type="password" [(ngModel)]="form.password" name="password" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="password" [(ngModel)]="form.password" name="password" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Rol</label>
-            <select [(ngModel)]="form.rol" name="rol" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <select [(ngModel)]="form.rol" name="rol" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option *ngFor="let rol of staffRoles" [value]="rol">{{ rol }}</option>
             </select>
           </div>
@@ -180,7 +180,7 @@ const STAFF_ROLES: StaffRole[] = ['Administrador', 'Encargado de Sucursal', 'Caj
           <button
             type="submit"
             [disabled]="saving() || !canSubmitCreate()"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ saving() ? 'Creando...' : 'Crear Usuario' }}
           </button>
@@ -216,7 +216,7 @@ export class TeamComponent implements OnInit {
 
   getRolBadgeClass(rol: string): string {
     const lower = rol.toLowerCase();
-    if (lower.includes('admin')) return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    if (lower.includes('admin')) return 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]';
     if (lower.includes('encargado') || lower.includes('sucursal')) return 'bg-amber-50 text-amber-700 border-amber-200';
     if (lower.includes('cajero')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     if (lower.includes('proveedor')) return 'bg-sky-50 text-sky-700 border-sky-200';

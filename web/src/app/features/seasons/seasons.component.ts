@@ -17,7 +17,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Temporadas y Colecciones</h1>
           <p class="text-xs text-gray-500 mt-1">
             Administración de temporadas y sus colecciones asociadas.
@@ -28,7 +28,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
           <button
             *ngIf="activeTab() === 'temporadas'"
             (click)="openCreateSeasonModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nueva Temporada</span>
@@ -36,7 +36,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
           <button
             *ngIf="activeTab() === 'colecciones'"
             (click)="openCreateCollectionModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nueva Colección</span>
@@ -48,8 +48,8 @@ type SeasonsTab = 'temporadas' | 'colecciones';
       <div class="flex items-center gap-1 border-b border-gray-200">
         <button
           (click)="activeTab.set('temporadas')"
-          [class.text-indigo-600]="activeTab() === 'temporadas'"
-          [class.border-indigo-600]="activeTab() === 'temporadas'"
+          [class.text-ys-primary]="activeTab() === 'temporadas'"
+          [class.border-ys-primary]="activeTab() === 'temporadas'"
           [class.text-gray-500]="activeTab() !== 'temporadas'"
           [class.border-transparent]="activeTab() !== 'temporadas'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -58,8 +58,8 @@ type SeasonsTab = 'temporadas' | 'colecciones';
         </button>
         <button
           (click)="activeTab.set('colecciones')"
-          [class.text-indigo-600]="activeTab() === 'colecciones'"
-          [class.border-indigo-600]="activeTab() === 'colecciones'"
+          [class.text-ys-primary]="activeTab() === 'colecciones'"
+          [class.border-ys-primary]="activeTab() === 'colecciones'"
           [class.text-gray-500]="activeTab() !== 'colecciones'"
           [class.border-transparent]="activeTab() !== 'colecciones'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -92,7 +92,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
                   <div class="inline-flex items-center space-x-2">
                     <button
                       (click)="openEditSeasonModal(t)"
-                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
+                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-[#F5EBF7] hover:text-[#38133E] text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
                       title="Editar"
                     >
                       <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -138,7 +138,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
                   <div class="inline-flex items-center space-x-2">
                     <button
                       (click)="openEditCollectionModal(c)"
-                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
+                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-[#F5EBF7] hover:text-[#38133E] text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
                       title="Editar"
                     >
                       <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -165,29 +165,29 @@ type SeasonsTab = 'temporadas' | 'colecciones';
     </div>
 
     <!-- Modal: Crear/Editar temporada -->
-    <div *ngIf="showSeasonModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showSeasonModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showSeasonModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showSeasonModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">{{ editingSeasonId() ? 'Editar Temporada' : 'Nueva Temporada' }}</h2>
         </div>
 
         <form (ngSubmit)="saveSeason()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="seasonForm.nombreTemporada" name="nombreTemporada" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="seasonForm.nombreTemporada" name="nombreTemporada" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Fecha Inicio</label>
-            <input type="date" [(ngModel)]="seasonForm.fecha_ini" name="fecha_ini" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="date" [(ngModel)]="seasonForm.fecha_ini" name="fecha_ini" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Fecha Fin</label>
-            <input type="date" [(ngModel)]="seasonForm.fecha_fin" name="fecha_fin" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="date" [(ngModel)]="seasonForm.fecha_fin" name="fecha_fin" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
 
           <p *ngIf="!isDateRangeValid()" class="text-[11px] text-red-600 font-semibold">
@@ -197,7 +197,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
           <button
             type="submit"
             [disabled]="!seasonForm.nombreTemporada || !isDateRangeValid()"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ editingSeasonId() ? 'Guardar Cambios' : 'Crear Temporada' }}
           </button>
@@ -206,25 +206,25 @@ type SeasonsTab = 'temporadas' | 'colecciones';
     </div>
 
     <!-- Modal: Crear/Editar colección -->
-    <div *ngIf="showCollectionModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showCollectionModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showCollectionModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showCollectionModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Catálogo</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">{{ editingCollectionId() ? 'Editar Colección' : 'Nueva Colección' }}</h2>
         </div>
 
         <form (ngSubmit)="saveCollection()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="collectionForm.nombre_coleccion" name="nombre_coleccion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="collectionForm.nombre_coleccion" name="nombre_coleccion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Temporada</label>
-            <select [(ngModel)]="collectionForm.idTemporada" name="idTemporada" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="collectionForm.idTemporada" name="idTemporada" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option [ngValue]="0" disabled>Seleccionar temporada</option>
               <option *ngFor="let t of seasonsService.seasons()" [ngValue]="t.idTemporada">{{ t.nombreTemporada }}</option>
             </select>
@@ -233,7 +233,7 @@ type SeasonsTab = 'temporadas' | 'colecciones';
           <button
             type="submit"
             [disabled]="!collectionForm.nombre_coleccion || !collectionForm.idTemporada"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ editingCollectionId() ? 'Guardar Cambios' : 'Crear Colección' }}
           </button>

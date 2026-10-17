@@ -16,7 +16,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Cumplimiento Global</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Cumplimiento Global</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Despachos y Operaciones Logísticas</h1>
           <p class="text-xs text-gray-500 mt-1">
             Tránsito seguro de alto valor y transferencias regionales entre sucursales.
@@ -26,7 +26,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
         <div class="flex items-center space-x-3">
           <button
             (click)="openNewDispatchModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add_box</span>
             <span>Registrar Despacho</span>
@@ -42,13 +42,13 @@ import { DispatchIn, DispatchItem } from '../../core/models';
         >
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-gray-100">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0 border border-indigo-100">
+              <div class="w-10 h-10 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center font-bold text-sm shrink-0 border border-[#E8E2DA]">
                 <span class="material-symbols-outlined text-[20px]">local_shipping</span>
               </div>
               <div>
                 <div class="flex items-center space-x-2">
                   <span class="text-sm font-bold text-gray-900">{{ order.referencia }}</span>
-                  <span class="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold uppercase tracking-wider">
+                  <span class="px-2 py-0.5 rounded-full bg-[#F5EBF7] border border-[#E8E2DA] text-[#38133E] text-[10px] font-bold uppercase tracking-wider">
                     Despacho
                   </span>
                 </div>
@@ -68,7 +68,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
             <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Movimientos</p>
             <div *ngFor="let mov of order.movimientos" class="flex items-center justify-between text-xs p-2.5 bg-gray-50 rounded-lg border border-gray-100">
               <div class="flex items-center space-x-2">
-                <span class="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold uppercase">{{ mov.tipo }}</span>
+                <span class="px-1.5 py-0.5 bg-[#F5EBF7] text-[#38133E] rounded text-[10px] font-bold uppercase border border-[#E8E2DA]">{{ mov.tipo }}</span>
                 <span class="font-semibold text-gray-900">{{ mov.producto_nombre }}</span>
               </div>
               <div class="flex items-center space-x-3 text-gray-500">
@@ -87,14 +87,14 @@ import { DispatchIn, DispatchItem } from '../../core/models';
     </div>
 
     <!-- Modal: Registrar nuevo despacho -->
-    <div *ngIf="showNewDispatchModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showNewDispatchModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-lg w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 max-h-[90vh] overflow-y-auto relative">
-        <button (click)="showNewDispatchModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showNewDispatchModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Cumplimiento Seguro</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Cumplimiento Seguro</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">Registrar Despacho</h2>
           <p class="text-xs text-gray-500">Registre un nuevo despacho entre sucursales.</p>
         </div>
@@ -103,7 +103,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal Origen</label>
-              <select [(ngModel)]="newOrigen" name="origen" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="newOrigen" name="origen" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
                   {{ loc.nombre }}
                 </option>
@@ -111,7 +111,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal Destino</label>
-              <select [(ngModel)]="newDestino" name="destino" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="newDestino" name="destino" required class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
                   {{ loc.nombre }}
                 </option>
@@ -121,13 +121,13 @@ import { DispatchIn, DispatchItem } from '../../core/models';
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Motivo</label>
-            <input type="text" [(ngModel)]="newMotivo" name="motivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Reabastecimiento, transferencia..." />
+            <input type="text" [(ngModel)]="newMotivo" name="motivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Reabastecimiento, transferencia..." />
           </div>
 
           <div class="border border-gray-200 rounded-lg p-3 space-y-3">
             <div class="flex items-center justify-between">
               <p class="text-xs font-bold text-gray-700 uppercase tracking-wide">Items del Despacho</p>
-              <button type="button" (click)="addItem()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+              <button type="button" (click)="addItem()" class="text-[11px] font-bold text-[#38133E] hover:text-[#260B2B] cursor-pointer">
                 + Agregar item
               </button>
             </div>
@@ -135,7 +135,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
             <div *ngFor="let item of newItems; let i = index" class="grid grid-cols-7 gap-2 items-end">
               <div class="col-span-4">
                 <label *ngIf="i === 0" class="text-[10px] font-bold text-gray-500 uppercase">Producto</label>
-                <select [(ngModel)]="item.idProducto" [name]="'item_producto_' + i" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <select [(ngModel)]="item.idProducto" [name]="'item_producto_' + i" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                   <option *ngFor="let p of archiveService.products()" [ngValue]="p.idProducto">
                     {{ p.nombre }}
                   </option>
@@ -143,7 +143,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
               </div>
               <div class="col-span-2">
                 <label *ngIf="i === 0" class="text-[10px] font-bold text-gray-500 uppercase">Cantidad</label>
-                <input type="number" min="1" [(ngModel)]="item.cantidad" [name]="'item_cantidad_' + i" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+                <input type="number" min="1" [(ngModel)]="item.cantidad" [name]="'item_cantidad_' + i" class="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
               </div>
               <div class="col-span-1">
                 <button *ngIf="newItems.length > 1" type="button" (click)="removeItem(i)" class="w-full py-1.5 text-red-400 hover:text-red-600 text-xs font-bold cursor-pointer">✕</button>
@@ -151,7 +151,7 @@ import { DispatchIn, DispatchItem } from '../../core/models';
             </div>
           </div>
 
-          <button type="submit" [disabled]="newOrigen === newDestino || newItems.length === 0" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4">
+          <button type="submit" [disabled]="newOrigen === newDestino || newItems.length === 0" class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer">
             Registrar Despacho
           </button>
         </form>

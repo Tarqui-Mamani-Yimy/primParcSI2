@@ -12,12 +12,12 @@ import {
 
 // Paleta validada (dataviz skill, referencia palette.md) — solo modo claro,
 // esta app no tiene modo oscuro en ningún otro lado.
-const CATEGORICAL = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
-const SEQ_BLUE = '#2a78d6';
-const INK_SECONDARY = '#52514e';
-const INK_MUTED = '#898781';
-const GRID = '#e1e0d9';
-const AXIS = '#c3c2b7';
+const CATEGORICAL = ['#38133E', '#260B2B', '#16A34A', '#eda100', '#9B94A3'];
+const SEQ_BLUE = '#38133E';
+const INK_SECONDARY = '#5A5561';
+const INK_MUTED = '#9B94A3';
+const GRID = '#E8E2DA';
+const AXIS = '#E8E2DA';
 const STATUS_WARNING = '#fab219';
 
 interface VentaPunto extends VentaDiariaFila {
@@ -35,7 +35,7 @@ interface VentaPunto extends VentaDiariaFila {
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Alta Administración</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Alta Administración</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Dashboard de Indicadores Empresariales</h1>
           <p class="text-xs text-gray-500 mt-1">
             Gráficos e indicadores consolidados de ventas e inventario.
@@ -47,11 +47,11 @@ interface VentaPunto extends VentaDiariaFila {
       <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-xs flex flex-wrap items-end gap-4">
         <div>
           <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Desde</label>
-          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="onFechaDesdeChange($event)" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <input type="date" [ngModel]="fechaDesde()" (ngModelChange)="onFechaDesdeChange($event)" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
         </div>
         <div>
           <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Hasta</label>
-          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="onFechaHastaChange($event)" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+          <input type="date" [ngModel]="fechaHasta()" (ngModelChange)="onFechaHastaChange($event)" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
         </div>
         <p *ngIf="rangoError()" class="text-xs text-rose-600">{{ rangoError() }}</p>
         <p class="text-xs text-gray-400 ml-auto">Rango por defecto: últimos 30 días.</p>
@@ -149,7 +149,7 @@ interface VentaPunto extends VentaDiariaFila {
         </div>
 
         <details class="mt-4">
-          <summary class="text-xs font-bold text-indigo-600 cursor-pointer select-none">Ver tabla de datos</summary>
+          <summary class="text-xs font-bold text-[#38133E] cursor-pointer select-none">Ver tabla de datos</summary>
           <div class="overflow-x-auto mt-2 max-h-56 overflow-y-auto border border-gray-100 rounded-lg">
             <table class="w-full text-left border-collapse text-xs">
               <thead class="sticky top-0 bg-gray-50">

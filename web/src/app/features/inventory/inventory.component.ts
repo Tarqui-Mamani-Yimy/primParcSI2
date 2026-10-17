@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../core/services/inventory.service';
 import { ArchiveService } from '../../core/services/archive.service';
+import { SyncService } from '../../core/services/sync.service';
 import { InventoryStockEntry } from '../../core/models';
 
 @Component({
@@ -15,7 +16,7 @@ import { InventoryStockEntry } from '../../core/models';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Red Multi-Sucursal</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Red Multi-Sucursal</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Matriz Global de Asignación de Stock</h1>
           <p class="text-xs text-gray-500 mt-1">
             Conteos de inventario en tiempo real en todas las sucursales registradas.
@@ -25,14 +26,18 @@ import { InventoryStockEntry } from '../../core/models';
         <div class="flex items-center space-x-3">
           <button
             (click)="openLoteModal()"
-            class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            [disabled]="!syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
           >
             <span class="material-symbols-outlined text-[18px]">inventory_2</span>
             <span>Ingreso de Lote</span>
           </button>
           <button
             (click)="openTransferModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            [disabled]="!syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
           >
             <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
             <span>Transferencia</span>
@@ -45,7 +50,7 @@ import { InventoryStockEntry } from '../../core/models';
         <span class="text-xs font-bold uppercase tracking-wider text-gray-400 mr-1">Filtrar por nodo:</span>
         <button
           (click)="selectedLocation.set('ALL')"
-          [class.bg-indigo-600]="selectedLocation() === 'ALL'"
+          [class.bg-ys-primary]="selectedLocation() === 'ALL'"
           [class.text-white]="selectedLocation() === 'ALL'"
           [class.text-gray-600]="selectedLocation() !== 'ALL'"
           class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
@@ -55,7 +60,7 @@ import { InventoryStockEntry } from '../../core/models';
         <button
           *ngFor="let loc of inventoryService.locations()"
           (click)="selectedLocation.set(loc.codigoSucursal.toString())"
-          [class.bg-indigo-600]="selectedLocation() === loc.codigoSucursal.toString()"
+          [class.bg-ys-primary]="selectedLocation() === loc.codigoSucursal.toString()"
           [class.text-white]="selectedLocation() === loc.codigoSucursal.toString()"
           [class.text-gray-600]="selectedLocation() !== loc.codigoSucursal.toString()"
           class="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
@@ -89,7 +94,7 @@ import { InventoryStockEntry } from '../../core/models';
                       class="w-10 h-10 rounded-lg object-cover bg-gray-100 border border-gray-200 shrink-0"
                     />
                     <div>
-                      <span class="text-[10px] font-bold uppercase text-indigo-600 tracking-wider">
+                      <span class="text-[10px] font-bold uppercase text-[#38133E] tracking-wider">
                         ID {{ item.idProducto }}
                       </span>
                       <p class="font-bold text-gray-900 leading-tight">{{ item.producto_nombre }}</p>
@@ -120,14 +125,16 @@ import { InventoryStockEntry } from '../../core/models';
                   <div class="inline-flex items-center space-x-1 bg-gray-50 p-1 rounded-lg border border-gray-200">
                     <button
                       (click)="adjustStock(item, -1)"
-                      class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs"
-                      title="Reducir 1 unidad"
+                      [disabled]="!syncService.isOnline()"
+                      class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs disabled:opacity-50"
+                      [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : 'Reducir 1 unidad'"
                     >-</button>
                     <span class="px-2 text-xs font-bold text-gray-900 min-w-[24px] text-center">{{ item.cantidad_actual }}</span>
                     <button
                       (click)="adjustStock(item, 1)"
-                      class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs"
-                      title="Agregar 1 unidad"
+                      [disabled]="!syncService.isOnline()"
+                      class="w-6 h-6 rounded bg-white hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-xs shadow-xs disabled:opacity-50"
+                      [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : 'Agregar 1 unidad'"
                     >+</button>
                   </div>
                 </td>
@@ -145,14 +152,14 @@ import { InventoryStockEntry } from '../../core/models';
     </div>
 
     <!-- Modal: Ingreso de Lote (stock inicial / reabastecimiento) -->
-    <div *ngIf="showLoteModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showLoteModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-lg w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showLoteModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showLoteModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Proveedores</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Proveedores</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">Ingreso de Lote</h2>
           <p class="text-xs text-gray-500">Registre stock inicial o reabastecimiento para un producto en una sucursal.</p>
         </div>
@@ -160,7 +167,7 @@ import { InventoryStockEntry } from '../../core/models';
         <div class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Producto</label>
-            <select [(ngModel)]="loteProductoId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <select [(ngModel)]="loteProductoId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
               <option *ngFor="let p of archiveService.products()" [ngValue]="p.idProducto">
                 {{ p.nombre }} ({{ p.tipo || 'Sin tipo' }} - {{ p.talla || 'S/T' }})
               </option>
@@ -170,7 +177,7 @@ import { InventoryStockEntry } from '../../core/models';
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal</label>
-              <select [(ngModel)]="loteSucursal" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="loteSucursal" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
                   {{ loc.nombre }}
                 </option>
@@ -178,13 +185,13 @@ import { InventoryStockEntry } from '../../core/models';
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Cantidad (Piezas)</label>
-              <input type="number" min="1" [(ngModel)]="loteCantidad" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+              <input type="number" min="1" [(ngModel)]="loteCantidad" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
             </div>
           </div>
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Proveedor (opcional)</label>
-            <select [(ngModel)]="loteProveedor" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <select [(ngModel)]="loteProveedor" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
               <option [ngValue]="null">Sin especificar</option>
               <option *ngFor="let pr of archiveService.proveedores()" [ngValue]="pr.idProveedor">
                 {{ pr.nombre }}
@@ -194,13 +201,14 @@ import { InventoryStockEntry } from '../../core/models';
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Motivo</label>
-            <input type="text" [(ngModel)]="loteMotivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Recepción de lote inicial..." />
+            <input type="text" [(ngModel)]="loteMotivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Recepción de lote inicial..." />
           </div>
 
           <button
             (click)="executeIngresoLote()"
-            [disabled]="!loteProductoId || !loteSucursal || loteCantidad < 1"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            [disabled]="!loteProductoId || !loteSucursal || loteCantidad < 1 || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             Registrar Ingreso
           </button>
@@ -209,14 +217,14 @@ import { InventoryStockEntry } from '../../core/models';
     </div>
 
     <!-- Modal: Transferencia entre sucursales -->
-    <div *ngIf="showTransferModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showTransferModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-lg w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showTransferModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showTransferModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Logística Interna</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Logística Interna</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">Transferencia entre Sucursales</h2>
           <p class="text-xs text-gray-500">Registre un despacho de transferencia entre ubicaciones.</p>
         </div>
@@ -224,7 +232,7 @@ import { InventoryStockEntry } from '../../core/models';
         <div class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Producto</label>
-            <select [(ngModel)]="transferProductoId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <select [(ngModel)]="transferProductoId" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
               <option *ngFor="let p of archiveService.products()" [ngValue]="p.idProducto">
                 {{ p.nombre }} ({{ p.tipo || 'Sin tipo' }} - {{ p.talla || 'S/T' }})
               </option>
@@ -234,7 +242,7 @@ import { InventoryStockEntry } from '../../core/models';
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal Origen</label>
-              <select [(ngModel)]="transferOrigen" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="transferOrigen" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
                   {{ loc.nombre }}
                 </option>
@@ -242,7 +250,7 @@ import { InventoryStockEntry } from '../../core/models';
             </div>
             <div>
               <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Sucursal Destino</label>
-              <select [(ngModel)]="transferDestino" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <select [(ngModel)]="transferDestino" class="w-full mt-1 px-2.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-[#38133E] focus:outline-none">
                 <option *ngFor="let loc of inventoryService.locations()" [ngValue]="loc.codigoSucursal">
                   {{ loc.nombre }}
                 </option>
@@ -252,18 +260,19 @@ import { InventoryStockEntry } from '../../core/models';
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Cantidad (Piezas)</label>
-            <input type="number" min="1" [(ngModel)]="transferCantidad" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="number" min="1" [(ngModel)]="transferCantidad" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
 
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Motivo</label>
-            <input type="text" [(ngModel)]="transferMotivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Reabastecimiento,平衡eo..." />
+            <input type="text" [(ngModel)]="transferMotivo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Reabastecimiento,平衡eo..." />
           </div>
 
           <button
             (click)="executeTransfer()"
-            [disabled]="transferOrigen === transferDestino || !transferProductoId"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            [disabled]="transferOrigen === transferDestino || !transferProductoId || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             Registrar Transferencia
           </button>
@@ -291,7 +300,8 @@ export class InventoryComponent implements OnInit {
 
   constructor(
     public inventoryService: InventoryService,
-    public archiveService: ArchiveService
+    public archiveService: ArchiveService,
+    public syncService: SyncService,
   ) {}
 
   ngOnInit() {

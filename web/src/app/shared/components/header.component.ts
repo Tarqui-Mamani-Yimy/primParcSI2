@@ -8,28 +8,28 @@ import { AuthService } from '../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <header class="h-16 bg-white border-b border-gray-200 px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
+    <header class="h-16 bg-white border-b border-[#E8E2DA] px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
 
       <!-- Izquierda: Menú móvil y breadcrumb -->
       <div class="flex items-center space-x-3">
         <button
           (click)="toggleMobileMenu.emit()"
-          class="md:hidden text-gray-600 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+          class="md:hidden text-[#5A5561] p-1.5 hover:bg-[#F3EFEA] rounded-lg transition-colors"
           aria-label="Alternar navegación"
         >
           <span class="material-symbols-outlined text-[20px]">menu</span>
         </button>
 
         <div class="flex items-center space-x-2 text-sm">
-          <span class="font-bold text-gray-900 tracking-tight">
+          <span class="font-bold text-[#17141A] tracking-tight">
             {{ authService.isSuperAdmin() ? 'Plataforma SaaS' : (authService.empresa()?.nombre || 'YouShop') }}
           </span>
-          <span class="text-gray-300">/</span>
-          <span class="text-gray-400 hidden sm:inline">
+          <span class="text-[#E8E2DA]">/</span>
+          <span class="text-[#9B94A3] hidden sm:inline">
             {{ authService.isSuperAdmin() ? 'SuperAdmin' : 'Operaciones' }}
           </span>
-          <span class="text-gray-300 hidden sm:inline">/</span>
-          <span class="font-medium text-gray-900">{{ activeViewTitle }}</span>
+          <span class="text-[#E8E2DA] hidden sm:inline">/</span>
+          <span class="font-medium text-[#17141A]">{{ activeViewTitle }}</span>
         </div>
       </div>
 
@@ -37,60 +37,60 @@ import { AuthService } from '../../core/services/auth.service';
       <div class="flex items-center space-x-3">
 
         <!-- Indicador de estado del sistema -->
-        <div class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-tight">Bóveda Sincronizada</span>
+        <div class="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-[#DCFCE7] border border-[#DCFCE7]">
+          <span class="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+          <span class="text-[11px] font-bold text-[#16A34A] uppercase tracking-tight">Bóveda Sincronizada</span>
         </div>
 
         <!-- Menú de usuario -->
         <div class="relative" *ngIf="authService.currentUser() as user">
           <button
             (click)="showUserDropdown.update(v => !v)"
-            class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-left cursor-pointer border border-transparent hover:border-gray-200"
+            class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-[#F3EFEA] transition-colors text-left cursor-pointer border border-transparent hover:border-[#E8E2DA]"
           >
-            <div class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border border-indigo-200">
+            <div class="w-7 h-7 rounded-full bg-[#F5EBF7] flex items-center justify-center text-[#38133E] font-bold text-xs border border-[#E8E2DA]">
               {{ user.nombre.substring(0, 2).toUpperCase() }}
             </div>
             <div class="hidden md:block">
-              <p class="text-xs font-bold text-gray-900 leading-tight">{{ user.nombre }}</p>
-              <p class="text-[10px] text-gray-500 font-medium">{{ user.rol }}</p>
+              <p class="text-xs font-bold text-[#17141A] leading-tight">{{ user.nombre }}</p>
+              <p class="text-[10px] text-[#5A5561] font-medium">{{ user.rol }}</p>
             </div>
-            <span class="material-symbols-outlined text-[16px] text-gray-400">expand_more</span>
+            <span class="material-symbols-outlined text-[16px] text-[#9B94A3]">expand_more</span>
           </button>
 
           <!-- Menú desplegable -->
           <div
             *ngIf="showUserDropdown()"
-            class="absolute right-0 mt-2 w-72 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150"
+            class="absolute right-0 mt-2 w-72 bg-white rounded-xl border border-[#E8E2DA] shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150"
           >
-            <div class="px-3 py-2 border-b border-gray-100">
-              <p class="text-xs font-bold text-gray-900">{{ user.nombre }}</p>
-              <p class="text-xs text-gray-500 truncate">{{ user.email }}</p>
+            <div class="px-3 py-2 border-b border-[#E8E2DA]">
+              <p class="text-xs font-bold text-[#17141A]">{{ user.nombre }}</p>
+              <p class="text-xs text-[#5A5561] truncate">{{ user.email }}</p>
               <div class="flex items-center gap-1.5 mt-1.5">
-                <span class="inline-block px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
+                <span class="inline-block px-2 py-0.5 rounded-full bg-[#F5EBF7] text-[#38133E] text-[10px] font-bold uppercase border border-[#E8E2DA]">
                   {{ user.rol }}
                 </span>
-                <span *ngIf="authService.plan() as p" class="inline-block px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold uppercase border border-purple-100">
+                <span *ngIf="authService.plan() as p" class="inline-block px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#38133E] text-[10px] font-bold uppercase border border-[#E8E2DA]">
                   {{ p.nombre }}
                 </span>
               </div>
             </div>
 
             <div class="py-1">
-              <p class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Permisos activos:</p>
+              <p class="px-3 py-1 text-[10px] font-bold text-[#9B94A3] uppercase tracking-widest">Permisos activos:</p>
               <div class="px-3 py-1 flex flex-wrap gap-1">
-                <span *ngFor="let perm of user.permisos" class="px-1.5 py-0.5 rounded bg-gray-50 border border-gray-200 text-gray-600 text-[9px] font-medium">
+                <span *ngFor="let perm of user.permisos" class="px-1.5 py-0.5 rounded bg-[#FAF8F5] border border-[#E8E2DA] text-[#5A5561] text-[9px] font-medium">
                   {{ perm.replace('_', ' ') }}
                 </span>
               </div>
             </div>
 
-            <div class="pt-1 border-t border-gray-100 space-y-0.5">
+            <div class="pt-1 border-t border-[#E8E2DA] space-y-0.5">
               <button
                 (click)="openChangePassword()"
-                class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-gray-50 text-xs font-semibold text-gray-700 flex items-center space-x-2"
+                class="w-full text-left px-3 py-1.5 rounded-lg hover:bg-[#F3EFEA] text-xs font-semibold text-[#17141A] flex items-center space-x-2"
               >
-                <span class="material-symbols-outlined text-[16px]">lock</span>
+                <span class="material-symbols-outlined text-[16px] text-[#5A5561]">lock</span>
                 <span>Cambiar Contraseña</span>
               </button>
               <button
@@ -107,54 +107,54 @@ import { AuthService } from '../../core/services/auth.service';
     </header>
 
     <!-- Modal: Cambiar contraseña -->
-    <div *ngIf="showChangePasswordModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-xl relative">
-        <button (click)="showChangePasswordModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+    <div *ngIf="showChangePasswordModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-[#E8E2DA] shadow-xl relative">
+        <button (click)="showChangePasswordModal.set(false)" class="absolute top-4 right-4 text-[#9B94A3] hover:text-[#17141A] p-1">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
         <div class="mb-5">
-          <span class="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">Seguridad de Cuenta</span>
-          <h3 class="text-lg font-bold text-gray-900 mt-1">Cambiar Contraseña</h3>
-          <p class="text-xs text-gray-500 mt-1">Ingrese su contraseña actual y la nueva contraseña.</p>
+          <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">Seguridad de Cuenta</span>
+          <h3 class="text-lg font-bold text-[#17141A] mt-1">Cambiar Contraseña</h3>
+          <p class="text-xs text-[#5A5561] mt-1">Ingrese su contraseña actual y la nueva contraseña.</p>
         </div>
         <div class="space-y-4">
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Contraseña Actual</label>
-            <input type="password" [(ngModel)]="currentPassword" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Ingrese su contraseña actual" />
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Contraseña Actual</label>
+            <input type="password" [(ngModel)]="currentPassword" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Ingrese su contraseña actual" />
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nueva Contraseña</label>
-            <input type="password" [(ngModel)]="newPassword" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Mínimo 10 caracteres" />
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Nueva Contraseña</label>
+            <input type="password" [(ngModel)]="newPassword" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Mínimo 10 caracteres" />
           </div>
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Confirmar Nueva Contraseña</label>
-            <input type="password" [(ngModel)]="confirmPassword" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none" placeholder="Repita la nueva contraseña" />
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Confirmar Nueva Contraseña</label>
+            <input type="password" [(ngModel)]="confirmPassword" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="Repita la nueva contraseña" />
           </div>
 
           <!-- Reglas de contraseña -->
-          <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-1.5">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">Requisitos de contraseña:</p>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="newPassword.length >= 10" [class.text-gray-400]="newPassword.length < 10">
+          <div class="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2DA] space-y-1.5">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561] mb-2">Requisitos de contraseña:</p>
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="newPassword.length >= 10" [class.text-ys-subtle]="newPassword.length < 10">
               <span>{{ newPassword.length >= 10 ? '✓' : '○' }}</span>
               <span>Mínimo 10 caracteres</span>
             </div>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasLower(newPassword)" [class.text-gray-400]="!hasLower(newPassword)">
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="hasLower(newPassword)" [class.text-ys-subtle]="!hasLower(newPassword)">
               <span>{{ hasLower(newPassword) ? '✓' : '○' }}</span>
               <span>Al menos 1 minúscula</span>
             </div>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasUpper(newPassword)" [class.text-gray-400]="!hasUpper(newPassword)">
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="hasUpper(newPassword)" [class.text-ys-subtle]="!hasUpper(newPassword)">
               <span>{{ hasUpper(newPassword) ? '✓' : '○' }}</span>
               <span>Al menos 1 mayúscula</span>
             </div>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasDigit(newPassword)" [class.text-gray-400]="!hasDigit(newPassword)">
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="hasDigit(newPassword)" [class.text-ys-subtle]="!hasDigit(newPassword)">
               <span>{{ hasDigit(newPassword) ? '✓' : '○' }}</span>
               <span>Al menos 1 número</span>
             </div>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="hasSpecial(newPassword)" [class.text-gray-400]="!hasSpecial(newPassword)">
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="hasSpecial(newPassword)" [class.text-ys-subtle]="!hasSpecial(newPassword)">
               <span>{{ hasSpecial(newPassword) ? '✓' : '○' }}</span>
               <span>Al menos 1 carácter especial</span>
             </div>
-            <div class="flex items-center space-x-2 text-xs" [class.text-emerald-600]="newPassword === confirmPassword && confirmPassword.length > 0" [class.text-gray-400]="newPassword !== confirmPassword || confirmPassword.length === 0">
+            <div class="flex items-center space-x-2 text-xs" [class.text-ys-success]="newPassword === confirmPassword && confirmPassword.length > 0" [class.text-ys-subtle]="newPassword !== confirmPassword || confirmPassword.length === 0">
               <span>{{ newPassword === confirmPassword && confirmPassword.length > 0 ? '✓' : '○' }}</span>
               <span>Las contraseñas coinciden</span>
             </div>
@@ -163,7 +163,7 @@ import { AuthService } from '../../core/services/auth.service';
           <button
             (click)="submitChangePassword()"
             [disabled]="!isChangePasswordValid()"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full bg-[#38133E] hover:bg-[#260B2B] text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Actualizar Contraseña
           </button>

@@ -37,14 +37,14 @@ interface PlanCard {
     <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
 
       <!-- Encabezado de la vista -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#E8E2DA]">
         <div>
-          <div class="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+          <div class="flex items-center space-x-2 text-xs font-bold text-[#38133E] uppercase tracking-wider mb-1">
             <span class="material-symbols-outlined text-[16px]">workspace_premium</span>
             <span>Membresía Empresarial</span>
           </div>
-          <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Mi Suscripción</h1>
-          <p class="text-sm text-gray-500 mt-1">
+          <h1 class="text-2xl lg:text-3xl font-bold text-[#17141A] tracking-tight">Mi Suscripción</h1>
+          <p class="text-sm text-[#5A5561] mt-1">
             Supervisa el estado del plan contratado, tus límites de capacidad, facturación automática y módulos habilitados.
           </p>
         </div>
@@ -54,7 +54,7 @@ interface PlanCard {
             *ngIf="tenant()?.facturacion?.modo === 'stripe'"
             (click)="openPortal()"
             [disabled]="loadingPortal() || loadingPlan() !== null"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
             title="Abrir portal de Stripe para gestionar métodos de pago y facturas"
           >
             <span *ngIf="loadingPortal()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
@@ -64,7 +64,7 @@ interface PlanCard {
 
           <button
             (click)="loadData()"
-            class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-2xs"
+            class="px-4 py-2 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#17141A] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-2xs"
           >
             <span class="material-symbols-outlined text-[16px]" [class.animate-spin]="isLoading()">refresh</span>
             <span>Actualizar Datos</span>
@@ -73,8 +73,8 @@ interface PlanCard {
       </div>
 
       <!-- Estado de carga -->
-      <div *ngIf="isLoading()" class="flex flex-col items-center justify-center py-20 text-gray-500 space-y-3">
-        <span class="material-symbols-outlined text-4xl text-indigo-600 animate-spin">progress_activity</span>
+      <div *ngIf="isLoading()" class="flex flex-col items-center justify-center py-20 text-[#5A5561] space-y-3">
+        <span class="material-symbols-outlined text-4xl text-[#38133E] animate-spin">progress_activity</span>
         <p class="text-sm font-medium">Cargando detalles de tu suscripción…</p>
       </div>
 
@@ -159,16 +159,16 @@ interface PlanCard {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           <!-- Tarjeta 1: Empresa y Plan Actual -->
-          <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col justify-between">
+          <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 shadow-xs flex flex-col justify-between">
             <div>
               <div class="flex items-start justify-between gap-3 mb-4">
                 <div class="flex items-center space-x-3 min-w-0">
-                  <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md">
+                  <div class="w-12 h-12 rounded-2xl bg-[#38133E] text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md">
                     {{ data.empresa.nombre.substring(0, 2).toUpperCase() }}
                   </div>
                   <div class="min-w-0">
-                    <h2 class="text-base font-bold text-gray-900 tracking-tight truncate">{{ data.empresa.nombre }}</h2>
-                    <p class="text-xs text-gray-400 font-mono truncate">{{ data.empresa.slug }}</p>
+                    <h2 class="text-base font-bold text-[#17141A] tracking-tight truncate">{{ data.empresa.nombre }}</h2>
+                    <p class="text-xs text-[#9B94A3] font-mono truncate">{{ data.empresa.slug }}</p>
                   </div>
                 </div>
 
@@ -178,56 +178,56 @@ interface PlanCard {
                 </div>
               </div>
 
-              <p class="text-xs text-gray-600 leading-relaxed">
+              <p class="text-xs text-[#5A5561] leading-relaxed">
                 Tu empresa está suscrita al <strong>{{ data.plan.nombre }}</strong> con límites adaptados a la escala de tu negocio.
               </p>
             </div>
 
-            <div class="pt-4 mt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-              <span>Cód. plan: <code class="font-mono text-gray-700 bg-gray-100 px-1 py-0.5 rounded">{{ data.plan.codigo }}</code></span>
+            <div class="pt-4 mt-4 border-t border-[#E8E2DA] flex items-center justify-between text-xs text-[#5A5561]">
+              <span>Cód. plan: <code class="font-mono text-[#17141A] bg-[#F3EFEA] px-1 py-0.5 rounded">{{ data.plan.codigo }}</code></span>
               <span>ID #{{ data.empresa.idEmpresa }}</span>
             </div>
           </div>
 
           <!-- Tarjeta 2: Vigencia y Estado -->
-          <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col justify-between">
+          <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 shadow-xs flex flex-col justify-between">
             <div>
-              <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-3">Vigencia y Estado</span>
+              <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider block mb-3">Vigencia y Estado</span>
 
               <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border mb-4"
                    [ngClass]="getEstadoBadgeClass(data.suscripcion.estado)">
                 <span class="w-2 h-2 rounded-full"
-                      [ngClass]="data.suscripcion.estado === 'activa' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                      [ngClass]="data.suscripcion.estado === 'activa' ? 'bg-[#16A34A]' : 'bg-rose-500'"></span>
                 <span>Suscripción {{ getEstadoLabel(data.suscripcion.estado) }}</span>
               </div>
 
               <div class="space-y-2 mt-1">
                 <div>
-                  <span class="text-[11px] text-gray-400 block">Vencimiento del período</span>
-                  <p class="text-sm font-bold text-gray-900">
+                  <span class="text-[11px] text-[#9B94A3] block">Vencimiento del período</span>
+                  <p class="text-sm font-bold text-[#17141A]">
                     {{ formatFecha(data.suscripcion.fechaFin) }}
                   </p>
                 </div>
-                <p class="text-[11px] text-gray-500 leading-normal" *ngIf="data.suscripcion.estado === 'activa'">
+                <p class="text-[11px] text-[#5A5561] leading-normal" *ngIf="data.suscripcion.estado === 'activa'">
                   Suscripción vigente con todas las capacidades habilitadas.
                 </p>
               </div>
             </div>
 
-            <div class="pt-4 border-t border-gray-100 text-[11px] text-gray-400 flex items-center space-x-1.5">
+            <div class="pt-4 border-t border-[#E8E2DA] text-[11px] text-[#9B94A3] flex items-center space-x-1.5">
               <span class="material-symbols-outlined text-[14px]">shield</span>
               <span>Seguridad RLS y aislamiento tenant</span>
             </div>
           </div>
 
           <!-- Tarjeta 3: Facturación Automática (SF2) -->
-          <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs flex flex-col justify-between">
+          <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 shadow-xs flex flex-col justify-between">
             <div>
               <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Facturación y Cobro</span>
+                <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider">Facturación y Cobro</span>
                 <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
-                  [ngClass]="data.facturacion?.modo === 'stripe' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-gray-100 text-gray-600 border-gray-200'"
+                  [ngClass]="data.facturacion?.modo === 'stripe' ? 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]' : 'bg-[#F3EFEA] text-[#5A5561] border-[#E8E2DA]'"
                 >
                   {{ data.facturacion?.modo === 'stripe' ? 'Stripe Auto' : 'Manual' }}
                 </span>
@@ -235,41 +235,41 @@ interface PlanCard {
 
               <div class="space-y-3">
                 <div>
-                  <span class="text-[11px] text-gray-400 block">Próximo cobro</span>
-                  <p class="text-sm font-bold text-gray-900">
+                  <span class="text-[11px] text-[#9B94A3] block">Próximo cobro</span>
+                  <p class="text-sm font-bold text-[#17141A]">
                     {{ formatFecha(data.facturacion?.proximoCobro) }}
                   </p>
                 </div>
 
                 <div>
-                  <span class="text-[11px] text-gray-400 block">Ciclo de facturación</span>
-                  <p class="text-xs font-semibold capitalize text-gray-800">
+                  <span class="text-[11px] text-[#9B94A3] block">Ciclo de facturación</span>
+                  <p class="text-xs font-semibold capitalize text-[#17141A]">
                     {{ data.facturacion?.ciclo ? (data.facturacion?.ciclo === 'anual' ? 'Anual (-20%)' : 'Mensual') : 'Mensual' }}
                   </p>
                 </div>
 
                 <div>
-                  <span class="text-[11px] text-gray-400 block">Renovación</span>
-                  <p class="text-xs font-semibold" [ngClass]="data.facturacion?.renovacionAutomatica ? 'text-emerald-600' : 'text-gray-500'">
+                  <span class="text-[11px] text-[#9B94A3] block">Renovación</span>
+                  <p class="text-xs font-semibold" [ngClass]="data.facturacion?.renovacionAutomatica ? 'text-[#16A34A]' : 'text-[#5A5561]'">
                     {{ data.facturacion?.renovacionAutomatica ? 'Automática por tarjeta' : 'Manual / No configurada' }}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div class="pt-4 mt-4 border-t border-gray-100">
+            <div class="pt-4 mt-4 border-t border-[#E8E2DA]">
               <button
                 *ngIf="data.facturacion?.modo === 'stripe'"
                 (click)="openPortal()"
                 [disabled]="loadingPortal() || loadingPlan() !== null || !canManageBilling"
-                class="w-full py-2 px-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
+                class="w-full py-2 px-3 bg-[#F5EBF7] hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#38133E] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
               >
                 <span *ngIf="loadingPortal()" class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
                 <span *ngIf="!loadingPortal()" class="material-symbols-outlined text-[15px]">credit_card</span>
                 <span>Portal de Facturación</span>
               </button>
 
-              <div *ngIf="data.facturacion?.modo !== 'stripe'" class="text-[11px] text-gray-400 flex items-center space-x-1.5">
+              <div *ngIf="data.facturacion?.modo !== 'stripe'" class="text-[11px] text-[#9B94A3] flex items-center space-x-1.5">
                 <span class="material-symbols-outlined text-[14px]">info</span>
                 <span>Facturación manual por SuperAdmin</span>
               </div>
@@ -279,29 +279,29 @@ interface PlanCard {
         </div>
 
         <!-- Sección: Planes Disponibles con Checkout y Portal (SF2) -->
-        <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 pb-4">
+        <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 sm:p-8 shadow-xs space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E8E2DA] pb-4">
             <div>
-              <div class="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+              <div class="flex items-center space-x-2 text-xs font-bold text-[#38133E] uppercase tracking-wider mb-1">
                 <span class="material-symbols-outlined text-[16px]">price_change</span>
                 <span>Tarifas Oficiales</span>
               </div>
-              <h3 class="text-lg font-bold text-gray-900 tracking-tight">Planes de Suscripción</h3>
-              <p class="text-xs text-gray-500 mt-0.5">
+              <h3 class="text-lg font-bold text-[#17141A] tracking-tight">Planes de Suscripción</h3>
+              <p class="text-xs text-[#5A5561] mt-0.5">
                 Actualiza tu suscripción automáticamente con tarjeta de crédito mediante Stripe Checkout o administra tu plan desde el portal.
               </p>
             </div>
 
             <!-- Selector de ciclo: Mensual / Anual -->
-            <div class="flex items-center bg-gray-100 p-1 rounded-xl self-start sm:self-auto">
+            <div class="flex items-center bg-[#F3EFEA] p-1 rounded-xl self-start sm:self-auto">
               <button
                 type="button"
                 (click)="selectedCiclo.set('mensual')"
                 [class.bg-white]="selectedCiclo() === 'mensual'"
                 [class.shadow-xs]="selectedCiclo() === 'mensual'"
-                [class.text-indigo-600]="selectedCiclo() === 'mensual'"
+                [class.text-ys-primary]="selectedCiclo() === 'mensual'"
                 [class.font-bold]="selectedCiclo() === 'mensual'"
-                [class.text-gray-600]="selectedCiclo() !== 'mensual'"
+                [class.text-ys-muted]="selectedCiclo() !== 'mensual'"
                 class="px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer"
               >
                 Mensual
@@ -311,13 +311,13 @@ interface PlanCard {
                 (click)="selectedCiclo.set('anual')"
                 [class.bg-white]="selectedCiclo() === 'anual'"
                 [class.shadow-xs]="selectedCiclo() === 'anual'"
-                [class.text-indigo-600]="selectedCiclo() === 'anual'"
+                [class.text-ys-primary]="selectedCiclo() === 'anual'"
                 [class.font-bold]="selectedCiclo() === 'anual'"
-                [class.text-gray-600]="selectedCiclo() !== 'anual'"
+                [class.text-ys-muted]="selectedCiclo() !== 'anual'"
                 class="px-3 py-1.5 rounded-lg text-xs transition-all flex items-center space-x-1.5 cursor-pointer"
               >
                 <span>Anual</span>
-                <span class="px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-emerald-100 text-emerald-700">
+                <span class="px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-[#DCFCE7] text-[#16A34A]">
                   -20%
                 </span>
               </button>
@@ -336,67 +336,67 @@ interface PlanCard {
               *ngFor="let p of availablePlans"
               class="rounded-2xl border p-6 flex flex-col justify-between transition-all relative"
               [ngClass]="p.codigo === data.plan.codigo
-                ? 'border-indigo-500 bg-indigo-50/15 ring-2 ring-indigo-500/20 shadow-sm'
-                : (p.destacado ? 'border-purple-300 bg-purple-50/10 shadow-2xs' : 'border-gray-200 bg-white')"
+                ? 'border-[#38133E] bg-[#F5EBF7]/30 ring-2 ring-[#38133E]/20 shadow-sm'
+                : (p.destacado ? 'border-[#38133E]/40 bg-[#FAF8F5] shadow-2xs' : 'border-[#E8E2DA] bg-white')"
             >
               <!-- Badge de Plan Actual o Recomendado -->
               <div *ngIf="p.codigo === data.plan.codigo" class="absolute -top-3 right-5">
-                <span class="px-3 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs">
+                <span class="px-3 py-1 bg-[#38133E] text-white rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs">
                   Tu Plan Actual
                 </span>
               </div>
               <div *ngIf="p.codigo !== data.plan.codigo && p.destacado" class="absolute -top-3 right-5">
-                <span class="px-3 py-1 bg-purple-600 text-white rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs">
+                <span class="px-3 py-1 bg-[#260B2B] text-white rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs">
                   Recomendado
                 </span>
               </div>
 
               <div>
                 <div class="flex items-center justify-between mb-3">
-                  <h4 class="text-base font-bold text-gray-900">{{ p.nombre }}</h4>
-                  <span class="font-mono text-[11px] text-gray-400">#{{ p.codigo }}</span>
+                  <h4 class="text-base font-bold text-[#17141A]">{{ p.nombre }}</h4>
+                  <span class="font-mono text-[11px] text-[#9B94A3]">#{{ p.codigo }}</span>
                 </div>
 
                 <!-- Precio -->
                 <div class="mb-4">
                   <div class="flex items-baseline space-x-1.5">
-                    <span class="text-3xl font-black text-gray-900">\${{ getPlanMonthlyEquivalent(p) }}</span>
-                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">USD / mes</span>
+                    <span class="text-3xl font-black text-[#17141A]">\${{ getPlanMonthlyEquivalent(p) }}</span>
+                    <span class="text-xs font-bold text-[#5A5561] uppercase tracking-wider">USD / mes</span>
                   </div>
-                  <p class="text-[11px] text-emerald-600 font-medium mt-1" *ngIf="selectedCiclo() === 'anual'">
+                  <p class="text-[11px] text-[#16A34A] font-medium mt-1" *ngIf="selectedCiclo() === 'anual'">
                     Facturado anualmente: \${{ p.precioAnual }} USD / año (-20%)
                   </p>
-                  <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">{{ p.descripcion }}</p>
+                  <p class="text-xs text-[#5A5561] mt-1.5 leading-relaxed">{{ p.descripcion }}</p>
                 </div>
 
                 <!-- Límites de capacidad -->
-                <div class="space-y-2 py-4 border-y border-gray-100 text-xs">
+                <div class="space-y-2 py-4 border-y border-[#E8E2DA] text-xs">
                   <div class="flex items-center justify-between">
-                    <span class="text-gray-500 flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[15px] text-gray-400">location_city</span>
+                    <span class="text-[#5A5561] flex items-center space-x-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-[#9B94A3]">location_city</span>
                       <span>Sucursales:</span>
                     </span>
-                    <span class="font-bold text-gray-900">
+                    <span class="font-bold text-[#17141A]">
                       {{ p.limites.sucursales === null ? 'Ilimitadas' : p.limites.sucursales }}
                     </span>
                   </div>
 
                   <div class="flex items-center justify-between">
-                    <span class="text-gray-500 flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[15px] text-gray-400">group</span>
+                    <span class="text-[#5A5561] flex items-center space-x-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-[#9B94A3]">group</span>
                       <span>Usuarios staff:</span>
                     </span>
-                    <span class="font-bold text-gray-900">
+                    <span class="font-bold text-[#17141A]">
                       {{ p.limites.usuarios === null ? 'Ilimitados' : p.limites.usuarios }}
                     </span>
                   </div>
 
                   <div class="flex items-center justify-between">
-                    <span class="text-gray-500 flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[15px] text-gray-400">checkroom</span>
+                    <span class="text-[#5A5561] flex items-center space-x-1.5">
+                      <span class="material-symbols-outlined text-[15px] text-[#9B94A3]">checkroom</span>
                       <span>Productos:</span>
                     </span>
-                    <span class="font-bold text-gray-900">
+                    <span class="font-bold text-[#17141A]">
                       {{ p.limites.productos === null ? 'Ilimitados' : p.limites.productos }}
                     </span>
                   </div>
@@ -404,16 +404,16 @@ interface PlanCard {
 
                 <!-- Lista de funciones clave -->
                 <div class="py-4 space-y-2">
-                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Incluye:</span>
-                  <div *ngFor="let f of p.features" class="flex items-center space-x-2 text-xs text-gray-700">
-                    <span class="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
+                  <span class="text-[10px] font-bold text-[#9B94A3] uppercase tracking-wider block">Incluye:</span>
+                  <div *ngFor="let f of p.features" class="flex items-center space-x-2 text-xs text-[#17141A]">
+                    <span class="material-symbols-outlined text-[15px] text-[#16A34A]">check_circle</span>
                     <span>{{ f }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Botones de Acción (Suscribirme / Cambiar Plan / Pagar Suscripción) -->
-              <div class="pt-4 mt-2 border-t border-gray-100">
+              <div class="pt-4 mt-2 border-t border-[#E8E2DA]">
 
                 <!-- CASO 1: Es el plan actual -->
                 <ng-container *ngIf="p.codigo === data.plan.codigo">
@@ -422,7 +422,7 @@ interface PlanCard {
                     *ngIf="data.suscripcion.estado === 'activa' && data.facturacion?.modo === 'stripe'"
                     (click)="openPortal()"
                     [disabled]="loadingPortal() || loadingPlan() !== null || !canManageBilling"
-                    class="w-full py-2.5 px-4 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
+                    class="w-full py-2.5 px-4 bg-[#F5EBF7] hover:bg-[#F3EFEA] disabled:opacity-50 border border-[#E8E2DA] text-[#38133E] rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
                   >
                     <span *ngIf="loadingPortal()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                     <span *ngIf="!loadingPortal()" class="material-symbols-outlined text-[16px]">manage_accounts</span>
@@ -434,7 +434,7 @@ interface PlanCard {
                     *ngIf="data.suscripcion.estado === 'activa' && data.facturacion?.modo !== 'stripe'"
                     (click)="subscribeToPlan(p.codigo)"
                     [disabled]="loadingPlan() !== null || loadingPortal() || !canManageBilling"
-                    class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                    class="w-full py-2.5 px-4 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
                   >
                     <span *ngIf="loadingPlan() === p.codigo" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                     <span *ngIf="loadingPlan() !== p.codigo" class="material-symbols-outlined text-[16px]">autorenew</span>
@@ -461,7 +461,7 @@ interface PlanCard {
                     *ngIf="data.suscripcion.estado === 'activa' && data.facturacion?.modo === 'stripe'"
                     (click)="openPortal()"
                     [disabled]="loadingPortal() || loadingPlan() !== null || !canManageBilling"
-                    class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                    class="w-full py-2.5 px-4 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
                   >
                     <span *ngIf="loadingPortal()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                     <span *ngIf="!loadingPortal()" class="material-symbols-outlined text-[16px]">upgrade</span>
@@ -473,7 +473,7 @@ interface PlanCard {
                     *ngIf="!(data.suscripcion.estado === 'activa' && data.facturacion?.modo === 'stripe')"
                     (click)="subscribeToPlan(p.codigo)"
                     [disabled]="loadingPlan() !== null || loadingPortal() || !canManageBilling"
-                    class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+                    class="w-full py-2.5 px-4 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
                   >
                     <span *ngIf="loadingPlan() === p.codigo" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
                     <span *ngIf="loadingPlan() !== p.codigo" class="material-symbols-outlined text-[16px]">shopping_cart_checkout</span>
@@ -487,24 +487,24 @@ interface PlanCard {
         </div>
 
         <!-- Sección de Límites y Métricas de Uso -->
-        <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+        <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 sm:p-8 shadow-xs">
           <div class="mb-6">
-            <h3 class="text-lg font-bold text-gray-900 tracking-tight">Capacidad y Uso del Plan</h3>
-            <p class="text-xs text-gray-500 mt-1">Supervisión en tiempo real de los recursos consumidos respecto al límite contratado.</p>
+            <h3 class="text-lg font-bold text-[#17141A] tracking-tight">Capacidad y Uso del Plan</h3>
+            <p class="text-xs text-[#5A5561] mt-1">Supervisión en tiempo real de los recursos consumidos respecto al límite contratado.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
             <!-- Métrica: Sucursales -->
-            <div class="p-5 rounded-xl border border-gray-100 bg-gray-50/70 space-y-3">
+            <div class="p-5 rounded-xl border border-[#E8E2DA] bg-[#FAF8F5] space-y-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
-                  <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                  <div class="w-8 h-8 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center">
                     <span class="material-symbols-outlined text-[18px]">location_city</span>
                   </div>
                   <div>
-                    <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide">Sucursales</h4>
-                    <span class="text-[11px] text-gray-500">Puntos de venta</span>
+                    <h4 class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Sucursales</h4>
+                    <span class="text-[11px] text-[#5A5561]">Puntos de venta</span>
                   </div>
                 </div>
                 <span class="text-xs font-black" [ngClass]="getUsageTextColor(data.uso.sucursales, data.plan.limites.sucursales)">
@@ -514,11 +514,11 @@ interface PlanCard {
 
               <div>
                 <div class="flex justify-between items-baseline mb-1">
-                  <span class="text-2xl font-black text-gray-900">{{ data.uso.sucursales }}</span>
-                  <span class="text-xs text-gray-500">de {{ data.plan.limites.sucursales === null ? '∞ ilimitadas' : data.plan.limites.sucursales }}</span>
+                  <span class="text-2xl font-black text-[#17141A]">{{ data.uso.sucursales }}</span>
+                  <span class="text-xs text-[#5A5561]">de {{ data.plan.limites.sucursales === null ? '∞ ilimitadas' : data.plan.limites.sucursales }}</span>
                 </div>
                 <!-- Barra de progreso -->
-                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="w-full h-2 bg-[#E8E2DA] rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-500"
                     [ngClass]="getUsageBarClass(data.uso.sucursales, data.plan.limites.sucursales)"
@@ -529,15 +529,15 @@ interface PlanCard {
             </div>
 
             <!-- Métrica: Usuarios del Personal -->
-            <div class="p-5 rounded-xl border border-gray-100 bg-gray-50/70 space-y-3">
+            <div class="p-5 rounded-xl border border-[#E8E2DA] bg-[#FAF8F5] space-y-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
-                  <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+                  <div class="w-8 h-8 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center">
                     <span class="material-symbols-outlined text-[18px]">group</span>
                   </div>
                   <div>
-                    <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide">Usuarios</h4>
-                    <span class="text-[11px] text-gray-500">Cuentas del personal</span>
+                    <h4 class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Usuarios</h4>
+                    <span class="text-[11px] text-[#5A5561]">Cuentas del personal</span>
                   </div>
                 </div>
                 <span class="text-xs font-black" [ngClass]="getUsageTextColor(data.uso.usuarios, data.plan.limites.usuarios)">
@@ -547,11 +547,11 @@ interface PlanCard {
 
               <div>
                 <div class="flex justify-between items-baseline mb-1">
-                  <span class="text-2xl font-black text-gray-900">{{ data.uso.usuarios }}</span>
-                  <span class="text-xs text-gray-500">de {{ data.plan.limites.usuarios === null ? '∞ ilimitados' : data.plan.limites.usuarios }}</span>
+                  <span class="text-2xl font-black text-[#17141A]">{{ data.uso.usuarios }}</span>
+                  <span class="text-xs text-[#5A5561]">de {{ data.plan.limites.usuarios === null ? '∞ ilimitados' : data.plan.limites.usuarios }}</span>
                 </div>
                 <!-- Barra de progreso -->
-                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="w-full h-2 bg-[#E8E2DA] rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-500"
                     [ngClass]="getUsageBarClass(data.uso.usuarios, data.plan.limites.usuarios)"
@@ -562,15 +562,15 @@ interface PlanCard {
             </div>
 
             <!-- Métrica: Productos en Catálogo -->
-            <div class="p-5 rounded-xl border border-gray-100 bg-gray-50/70 space-y-3">
+            <div class="p-5 rounded-xl border border-[#E8E2DA] bg-[#FAF8F5] space-y-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2.5">
-                  <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <div class="w-8 h-8 rounded-lg bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center">
                     <span class="material-symbols-outlined text-[18px]">checkroom</span>
                   </div>
                   <div>
-                    <h4 class="text-xs font-bold text-gray-900 uppercase tracking-wide">Productos</h4>
-                    <span class="text-[11px] text-gray-500">Prendas archivadas</span>
+                    <h4 class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Productos</h4>
+                    <span class="text-[11px] text-[#5A5561]">Prendas archivadas</span>
                   </div>
                 </div>
                 <span class="text-xs font-black" [ngClass]="getUsageTextColor(data.uso.productos, data.plan.limites.productos)">
@@ -580,11 +580,11 @@ interface PlanCard {
 
               <div>
                 <div class="flex justify-between items-baseline mb-1">
-                  <span class="text-2xl font-black text-gray-900">{{ data.uso.productos }}</span>
-                  <span class="text-xs text-gray-500">de {{ data.plan.limites.productos === null ? '∞ ilimitados' : data.plan.limites.productos }}</span>
+                  <span class="text-2xl font-black text-[#17141A]">{{ data.uso.productos }}</span>
+                  <span class="text-xs text-[#5A5561]">de {{ data.plan.limites.productos === null ? '∞ ilimitados' : data.plan.limites.productos }}</span>
                 </div>
                 <!-- Barra de progreso -->
-                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div class="w-full h-2 bg-[#E8E2DA] rounded-full overflow-hidden">
                   <div
                     class="h-full rounded-full transition-all duration-500"
                     [ngClass]="getUsageBarClass(data.uso.productos, data.plan.limites.productos)"
@@ -598,13 +598,13 @@ interface PlanCard {
         </div>
 
         <!-- Matriz de Funcionalidades del Plan -->
-        <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs">
+        <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 sm:p-8 shadow-xs">
           <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h3 class="text-lg font-bold text-gray-900 tracking-tight">Módulos y Funciones de la Plataforma</h3>
-              <p class="text-xs text-gray-500 mt-1">Conoce qué módulos están activos en tu suscripción y cuáles requieren subir de nivel.</p>
+              <h3 class="text-lg font-bold text-[#17141A] tracking-tight">Módulos y Funciones de la Plataforma</h3>
+              <p class="text-xs text-[#5A5561] mt-1">Conoce qué módulos están activos en tu suscripción y cuáles requieren subir de nivel.</p>
             </div>
-            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 self-start sm:self-auto">
+            <span class="text-xs font-bold text-[#38133E] bg-[#F5EBF7] px-3 py-1 rounded-full border border-[#E8E2DA] self-start sm:self-auto">
               {{ data.plan.features.length }} de 12 funciones activas
             </span>
           </div>
@@ -614,22 +614,22 @@ interface PlanCard {
               *ngFor="let feat of allFeatures"
               class="p-4 rounded-xl border transition-all"
               [ngClass]="hasFeature(data, feat.key)
-                ? 'bg-white border-gray-200 shadow-2xs'
-                : 'bg-gray-50/60 border-gray-100 opacity-60'"
+                ? 'bg-white border-[#E8E2DA] shadow-2xs'
+                : 'bg-[#FAF8F5]/60 border-[#E8E2DA]/50 opacity-60'"
             >
               <div class="flex items-start justify-between gap-3 mb-2">
                 <div class="flex items-center space-x-2.5">
                   <div
                     class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     [ngClass]="hasFeature(data, feat.key)
-                      ? 'bg-indigo-50 text-indigo-600'
-                      : 'bg-gray-200 text-gray-400'"
+                      ? 'bg-[#F5EBF7] text-[#38133E]'
+                      : 'bg-[#F3EFEA] text-[#9B94A3]'"
                   >
                     <span class="material-symbols-outlined text-[18px]">{{ feat.icono }}</span>
                   </div>
                   <div>
-                    <h4 class="text-xs font-bold text-gray-900">{{ feat.nombre }}</h4>
-                    <span class="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">{{ feat.categoria }}</span>
+                    <h4 class="text-xs font-bold text-[#17141A]">{{ feat.nombre }}</h4>
+                    <span class="text-[10px] uppercase tracking-wider text-[#9B94A3] font-semibold">{{ feat.categoria }}</span>
                   </div>
                 </div>
 
@@ -637,14 +637,14 @@ interface PlanCard {
                 <span
                   class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0"
                   [ngClass]="hasFeature(data, feat.key)
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-gray-100 text-gray-500 border border-gray-200'"
+                    ? 'bg-[#DCFCE7] text-[#16A34A] border border-[#DCFCE7]'
+                    : 'bg-[#F3EFEA] text-[#5A5561] border border-[#E8E2DA]'"
                 >
                   {{ hasFeature(data, feat.key) ? 'Habilitado' : 'Bloqueado' }}
                 </span>
               </div>
 
-              <p class="text-xs text-gray-500 leading-relaxed pl-10">
+              <p class="text-xs text-[#5A5561] leading-relaxed pl-10">
                 {{ feat.descripcion }}
               </p>
             </div>
@@ -863,33 +863,33 @@ export class SubscriptionComponent implements OnInit {
   }
 
   getUsageBarClass(current: number, limit: number | null): string {
-    if (limit === null) return 'bg-emerald-500';
+    if (limit === null) return 'bg-[#16A34A]';
     const pct = (current / limit) * 100;
     if (pct >= 100) return 'bg-rose-500';
     if (pct >= 80) return 'bg-amber-500';
-    return 'bg-indigo-600';
+    return 'bg-[#38133E]';
   }
 
   getUsageTextColor(current: number, limit: number | null): string {
-    if (limit === null) return 'text-emerald-700';
+    if (limit === null) return 'text-[#16A34A]';
     const pct = (current / limit) * 100;
     if (pct >= 100) return 'text-rose-600';
     if (pct >= 80) return 'text-amber-600';
-    return 'text-indigo-600';
+    return 'text-[#38133E]';
   }
 
   getPlanBadgeClass(codigo: string): string {
     const c = (codigo || '').toLowerCase();
-    if (c === 'avanzado') return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (c === 'intermedio') return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (c === 'avanzado') return 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]';
+    if (c === 'intermedio') return 'bg-[#F3EFEA] text-[#17141A] border-[#E8E2DA]';
+    return 'bg-[#FAF8F5] text-[#5A5561] border-[#E8E2DA]';
   }
 
   getEstadoBadgeClass(estado: string): string {
     const e = (estado || '').toLowerCase();
-    if (e === 'activa') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (e === 'suspendida') return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-rose-50 text-rose-700 border-rose-200';
+    if (e === 'activa') return 'bg-[#DCFCE7] text-[#16A34A] border border-[#DCFCE7]';
+    if (e === 'suspendida') return 'bg-amber-50 text-amber-700 border border-amber-200';
+    return 'bg-rose-50 text-rose-700 border border-rose-200';
   }
 
   getEstadoLabel(estado: string): string {

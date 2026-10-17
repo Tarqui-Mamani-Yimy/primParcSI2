@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { MetodoPago, Reserva, ReservaIn, Venta } from '../models';
 import { NotificationService } from './notification.service';
+import { OfflineDbService } from './offline-db.service';
+import { SyncService } from './sync.service';
 import { environment } from '../../../environments/environment';
 
 const API_URL = environment.apiUrl;
@@ -22,19 +24,51 @@ export class ReservationsService {
   constructor(
     private http: HttpClient,
     private notificationService: NotificationService,
-  ) {}
-
-  loadReservations(): Promise<void> {
-    return firstValueFrom(
-      this.http.get<Reserva[]>(`${API_URL}/api/reservations`)
-    ).then((list) => {
-      this.reservationsSignal.set(list);
-    }).catch(() => {
-      this.notificationService.error('Error', 'No se pudo cargar la lista de reservas.');
+    private offlineDbService: OfflineDbService,
+    private syncService: SyncService,
+  ) {
+    this.syncService.syncCompleted.subscribe(() => {
+      this.loadCachedReservations();
+      this.loadCachedStaffReservations();
     });
   }
 
+  private async loadCachedReservations(): Promise<boolean> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const cached = await db.reservas.toArray();
+      if (cached && cached.length > 0) {
+        this.reservationsSignal.set(cached as Reserva[]);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async loadReservations(): Promise<void> {
+    const hadCached = await this.loadCachedReservations();
+
+    if (this.syncService.isOnline()) {
+      try {
+        const list = await firstValueFrom(
+          this.http.get<Reserva[]>(`${API_URL}/api/reservations`)
+        );
+        this.reservationsSignal.set(list);
+      } catch {
+        if (!hadCached && this.reservationsSignal().length === 0) {
+          this.notificationService.error('Error', 'No se pudo cargar la lista de reservas.');
+        }
+      }
+    }
+  }
+
   createReservation(payload: ReservaIn): Promise<Reserva | null> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Operación no disponible sin conexión a internet.');
+      return Promise.resolve(null);
+    }
     // idCliente nunca va en el payload: el backend lo deriva del JWT
     // cuando el llamante es un Cliente autenticado.
     return firstValueFrom(
@@ -51,6 +85,10 @@ export class ReservationsService {
   }
 
   cancelReservation(codigoReserva: number): Promise<boolean> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Operación no disponible sin conexión a internet.');
+      return Promise.resolve(false);
+    }
     return firstValueFrom(
       this.http.put<Reserva>(`${API_URL}/api/reservations/${codigoReserva}/cancel`, {})
     ).then((reserva) => {
@@ -68,17 +106,42 @@ export class ReservationsService {
   // Portal de staff (CU13/CU14/CU15) — reserva.gestionar
   // ───────────────────────────────────────────
 
-  loadAllReservations(): Promise<void> {
-    return firstValueFrom(
-      this.http.get<Reserva[]>(`${API_URL}/api/reservations`)
-    ).then((list) => {
-      this.staffReservationsSignal.set(list);
-    }).catch(() => {
-      this.notificationService.error('Error', 'No se pudo cargar la lista de reservas.');
-    });
+  private async loadCachedStaffReservations(): Promise<boolean> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const cached = await db.reservas.toArray();
+      if (cached && cached.length > 0) {
+        this.staffReservationsSignal.set(cached as Reserva[]);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  async loadAllReservations(): Promise<void> {
+    const hadCached = await this.loadCachedStaffReservations();
+
+    if (this.syncService.isOnline()) {
+      try {
+        const list = await firstValueFrom(
+          this.http.get<Reserva[]>(`${API_URL}/api/reservations`)
+        );
+        this.staffReservationsSignal.set(list);
+      } catch {
+        if (!hadCached && this.staffReservationsSignal().length === 0) {
+          this.notificationService.error('Error', 'No se pudo cargar la lista de reservas.');
+        }
+      }
+    }
   }
 
   prepareReservation(codigoReserva: number): Promise<boolean> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Operación no disponible sin conexión a internet.');
+      return Promise.resolve(false);
+    }
     return firstValueFrom(
       this.http.put<Reserva>(`${API_URL}/api/reservations/${codigoReserva}/prepare`, {})
     ).then((reserva) => {
@@ -93,6 +156,10 @@ export class ReservationsService {
   }
 
   confirmReservation(codigoReserva: number, idMetPago: number): Promise<boolean> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Operación no disponible sin conexión a internet.');
+      return Promise.resolve(false);
+    }
     return firstValueFrom(
       this.http.put<Venta>(`${API_URL}/api/reservations/${codigoReserva}/confirm`, { idMetPago })
     ).then(() => {
@@ -109,6 +176,10 @@ export class ReservationsService {
   }
 
   cancelReservationAsStaff(codigoReserva: number): Promise<boolean> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Operación no disponible sin conexión a internet.');
+      return Promise.resolve(false);
+    }
     return firstValueFrom(
       this.http.put<Reserva>(`${API_URL}/api/reservations/${codigoReserva}/cancel`, {})
     ).then((reserva) => {

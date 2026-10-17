@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../../core/services/inventory.service';
 import { ReservationsService } from '../../../core/services/reservations.service';
 import { PaymentsService } from '../../../core/services/payments.service';
+import { SyncService } from '../../../core/services/sync.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
 import type { ProductOut, Reserva } from '../../../core/models';
@@ -34,15 +35,15 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl overflow-hidden flex flex-col">
-        <div class="p-5 border-b border-gray-100 flex items-start justify-between">
+        <div class="p-5 border-b border-[#E8E2DA] flex items-start justify-between">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Nueva reserva</span>
-            <h2 class="text-base font-bold text-gray-900 mt-0.5 leading-snug">{{ producto.nombre }}</h2>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Nueva reserva</span>
+            <h2 class="text-base font-bold text-[#17141A] mt-0.5 leading-snug">{{ producto.nombre }}</h2>
           </div>
           <button
             *ngIf="estado() !== 'cobrado_sin_reserva'"
             (click)="cerrar.emit()"
-            class="w-8 h-8 rounded-full bg-gray-50 text-gray-500 flex items-center justify-center hover:bg-gray-900 hover:text-white transition-colors cursor-pointer"
+            class="w-8 h-8 rounded-full bg-[#FAF8F5] text-[#5A5561] flex items-center justify-center hover:bg-[#260B2B] hover:text-white transition-colors cursor-pointer"
             aria-label="Cerrar"
           >
             <span class="material-symbols-outlined text-[18px]">close</span>
@@ -52,12 +53,12 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
         <!-- Paso 1: datos de la reserva (sucursal/fecha/horario) — todavia sin cobrar nada -->
         <form *ngIf="estado() === 'iniciando'" (ngSubmit)="onSubmit()" class="p-5 space-y-4">
           <div class="flex flex-col space-y-1.5">
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="sucursal">Sucursal</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider" for="sucursal">Sucursal</label>
             <select
               id="sucursal"
               name="sucursal"
               [(ngModel)]="codigoSucursal"
-              class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full px-3 py-2 bg-white border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none"
             >
               <option [ngValue]="null">Seleccione una sucursal</option>
               <option *ngFor="let s of inventoryService.locations()" [ngValue]="s.codigoSucursal">
@@ -67,25 +68,25 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
           </div>
 
           <div class="flex flex-col space-y-1.5">
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="fecha">Fecha</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider" for="fecha">Fecha</label>
             <input
               id="fecha"
               name="fecha"
               type="date"
               [(ngModel)]="fecha"
-              class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full px-3 py-2 bg-white border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none"
             />
             <p *ngIf="fecha && !isFechaValida()" class="text-xs text-rose-600">La fecha debe ser hoy o una fecha futura.</p>
           </div>
 
           <div class="flex flex-col space-y-1.5">
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider" for="horario">Horario</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider" for="horario">Horario</label>
             <input
               id="horario"
               name="horario"
               type="time"
               [(ngModel)]="horario"
-              class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full px-3 py-2 bg-white border border-[#E8E2DA] rounded-lg text-sm focus:ring-2 focus:ring-[#38133E] focus:outline-none"
             />
             <p *ngIf="horario && !isHorarioValido()" class="text-xs text-rose-600">Formato de horario inválido (HH:MM).</p>
           </div>
@@ -96,14 +97,15 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
             <button
               type="button"
               (click)="cerrar.emit()"
-              class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+              class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-[#5A5561] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              [disabled]="isSubmitting() || !canSubmit()"
-              class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+              [disabled]="isSubmitting() || !canSubmit() || !syncService.isOnline()"
+              [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+              class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             >
               {{ isSubmitting() ? 'Calculando depósito...' : 'Continuar al pago' }}
             </button>
@@ -112,10 +114,10 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
 
         <!-- Paso 2: cobro del anticipo -->
         <div *ngIf="estado() === 'cobrando'" class="p-5 space-y-4">
-          <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-            <p class="text-xs font-bold uppercase tracking-wider text-indigo-600">Anticipo a cobrar (10%)</p>
-            <p class="text-2xl font-bold text-indigo-700 mt-1">Bs {{ depositoMonto()?.toFixed(2) }}</p>
-            <p class="text-xs text-indigo-500 mt-1">Se descuenta del total al confirmar la reserva en sucursal.</p>
+          <div class="bg-[#F5EBF7] border border-[#E8E2DA] rounded-xl p-4">
+            <p class="text-xs font-bold uppercase tracking-wider text-[#38133E]">Anticipo a cobrar (10%)</p>
+            <p class="text-2xl font-bold text-[#38133E] mt-1">Bs {{ depositoMonto()?.toFixed(2) }}</p>
+            <p class="text-xs text-[#5A5561] mt-1">Se descuenta del total al confirmar la reserva en sucursal.</p>
           </div>
           <app-card-payment
             *ngIf="clientSecret()"
@@ -137,8 +139,9 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
             </p>
             <button
               (click)="onReintentarReserva()"
-              [disabled]="isSubmitting()"
-              class="w-full px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-white bg-indigo-600 hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-50"
+              [disabled]="isSubmitting() || !syncService.isOnline()"
+              [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+              class="w-full px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-white bg-[#38133E] hover:bg-[#260B2B] transition-colors cursor-pointer disabled:opacity-50"
             >
               {{ isSubmitting() ? 'Reintentando…' : 'Reintentar reserva' }}
             </button>
@@ -150,7 +153,7 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
           <p class="text-sm font-bold text-rose-700">{{ submitError() }}</p>
           <button
             (click)="cerrar.emit()"
-            class="w-full px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+            class="w-full px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-[#5A5561] border border-[#E8E2DA] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
           >
             Cerrar
           </button>
@@ -181,6 +184,7 @@ export class ReservationFormComponent implements OnInit {
     private reservationsService: ReservationsService,
     private paymentsService: PaymentsService,
     private notificationService: NotificationService,
+    public syncService: SyncService,
   ) {}
 
   ngOnInit() {

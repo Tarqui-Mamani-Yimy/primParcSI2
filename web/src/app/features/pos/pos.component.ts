@@ -14,6 +14,8 @@ import {
 import { SalesService } from '../../core/services/sales.service';
 import { PaymentsService } from '../../core/services/payments.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { OfflineDbService } from '../../core/services/offline-db.service';
+import { SyncService } from '../../core/services/sync.service';
 import { CardPaymentComponent } from '../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../shared/components/receipt-modal.component';
 import { environment } from '../../../environments/environment';
@@ -41,7 +43,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
     <div class="p-6 md:p-8 space-y-6 animate-in fade-in duration-200 max-w-5xl">
 
       <div class="pb-5 border-b border-gray-200">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Caja</span>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Caja</span>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Venta Presencial</h1>
         <p class="text-xs text-gray-500 mt-1">
           El stock se filtra por la sucursal seleccionada: una venta se rechaza si esa sucursal
@@ -106,7 +108,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
             <button
               (click)="agregarLinea(e)"
               [disabled]="e.cantidad_actual - e.cantidad_reservada <= 0"
-              class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-[#38133E] border border-[#E8E2DA] hover:bg-[#F5EBF7] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Agregar
             </button>
@@ -179,9 +181,9 @@ type Modalidad = 'efectivo' | 'tarjeta';
             (click)="onElegirModalidad('efectivo')"
             [disabled]="enviando()"
             class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide border transition-colors cursor-pointer disabled:opacity-50"
-            [class.bg-indigo-600]="modalidad() === 'efectivo'"
+            [class.bg-ys-primary]="modalidad() === 'efectivo'"
             [class.text-white]="modalidad() === 'efectivo'"
-            [class.border-indigo-600]="modalidad() === 'efectivo'"
+            [class.border-ys-primary]="modalidad() === 'efectivo'"
             [class.text-gray-600]="modalidad() !== 'efectivo'"
             [class.border-gray-200]="modalidad() !== 'efectivo'"
           >
@@ -192,9 +194,9 @@ type Modalidad = 'efectivo' | 'tarjeta';
             [disabled]="enviando() || !tarjetaDisponible()"
             [title]="!tarjetaDisponible() ? 'El cobro con tarjeta no está disponible en este servidor' : ''"
             class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            [class.bg-indigo-600]="modalidad() === 'tarjeta'"
+            [class.bg-ys-primary]="modalidad() === 'tarjeta'"
             [class.text-white]="modalidad() === 'tarjeta'"
-            [class.border-indigo-600]="modalidad() === 'tarjeta'"
+            [class.border-ys-primary]="modalidad() === 'tarjeta'"
             [class.text-gray-600]="modalidad() !== 'tarjeta'"
             [class.border-gray-200]="modalidad() !== 'tarjeta'"
           >
@@ -205,7 +207,8 @@ type Modalidad = 'efectivo' | 'tarjeta';
         <button
           *ngIf="modalidad() === 'efectivo'"
           (click)="onConfirmarEfectivo()"
-          [disabled]="enviando()"
+          [disabled]="enviando() || !syncService.isOnline()"
+          [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
           class="w-full px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
         >
           {{ enviando() ? 'Procesando…' : 'Cobrar y registrar venta' }}
@@ -214,7 +217,8 @@ type Modalidad = 'efectivo' | 'tarjeta';
         <button
           *ngIf="modalidad() === 'tarjeta' && !clientSecret()"
           (click)="onIniciarCobroTarjeta()"
-          [disabled]="enviando()"
+          [disabled]="enviando() || !syncService.isOnline()"
+          [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
           class="w-full px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
         >
           {{ enviando() ? 'Iniciando cobro…' : 'Iniciar cobro con tarjeta' }}
@@ -246,8 +250,9 @@ type Modalidad = 'efectivo' | 'tarjeta';
         <div class="flex gap-2">
           <button
             (click)="onReintentarVenta()"
-            [disabled]="enviando()"
-            class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-white bg-indigo-600 hover:bg-indigo-700 transition-colors cursor-pointer disabled:opacity-50"
+            [disabled]="enviando() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-white bg-[#38133E] hover:bg-[#260B2B] transition-colors cursor-pointer disabled:opacity-50"
           >
             {{ enviando() ? 'Reintentando…' : 'Reintentar venta' }}
           </button>
@@ -328,40 +333,112 @@ export class PosComponent implements OnInit {
     private salesService: SalesService,
     private paymentsService: PaymentsService,
     private notificationService: NotificationService,
-  ) {}
+    private offlineDbService: OfflineDbService,
+    public syncService: SyncService,
+  ) {
+    this.syncService.syncCompleted.subscribe(() => {
+      this.cargarSucursales();
+      this.cargarClientes();
+      const currentBranch = this.selectedBranch();
+      if (currentBranch !== null) {
+        this.onBranchChange(currentBranch);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.cargarSucursales();
     this.cargarClientes();
   }
 
-  private cargarSucursales(): Promise<void> {
-    return firstValueFrom(
-      this.http.get<InventoryLocation[]>(`${API_URL}/api/inventory/locations`)
-    ).then((locs) => this.locations.set(locs)).catch(() => {
-      this.notificationService.error('Error', 'No se pudieron cargar las sucursales.');
-    });
+  private async cargarSucursales(): Promise<void> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const cached = await db.sucursales.toArray();
+      if (cached && cached.length > 0) {
+        this.locations.set(cached.map(s => ({
+          codigoSucursal: s.codigoSucursal,
+          nombre: s.nombre,
+          idCiudad: s.idCiudad,
+          ciudad: (s as any).ciudad || '',
+          direccion: s.direccion || '',
+          idEmpresa: s.idEmpresa,
+        })));
+      }
+    } catch {}
+
+    if (this.syncService.isOnline()) {
+      firstValueFrom(
+        this.http.get<InventoryLocation[]>(`${API_URL}/api/inventory/locations`)
+      ).then((locs) => this.locations.set(locs)).catch(() => {
+        if (this.locations().length === 0) {
+          this.notificationService.error('Error', 'No se pudieron cargar las sucursales.');
+        }
+      });
+    }
   }
 
-  private cargarClientes(): Promise<void> {
-    return firstValueFrom(
-      this.http.get<Cliente[]>(`${API_URL}/api/customers`)
-    ).then((list) => this.customers.set(list)).catch(() => {
-      this.notificationService.error('Error', 'No se pudo cargar la lista de clientes.');
-    });
+  private async cargarClientes(): Promise<void> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const cached = await db.cliente.toArray();
+      if (cached && cached.length > 0) {
+        this.customers.set(cached as Cliente[]);
+      }
+    } catch {}
+
+    if (this.syncService.isOnline()) {
+      firstValueFrom(
+        this.http.get<Cliente[]>(`${API_URL}/api/customers`)
+      ).then((list) => this.customers.set(list)).catch(() => {
+        if (this.customers().length === 0) {
+          this.notificationService.error('Error', 'No se pudo cargar la lista de clientes.');
+        }
+      });
+    }
   }
 
-  onBranchChange(codigoSucursal: number): void {
+  async onBranchChange(codigoSucursal: number): Promise<void> {
     this.selectedBranch.set(codigoSucursal);
     this.branchPromptVisible.set(false);
     this.searchQuery.set('');
-    firstValueFrom(
-      this.http.get<InventoryStockEntry[]>(`${API_URL}/api/inventory/stock`, {
-        params: { codigoSucursal: String(codigoSucursal) },
-      })
-    ).then((stock) => this.branchStock.set(stock)).catch(() => {
-      this.notificationService.error('Error', 'No se pudo cargar el stock de la sucursal.');
-    });
+
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const invs = await db.inventario.where('codigoSucursal').equals(codigoSucursal).toArray();
+      if (invs && invs.length > 0) {
+        const prodsMap = new Map((await db.productos.toArray()).map(p => [p.idProducto, p]));
+        const entries: InventoryStockEntry[] = invs.map(inv => {
+          const p = prodsMap.get(inv.idProducto);
+          return {
+            idInv: inv.idInv,
+            idProducto: inv.idProducto,
+            codigoSucursal: inv.codigoSucursal,
+            cantidad_actual: inv.cantidad_actual,
+            cantidad_reservada: inv.cantidad_reservada,
+            producto_nombre: p?.nombre ?? `Producto #${inv.idProducto}`,
+            producto_tipo: p?.tipo ?? '',
+            producto_talla: p?.talla ?? '',
+            producto_color: p?.color ?? '',
+            producto_imagen: p?.imagen_url ?? '',
+            sucursal_nombre: '',
+          };
+        });
+        this.branchStock.set(entries);
+      }
+    } catch {}
+
+    if (this.syncService.isOnline()) {
+      firstValueFrom(
+        this.http.get<InventoryStockEntry[]>(`${API_URL}/api/inventory/stock`, {
+          params: { codigoSucursal: String(codigoSucursal) },
+        })
+      ).then((stock) => this.branchStock.set(stock)).catch(() => {
+        if (this.branchStock().length === 0) {
+          this.notificationService.error('Error', 'No se pudo cargar el stock de la sucursal.');
+        }
+      });
+    }
   }
 
   async agregarLinea(entry: InventoryStockEntry): Promise<void> {
@@ -372,15 +449,29 @@ export class PosComponent implements OnInit {
 
     let precio = this.priceCache().get(entry.idProducto);
     if (precio === undefined) {
-      const producto = await firstValueFrom(
-        this.http.get<ProductOut>(`${API_URL}/api/products/${entry.idProducto}`)
-      ).catch(() => null);
-      if (!producto) {
+      try {
+        const db = this.offlineDbService.getActiveDb();
+        const prod = await db.productos.get(entry.idProducto);
+        if (prod && prod.venta) {
+          precio = prod.venta;
+          this.priceCache.update(m => new Map(m).set(entry.idProducto, precio!));
+        }
+      } catch {}
+
+      if (precio === undefined && this.syncService.isOnline()) {
+        const producto = await firstValueFrom(
+          this.http.get<ProductOut>(`${API_URL}/api/products/${entry.idProducto}`)
+        ).catch(() => null);
+        if (producto) {
+          precio = producto.venta;
+          this.priceCache.update(m => new Map(m).set(entry.idProducto, precio!));
+        }
+      }
+
+      if (precio === undefined) {
         this.notificationService.error('Error', 'No se pudo obtener el precio del producto.');
         return;
       }
-      precio = producto.venta;
-      this.priceCache.update(m => new Map(m).set(entry.idProducto, precio!));
     }
 
     this.ticketLines.update(lines => {

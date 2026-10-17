@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, timeout } from 'rxjs';
 import { AuthUser, EmpresaInfo, LoginResponse, PlanInfo, RegisterRequest, SuscripcionInfo, UserRole } from '../models';
 import { NotificationService } from './notification.service';
+import { OfflineDbService } from './offline-db.service';
 import { environment } from '../../../environments/environment';
 
 const API_URL = environment.apiUrl;
@@ -61,6 +62,7 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private notificationService: NotificationService,
+    private offlineDbService: OfflineDbService,
   ) {
     this.loadTokenFromStorage();
   }
@@ -101,6 +103,8 @@ export class AuthService {
         if (pl) this.planSignal.set(JSON.parse(pl));
         const sub = localStorage.getItem('suscripcion');
         if (sub) this.suscripcionSignal.set(JSON.parse(sub));
+        const usr = localStorage.getItem('user');
+        if (usr) this.currentUserSignal.set(JSON.parse(usr));
       } catch {
         // Ignorar fallos de deserialización
       }
@@ -134,7 +138,9 @@ export class AuthService {
       localStorage.setItem('access_token', res.access_token);
       localStorage.setItem('refresh_token', res.refresh_token);
       this.setTenantState(res.empresa, res.plan, res.suscripcion);
-      this.currentUserSignal.set(this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion));
+      const user = this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion);
+      this.currentUserSignal.set(user);
+      localStorage.setItem('user', JSON.stringify(user));
       this.isAuthenticatedSignal.set(true);
       this.notificationService.success('Acceso concedido', `Bienvenido, ${res.user.nombre}`);
       return true;
@@ -159,7 +165,9 @@ export class AuthService {
       localStorage.setItem('access_token', res.access_token);
       localStorage.setItem('refresh_token', res.refresh_token);
       this.setTenantState(res.empresa, res.plan, res.suscripcion);
-      this.currentUserSignal.set(this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion));
+      const user = this.mapBackendUser(res.user, res.empresa, res.plan, res.suscripcion);
+      this.currentUserSignal.set(user);
+      localStorage.setItem('user', JSON.stringify(user));
       this.isAuthenticatedSignal.set(true);
       this.notificationService.success('Registro exitoso', `Bienvenido, ${res.user.nombre}`);
       return { ok: true } as RegisterResult;
@@ -223,20 +231,31 @@ export class AuthService {
         .pipe(timeout(10000))
     ).then((u) => {
       this.setTenantState(u.empresa, u.plan, u.suscripcion);
-      this.currentUserSignal.set({
+      const user: AuthUser = {
         id: String(u.idUser),
         nombre: u.nombre,
         email: u.correo,
         rol: u.rol as UserRole,
         permisos: u.permisos,
-        empresa: u.empresa ?? null,
-        plan: u.plan ?? null,
-        suscripcion: u.suscripcion ?? null,
-      });
+        empresa: u.empresa ?? this.empresaSignal() ?? null,
+        plan: u.plan ?? this.planSignal() ?? null,
+        suscripcion: u.suscripcion ?? this.suscripcionSignal() ?? null,
+      };
+      this.currentUserSignal.set(user);
+      localStorage.setItem('user', JSON.stringify(user));
       this.isAuthenticatedSignal.set(true);
-    }).catch(() => {
-      this.notificationService.error('Sesión no válida', 'No pudimos validar tu sesión. Volvé a iniciar sesión.');
-      this.logout();
+    }).catch((err) => {
+      // Si la app está offline o hay error de red temporal, no cerramos sesión
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return;
+      }
+      if (err?.status === 0) {
+        return;
+      }
+      if (err?.status === 401) {
+        this.notificationService.error('Sesión no válida', 'No pudimos validar tu sesión. Volvé a iniciar sesión.');
+        this.logout();
+      }
     });
   }
 
@@ -315,6 +334,8 @@ export class AuthService {
     localStorage.removeItem('empresa');
     localStorage.removeItem('plan');
     localStorage.removeItem('suscripcion');
+    localStorage.removeItem('user');
+    this.offlineDbService.wipeOnLogout();
     this.notificationService.info('Sesión cerrada', 'Tu sesión administrativa ha terminado de forma segura.');
   }
 

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ReportsService } from '../../core/services/reports.service';
 import { InventoryService } from '../../core/services/inventory.service';
 import { ArchiveService } from '../../core/services/archive.service';
+import { SyncService } from '../../core/services/sync.service';
 import { InventarioReporteOut, VentaReporteOut } from '../../core/models';
 import {
   InventoryReportFormState,
@@ -26,7 +27,7 @@ type ReportsTab = 'ventas' | 'inventario';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Administración</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Administración</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Reportes de Ventas e Inventario</h1>
           <p class="text-xs text-gray-500 mt-1">
             Reportes filtrables en pantalla, exportables a CSV y PDF.
@@ -38,8 +39,8 @@ type ReportsTab = 'ventas' | 'inventario';
       <div class="flex items-center gap-1 border-b border-gray-200">
         <button
           (click)="activeTab.set('ventas')"
-          [class.text-indigo-600]="activeTab() === 'ventas'"
-          [class.border-indigo-600]="activeTab() === 'ventas'"
+          [class.text-ys-primary]="activeTab() === 'ventas'"
+          [class.border-ys-primary]="activeTab() === 'ventas'"
           [class.text-gray-500]="activeTab() !== 'ventas'"
           [class.border-transparent]="activeTab() !== 'ventas'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -48,8 +49,8 @@ type ReportsTab = 'ventas' | 'inventario';
         </button>
         <button
           (click)="activeTab.set('inventario')"
-          [class.text-indigo-600]="activeTab() === 'inventario'"
-          [class.border-indigo-600]="activeTab() === 'inventario'"
+          [class.text-ys-primary]="activeTab() === 'inventario'"
+          [class.border-ys-primary]="activeTab() === 'inventario'"
           [class.text-gray-500]="activeTab() !== 'inventario'"
           [class.border-transparent]="activeTab() !== 'inventario'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -63,22 +64,22 @@ type ReportsTab = 'ventas' | 'inventario';
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Desde</label>
-            <input type="date" [(ngModel)]="salesForm.fechaDesde" name="fechaDesde" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="date" [(ngModel)]="salesForm.fechaDesde" name="fechaDesde" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Hasta</label>
-            <input type="date" [(ngModel)]="salesForm.fechaHasta" name="fechaHasta" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="date" [(ngModel)]="salesForm.fechaHasta" name="fechaHasta" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sucursal</label>
-            <select [(ngModel)]="salesForm.codigoSucursal" name="codigoSucursal" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="salesForm.codigoSucursal" name="codigoSucursal" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option value="ALL">Todas</option>
               <option *ngFor="let loc of inventoryService.locations()" [value]="loc.codigoSucursal">{{ loc.nombre }}</option>
             </select>
           </div>
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Producto</label>
-            <select [(ngModel)]="salesForm.idProducto" name="idProducto" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="salesForm.idProducto" name="idProducto" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option value="ALL">Todos</option>
               <option *ngFor="let p of archiveService.products()" [value]="p.idProducto">{{ p.nombre }}</option>
             </select>
@@ -91,20 +92,22 @@ type ReportsTab = 'ventas' | 'inventario';
           <button
             (click)="verVentas()"
             [disabled]="loadingSales()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer"
           >
             {{ loadingSales() ? 'Cargando...' : 'Ver' }}
           </button>
           <button
             (click)="descargarVentasCsv()"
-            [disabled]="downloadingSalesCsv()"
+            [disabled]="downloadingSalesCsv() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
             class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ downloadingSalesCsv() ? 'Descargando...' : 'Descargar CSV' }}
           </button>
           <button
             (click)="descargarVentasPdf()"
-            [disabled]="downloadingSalesPdf()"
+            [disabled]="downloadingSalesPdf() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
             class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ downloadingSalesPdf() ? 'Descargando...' : 'Descargar PDF' }}
@@ -155,14 +158,14 @@ type ReportsTab = 'ventas' | 'inventario';
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Sucursal</label>
-            <select [(ngModel)]="inventoryForm.codigoSucursal" name="invCodigoSucursal" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="inventoryForm.codigoSucursal" name="invCodigoSucursal" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option value="ALL">Todas</option>
               <option *ngFor="let loc of inventoryService.locations()" [value]="loc.codigoSucursal">{{ loc.nombre }}</option>
             </select>
           </div>
           <div>
             <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Producto</label>
-            <select [(ngModel)]="inventoryForm.idProducto" name="invIdProducto" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="inventoryForm.idProducto" name="invIdProducto" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option value="ALL">Todos</option>
               <option *ngFor="let p of archiveService.products()" [value]="p.idProducto">{{ p.nombre }}</option>
             </select>
@@ -173,20 +176,22 @@ type ReportsTab = 'ventas' | 'inventario';
           <button
             (click)="verInventario()"
             [disabled]="loadingInventory()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer"
           >
             {{ loadingInventory() ? 'Cargando...' : 'Ver' }}
           </button>
           <button
             (click)="descargarInventarioCsv()"
-            [disabled]="downloadingInventoryCsv()"
+            [disabled]="downloadingInventoryCsv() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
             class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ downloadingInventoryCsv() ? 'Descargando...' : 'Descargar CSV' }}
           </button>
           <button
             (click)="descargarInventarioPdf()"
-            [disabled]="downloadingInventoryPdf()"
+            [disabled]="downloadingInventoryPdf() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
             class="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {{ downloadingInventoryPdf() ? 'Descargando...' : 'Descargar PDF' }}
@@ -250,6 +255,7 @@ export class ReportsComponent implements OnInit {
     private reportsService: ReportsService,
     public inventoryService: InventoryService,
     public archiveService: ArchiveService,
+    public syncService: SyncService,
   ) {}
 
   ngOnInit() {

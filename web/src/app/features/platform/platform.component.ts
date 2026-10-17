@@ -13,14 +13,14 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
     <div class="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
 
       <!-- Encabezado de la vista -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-[#E8E2DA]">
         <div>
-          <div class="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+          <div class="flex items-center space-x-2 text-xs font-bold text-[#38133E] uppercase tracking-wider mb-1">
             <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
             <span>Operador Global de Plataforma</span>
           </div>
-          <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Gestión de Empresas y Tenants</h1>
-          <p class="text-sm text-gray-500 mt-1">
+          <h1 class="text-2xl lg:text-3xl font-bold text-[#17141A] tracking-tight">Gestión de Empresas y Tenants</h1>
+          <p class="text-sm text-[#5A5561] mt-1">
             Administración centralizada de boutiques clientes, planes de suscripción y aprovisionamiento de tenants.
           </p>
         </div>
@@ -28,7 +28,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
         <div class="flex items-center space-x-3">
           <button
             (click)="loadData()"
-            class="px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-2xs"
+            class="px-3.5 py-2 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#5A5561] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-2xs"
           >
             <span class="material-symbols-outlined text-[16px]" [class.animate-spin]="isLoading()">refresh</span>
             <span>Refrescar</span>
@@ -36,7 +36,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
 
           <button
             (click)="openCreateModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
           >
             <span class="material-symbols-outlined text-[16px]">add_business</span>
             <span>Nueva Empresa</span>
@@ -46,79 +46,79 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
 
       <!-- Tarjetas KPI Resumen -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div class="bg-white p-5 rounded-2xl border border-[#E8E2DA] shadow-xs">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Empresas</span>
-            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider">Total Empresas</span>
+            <div class="w-8 h-8 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">storefront</span>
             </div>
           </div>
-          <p class="text-3xl font-black text-gray-900">{{ empresas().length }}</p>
-          <span class="text-xs text-gray-500 mt-1 block">Tenants registrados en la base</span>
+          <p class="text-3xl font-black text-[#17141A]">{{ empresas().length }}</p>
+          <span class="text-xs text-[#5A5561] mt-1 block">Tenants registrados en la base</span>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div class="bg-white p-5 rounded-2xl border border-[#E8E2DA] shadow-xs">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Empresas Activas</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider">Empresas Activas</span>
+            <div class="w-8 h-8 rounded-lg bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">check_circle</span>
             </div>
           </div>
-          <p class="text-3xl font-black text-emerald-600">{{ countActivas() }}</p>
-          <span class="text-xs text-gray-500 mt-1 block">Operando con suscripción activa</span>
+          <p class="text-3xl font-black text-[#16A34A]">{{ countActivas() }}</p>
+          <span class="text-xs text-[#5A5561] mt-1 block">Operando con suscripción activa</span>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div class="bg-white p-5 rounded-2xl border border-[#E8E2DA] shadow-xs">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Empresas Suspendidas</span>
+            <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider">Empresas Suspendidas</span>
             <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">pause_circle</span>
             </div>
           </div>
           <p class="text-3xl font-black text-rose-600">{{ countSuspendidas() }}</p>
-          <span class="text-xs text-gray-500 mt-1 block">Escrituras bloqueadas</span>
+          <span class="text-xs text-[#5A5561] mt-1 block">Escrituras bloqueadas</span>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+        <div class="bg-white p-5 rounded-2xl border border-[#E8E2DA] shadow-xs">
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Planes Disponibles</span>
-            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+            <span class="text-xs font-bold text-[#9B94A3] uppercase tracking-wider">Planes Disponibles</span>
+            <div class="w-8 h-8 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center">
               <span class="material-symbols-outlined text-[18px]">layers</span>
             </div>
           </div>
-          <p class="text-3xl font-black text-purple-600">{{ plans().length }}</p>
-          <span class="text-xs text-gray-500 mt-1 block">Básico, Intermedio, Avanzado</span>
+          <p class="text-3xl font-black text-[#38133E]">{{ plans().length }}</p>
+          <span class="text-xs text-[#5A5561] mt-1 block">Básico, Intermedio, Avanzado</span>
         </div>
       </div>
 
       <!-- Barra de Filtros y Búsqueda -->
-      <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="bg-white p-4 rounded-2xl border border-[#E8E2DA] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div class="relative w-full sm:w-80">
-          <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400 text-[18px]">search</span>
+          <span class="material-symbols-outlined absolute left-3 top-2.5 text-[#9B94A3] text-[18px]">search</span>
           <input
             type="text"
             [(ngModel)]="searchQuery"
             placeholder="Buscar por nombre o slug…"
-            class="w-full pl-9 pr-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            class="w-full pl-9 pr-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
           />
         </div>
 
         <div class="flex items-center space-x-2 w-full sm:w-auto">
           <button
             (click)="filterStatus = 'all'"
-            [class.bg-indigo-50]="filterStatus === 'all'"
-            [class.text-indigo-700]="filterStatus === 'all'"
+            [class.bg-ys-primary-soft]="filterStatus === 'all'"
+            [class.text-ys-primary]="filterStatus === 'all'"
             [class.font-bold]="filterStatus === 'all'"
-            class="px-3 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            class="px-3 py-1.5 rounded-lg text-xs text-[#5A5561] hover:bg-[#F3EFEA] transition-colors cursor-pointer"
           >
             Todas ({{ empresas().length }})
           </button>
           <button
             (click)="filterStatus = 'activa'"
-            [class.bg-emerald-50]="filterStatus === 'activa'"
-            [class.text-emerald-700]="filterStatus === 'activa'"
+            [class.bg-ys-success-soft]="filterStatus === 'activa'"
+            [class.text-ys-success]="filterStatus === 'activa'"
             [class.font-bold]="filterStatus === 'activa'"
-            class="px-3 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            class="px-3 py-1.5 rounded-lg text-xs text-[#5A5561] hover:bg-[#F3EFEA] transition-colors cursor-pointer"
           >
             Activas ({{ countActivas() }})
           </button>
@@ -127,7 +127,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
             [class.bg-rose-50]="filterStatus === 'suspendida'"
             [class.text-rose-700]="filterStatus === 'suspendida'"
             [class.font-bold]="filterStatus === 'suspendida'"
-            class="px-3 py-1.5 rounded-lg text-xs text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+            class="px-3 py-1.5 rounded-lg text-xs text-[#5A5561] hover:bg-[#F3EFEA] transition-colors cursor-pointer"
           >
             Suspendidas ({{ countSuspendidas() }})
           </button>
@@ -135,17 +135,17 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
       </div>
 
       <!-- Estado de carga -->
-      <div *ngIf="isLoading()" class="flex flex-col items-center justify-center py-20 text-gray-500 space-y-3">
-        <span class="material-symbols-outlined text-4xl text-indigo-600 animate-spin">progress_activity</span>
+      <div *ngIf="isLoading()" class="flex flex-col items-center justify-center py-20 text-[#5A5561] space-y-3">
+        <span class="material-symbols-outlined text-4xl text-[#38133E] animate-spin">progress_activity</span>
         <p class="text-sm font-medium">Cargando empresas de la plataforma…</p>
       </div>
 
       <!-- Tabla de Empresas -->
-      <div *ngIf="!isLoading()" class="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+      <div *ngIf="!isLoading()" class="bg-white rounded-2xl border border-[#E8E2DA] shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-gray-50/75 border-b border-gray-200 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+              <tr class="bg-[#FAF8F5] border-b border-[#E8E2DA] text-[10px] font-bold text-[#5A5561] uppercase tracking-wider">
                 <th class="py-3 px-6">Empresa</th>
                 <th class="py-3 px-6">Plan Asignado</th>
                 <th class="py-3 px-6">Estado Suscripción</th>
@@ -154,19 +154,19 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                 <th class="py-3 px-6 text-right">Acciones de Gestión</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-xs">
-              <tr *ngFor="let emp of filteredEmpresas()" class="hover:bg-gray-50/50 transition-colors">
+            <tbody class="divide-y divide-[#E8E2DA]/60 text-xs">
+              <tr *ngFor="let emp of filteredEmpresas()" class="hover:bg-[#FAF8F5]/60 transition-colors">
 
                 <!-- Columna Empresa -->
                 <td class="py-4 px-6">
                   <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
+                    <div class="w-10 h-10 rounded-xl bg-[#38133E] text-white font-black text-sm flex items-center justify-center shrink-0 shadow-2xs">
                       {{ emp.nombre.substring(0, 2).toUpperCase() }}
                     </div>
                     <div>
-                      <p class="font-bold text-gray-900 text-sm tracking-tight">{{ emp.nombre }}</p>
-                      <div class="flex items-center space-x-2 text-[11px] text-gray-400 mt-0.5">
-                        <span class="font-mono text-gray-500">{{ emp.slug }}</span>
+                      <p class="font-bold text-[#17141A] text-sm tracking-tight">{{ emp.nombre }}</p>
+                      <div class="flex items-center space-x-2 text-[11px] text-[#9B94A3] mt-0.5">
+                        <span class="font-mono text-[#5A5561]">{{ emp.slug }}</span>
                         <span>•</span>
                         <span>ID #{{ emp.idEmpresa }}</span>
                       </div>
@@ -180,7 +180,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                        [ngClass]="getPlanBadgeClass(emp.plan?.codigo || '')">
                     <span>{{ emp.plan?.nombre || 'Sin Plan' }}</span>
                   </div>
-                  <p class="text-[10px] text-gray-400 mt-1">Cód: {{ emp.plan?.codigo || 'N/A' }}</p>
+                  <p class="text-[10px] text-[#9B94A3] mt-1">Cód: {{ emp.plan?.codigo || 'N/A' }}</p>
                 </td>
 
                 <!-- Columna Estado -->
@@ -188,10 +188,10 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                   <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border"
                        [ngClass]="getEstadoBadgeClass(emp.suscripcion?.estado || emp.estado)">
                     <span class="w-1.5 h-1.5 rounded-full"
-                          [ngClass]="(emp.suscripcion?.estado || emp.estado) === 'activa' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                          [ngClass]="(emp.suscripcion?.estado || emp.estado) === 'activa' ? 'bg-[#16A34A]' : 'bg-rose-500'"></span>
                     <span>{{ getEstadoLabel(emp.suscripcion?.estado || emp.estado) }}</span>
                   </div>
-                  <p class="text-[10px] text-gray-400 mt-1">
+                  <p class="text-[10px] text-[#9B94A3] mt-1">
                     Vence: {{ emp.suscripcion?.fechaFin || 'Sin límite' }}
                   </p>
                 </td>
@@ -199,38 +199,38 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                 <!-- Columna Facturación (Stripe / Manual + Próximo Cobro) -->
                 <td class="py-4 px-6">
                   <div *ngIf="emp.facturacion?.modo === 'stripe'; else manualBilling">
-                    <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#F5EBF7] text-[#38133E] border border-[#E8E2DA]">
                       <span class="material-symbols-outlined text-[13px]">credit_card</span>
                       <span>Stripe{{ emp.facturacion?.ciclo ? (' (' + emp.facturacion.ciclo + ')') : '' }}</span>
                     </div>
-                    <p class="text-[10px] text-gray-500 mt-1">
+                    <p class="text-[10px] text-[#5A5561] mt-1">
                       {{ emp.facturacion?.proximoCobro ? ('Cobro: ' + emp.facturacion?.proximoCobro) : 'Sin fecha de cobro' }}
                     </p>
                   </div>
                   <ng-template #manualBilling>
                     <div>
-                      <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+                      <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#F3EFEA] text-[#5A5561] border border-[#E8E2DA]">
                         <span class="material-symbols-outlined text-[13px]">tune</span>
                         <span>Manual</span>
                       </div>
-                      <p class="text-[10px] text-gray-400 mt-1">SuperAdmin</p>
+                      <p class="text-[10px] text-[#9B94A3] mt-1">SuperAdmin</p>
                     </div>
                   </ng-template>
                 </td>
 
                 <!-- Columna Uso -->
                 <td class="py-4 px-6">
-                  <div class="space-y-1 text-[11px] text-gray-600">
+                  <div class="space-y-1 text-[11px] text-[#5A5561]">
                     <div class="flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[13px] text-gray-400">location_city</span>
+                      <span class="material-symbols-outlined text-[13px] text-[#9B94A3]">location_city</span>
                       <span>{{ emp.uso?.sucursales ?? 0 }} sucursales</span>
                     </div>
                     <div class="flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[13px] text-gray-400">group</span>
+                      <span class="material-symbols-outlined text-[13px] text-[#9B94A3]">group</span>
                       <span>{{ emp.uso?.usuarios ?? 0 }} usuarios</span>
                     </div>
                     <div class="flex items-center space-x-1.5">
-                      <span class="material-symbols-outlined text-[13px] text-gray-400">checkroom</span>
+                      <span class="material-symbols-outlined text-[13px] text-[#9B94A3]">checkroom</span>
                       <span>{{ emp.uso?.productos ?? 0 }} productos</span>
                     </div>
                   </div>
@@ -242,9 +242,9 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                     <button
                       (click)="openChangePlanModal(emp)"
                       title="Cambiar Plan de Suscripción"
-                      class="px-2.5 py-1.5 bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 cursor-pointer shadow-2xs"
+                      class="px-2.5 py-1.5 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#5A5561] rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 cursor-pointer shadow-2xs"
                     >
-                      <span class="material-symbols-outlined text-[15px] text-indigo-600">upgrade</span>
+                      <span class="material-symbols-outlined text-[15px] text-[#38133E]">upgrade</span>
                       <span>Plan</span>
                     </button>
 
@@ -262,7 +262,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                       *ngIf="(emp.suscripcion?.estado || emp.estado) !== 'activa'"
                       (click)="toggleEstado(emp)"
                       title="Reactivar Empresa"
-                      class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 cursor-pointer shadow-2xs"
+                      class="px-2.5 py-1.5 bg-[#DCFCE7] hover:bg-[#d0f7dc] border border-[#16A34A]/30 text-[#16A34A] rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 cursor-pointer shadow-2xs"
                     >
                       <span class="material-symbols-outlined text-[15px]">play_arrow</span>
                       <span>Reactivar</span>
@@ -271,7 +271,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                     <button
                       (click)="openEditModal(emp)"
                       title="Editar Datos"
-                      class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                      class="p-1.5 text-[#9B94A3] hover:text-[#17141A] hover:bg-[#F3EFEA] rounded-lg transition-colors cursor-pointer"
                     >
                       <span class="material-symbols-outlined text-[18px]">edit</span>
                     </button>
@@ -281,8 +281,8 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
               </tr>
 
               <tr *ngIf="filteredEmpresas().length === 0">
-                <td colspan="6" class="py-12 text-center text-gray-400">
-                  <span class="material-symbols-outlined text-3xl mb-1 text-gray-300">search_off</span>
+                <td colspan="6" class="py-12 text-center text-[#9B94A3]">
+                  <span class="material-symbols-outlined text-3xl mb-1 text-[#9B94A3]">search_off</span>
                   <p class="text-sm font-medium">No se encontraron empresas con los criterios seleccionados.</p>
                 </td>
               </tr>
@@ -292,17 +292,17 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
       </div>
 
       <!-- Sección: Planes de Suscripción Disponibles (290/690/1490 USD) -->
-      <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-4">
+      <div class="bg-white rounded-2xl border border-[#E8E2DA] p-6 sm:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#E8E2DA] pb-4">
           <div>
-            <div class="flex items-center space-x-2 text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+            <div class="flex items-center space-x-2 text-xs font-bold text-[#38133E] uppercase tracking-wider mb-1">
               <span class="material-symbols-outlined text-[16px]">price_change</span>
               <span>Tarifas y Límites</span>
             </div>
-            <h3 class="text-lg font-bold text-gray-900 tracking-tight">Planes de Suscripción</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Precios oficiales y capacidades asignadas a cada nivel de tenant.</p>
+            <h3 class="text-lg font-bold text-[#17141A] tracking-tight">Planes de Suscripción</h3>
+            <p class="text-xs text-[#5A5561] mt-0.5">Precios oficiales y capacidades asignadas a cada nivel de tenant.</p>
           </div>
-          <span class="text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-200 self-start sm:self-auto">
+          <span class="text-xs font-bold text-[#5A5561] bg-[#FAF8F5] px-3 py-1 rounded-full border border-[#E8E2DA] self-start sm:self-auto">
             Moneda: USD (mensual / anual)
           </span>
         </div>
@@ -311,7 +311,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
           <div
             *ngFor="let p of plans()"
             class="rounded-xl border p-5 flex flex-col justify-between transition-all hover:shadow-xs"
-            [ngClass]="p.codigo === 'avanzado' ? 'border-purple-200 bg-purple-50/20' : (p.codigo === 'intermedio' ? 'border-indigo-200 bg-indigo-50/20' : 'border-gray-200 bg-gray-50/30')"
+            [ngClass]="p.codigo === 'avanzado' ? 'border-[#38133E]/30 bg-[#F5EBF7]/30' : (p.codigo === 'intermedio' ? 'border-[#E8E2DA] bg-white' : 'border-[#E8E2DA] bg-[#FAF8F5]/60')"
           >
             <div>
               <div class="flex items-center justify-between mb-3">
@@ -380,30 +380,30 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
     </div>
 
     <!-- Modal: Crear Nueva Empresa + Admin Inicial -->
-    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div class="bg-white max-w-lg w-full p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        <button (click)="showCreateModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+    <div *ngIf="showCreateModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-lg w-full p-6 sm:p-8 rounded-2xl border border-[#E8E2DA] shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button (click)="showCreateModal.set(false)" class="absolute top-4 right-4 text-[#9B94A3] hover:text-[#17141A] p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-6">
-          <div class="flex items-center space-x-2 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-1">
+          <div class="flex items-center space-x-2 text-[#38133E] text-xs font-bold uppercase tracking-wider mb-1">
             <span class="material-symbols-outlined text-[16px]">domain_add</span>
             <span>Aprovisionamiento Multitenant</span>
           </div>
-          <h3 class="text-xl font-bold text-gray-900">Registrar Nueva Empresa</h3>
-          <p class="text-xs text-gray-500 mt-1">Crea la empresa, activa su suscripción inicial y genera las credenciales de su primer Administrador.</p>
+          <h3 class="text-xl font-bold text-[#17141A]">Registrar Nueva Empresa</h3>
+          <p class="text-xs text-[#5A5561] mt-1">Crea la empresa, activa su suscripción inicial y genera las credenciales de su primer Administrador.</p>
         </div>
 
         <form (ngSubmit)="submitCreateEmpresa()" class="space-y-5">
           <!-- Sección Empresa -->
           <div class="space-y-3">
-            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-1">
+            <h4 class="text-xs font-bold text-[#17141A] uppercase tracking-wide border-b border-[#E8E2DA] pb-1">
               Datos de la Empresa
             </h4>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre de la Empresa</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Nombre de la Empresa</label>
               <input
                 type="text"
                 [(ngModel)]="newNombre"
@@ -411,30 +411,30 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                 name="newNombre"
                 required
                 placeholder="ej. Boutique Alta Costura"
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
               />
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Slug Identificador (único)</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Slug Identificador (único)</label>
               <input
                 type="text"
                 [(ngModel)]="newSlug"
                 name="newSlug"
                 required
                 placeholder="ej. boutique-alta-costura"
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs font-mono focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
               />
-              <span class="text-[10px] text-gray-400 mt-0.5 block">Usado para rutas y subdominios. Solo minúsculas y guiones.</span>
+              <span class="text-[10px] text-[#9B94A3] mt-0.5 block">Usado para rutas y subdominios. Solo minúsculas y guiones.</span>
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Plan de Suscripción</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Plan de Suscripción</label>
               <select
                 [(ngModel)]="newCodigoPlan"
                 name="newCodigoPlan"
                 required
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white cursor-pointer"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white text-[#17141A] cursor-pointer"
               >
                 <option value="basico">Plan Básico (1 sucursal, 3 usuarios, 200 productos)</option>
                 <option value="intermedio">Plan Intermedio (5 sucursales, 15 usuarios, 2000 productos)</option>
@@ -445,59 +445,59 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
 
           <!-- Sección Administrador -->
           <div class="space-y-3 pt-2">
-            <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-1">
+            <h4 class="text-xs font-bold text-[#17141A] uppercase tracking-wide border-b border-[#E8E2DA] pb-1">
               Administrador Inicial de la Empresa
             </h4>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Completo</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Nombre Completo</label>
               <input
                 type="text"
                 [(ngModel)]="newAdminNombre"
                 name="newAdminNombre"
                 required
                 placeholder="ej. Valentina Rosales"
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
               />
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Correo Electrónico (Login)</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Correo Electrónico (Login)</label>
               <input
                 type="email"
                 [(ngModel)]="newAdminCorreo"
                 name="newAdminCorreo"
                 required
                 placeholder="ej. valentina@boutique.com"
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
               />
             </div>
 
             <div>
-              <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Contraseña Temporal</label>
+              <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Contraseña Temporal</label>
               <input
                 type="password"
                 [(ngModel)]="newAdminPassword"
                 name="newAdminPassword"
                 required
                 placeholder="Mínimo 10 caracteres (Mayús, Minús, Núm, Especial)"
-                class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
               />
             </div>
           </div>
 
-          <div class="pt-4 border-t border-gray-100 flex items-center justify-end space-x-3">
+          <div class="pt-4 border-t border-[#E8E2DA] flex items-center justify-end space-x-3">
             <button
               type="button"
               (click)="showCreateModal.set(false)"
-              class="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+              class="px-4 py-2 border border-[#E8E2DA] text-[#5A5561] hover:bg-[#F3EFEA] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               [disabled]="isSubmitting() || !isCreateFormValid()"
-              class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-2"
+              class="px-5 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center space-x-2 cursor-pointer"
             >
               <span *ngIf="isSubmitting()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
               <span>Crear Empresa</span>
@@ -508,24 +508,24 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
     </div>
 
     <!-- Modal: Cambiar Plan de Suscripción -->
-    <div *ngIf="showPlanModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-2xl relative">
-        <button (click)="showPlanModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+    <div *ngIf="showPlanModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-[#E8E2DA] shadow-2xl relative">
+        <button (click)="showPlanModal.set(false)" class="absolute top-4 right-4 text-[#9B94A3] hover:text-[#17141A] p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Modificar Suscripción</span>
-          <h3 class="text-lg font-bold text-gray-900 mt-1">Cambiar Plan de {{ selectedEmpresa?.nombre }}</h3>
-          <p class="text-xs text-gray-500 mt-1">Selecciona el nuevo nivel de plan para actualizar inmediatamente sus límites y módulos.</p>
+          <span class="text-xs font-bold text-[#38133E] uppercase tracking-wider">Modificar Suscripción</span>
+          <h3 class="text-lg font-bold text-[#17141A] mt-1">Cambiar Plan de {{ selectedEmpresa?.nombre }}</h3>
+          <p class="text-xs text-[#5A5561] mt-1">Selecciona el nuevo nivel de plan para actualizar inmediatamente sus límites y módulos.</p>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Plan Destino</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Plan Destino</label>
             <select
               [(ngModel)]="selectedPlanCode"
-              class="w-full mt-1.5 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white cursor-pointer"
+              class="w-full mt-1.5 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white text-[#17141A] cursor-pointer"
             >
               <option value="basico">Plan Básico (1 sucursal, 3 usuarios, 200 productos)</option>
               <option value="intermedio">Plan Intermedio (5 sucursales, 15 usuarios, 2000 productos)</option>
@@ -533,22 +533,22 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
             </select>
           </div>
 
-          <div class="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-600 space-y-1">
-            <p class="font-bold text-gray-900">Efecto inmediato:</p>
+          <div class="p-3 bg-[#FAF8F5] rounded-xl border border-[#E8E2DA] text-xs text-[#5A5561] space-y-1">
+            <p class="font-bold text-[#17141A]">Efecto inmediato:</p>
             <p>El tenant adoptará las nuevas cuotas y permisos en su próximo inicio de sesión o refresco de token.</p>
           </div>
 
-          <div class="pt-4 border-t border-gray-100 flex items-center justify-end space-x-3">
+          <div class="pt-4 border-t border-[#E8E2DA] flex items-center justify-end space-x-3">
             <button
               (click)="showPlanModal.set(false)"
-              class="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+              class="px-4 py-2 border border-[#E8E2DA] text-[#5A5561] hover:bg-[#F3EFEA] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               (click)="submitChangePlan()"
               [disabled]="isSubmitting()"
-              class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs"
+              class="px-5 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
             >
               Confirmar Cambio
             </button>
@@ -558,48 +558,48 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
     </div>
 
     <!-- Modal: Editar Datos de Empresa -->
-    <div *ngIf="showEditModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-2xl relative">
-        <button (click)="showEditModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+    <div *ngIf="showEditModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-md w-full p-6 sm:p-8 rounded-2xl border border-[#E8E2DA] shadow-2xl relative">
+        <button (click)="showEditModal.set(false)" class="absolute top-4 right-4 text-[#9B94A3] hover:text-[#17141A] p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Configuración</span>
-          <h3 class="text-lg font-bold text-gray-900 mt-1">Editar Empresa #{{ selectedEmpresa?.idEmpresa }}</h3>
+          <span class="text-xs font-bold text-[#38133E] uppercase tracking-wider">Configuración</span>
+          <h3 class="text-lg font-bold text-[#17141A] mt-1">Editar Empresa #{{ selectedEmpresa?.idEmpresa }}</h3>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Comercial</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Nombre Comercial</label>
             <input
               type="text"
               [(ngModel)]="editNombre"
-              class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
             />
           </div>
 
           <div>
-            <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">URL del Logo (Opcional)</label>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">URL del Logo (Opcional)</label>
             <input
               type="text"
               [(ngModel)]="editLogoUrl"
               placeholder="https://ejemplo.com/logo.png"
-              class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none placeholder:text-[#9B94A3] text-[#17141A]"
             />
           </div>
 
-          <div class="pt-4 border-t border-gray-100 flex items-center justify-end space-x-3">
+          <div class="pt-4 border-t border-[#E8E2DA] flex items-center justify-end space-x-3">
             <button
               (click)="showEditModal.set(false)"
-              class="px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+              class="px-4 py-2 border border-[#E8E2DA] text-[#5A5561] hover:bg-[#F3EFEA] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               (click)="submitEditEmpresa()"
               [disabled]="isSubmitting() || editNombre.trim().length === 0"
-              class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs"
+              class="px-5 py-2 bg-[#38133E] hover:bg-[#260B2B] disabled:opacity-50 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-xs cursor-pointer"
             >
               Guardar Cambios
             </button>
@@ -841,14 +841,14 @@ export class PlatformComponent implements OnInit {
 
   getPlanBadgeClass(codigo: string): string {
     const c = codigo.toLowerCase();
-    if (c === 'avanzado') return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (c === 'intermedio') return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (c === 'avanzado') return 'bg-[#38133E] text-white border-[#38133E]';
+    if (c === 'intermedio') return 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]';
+    return 'bg-[#F3EFEA] text-[#5A5561] border-[#E8E2DA]';
   }
 
   getEstadoBadgeClass(estado: string): string {
     const e = (estado || '').toLowerCase();
-    if (e === 'activa') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    if (e === 'activa') return 'bg-[#DCFCE7] text-[#16A34A] border-[#16A34A]/20';
     if (e === 'suspendida') return 'bg-amber-50 text-amber-700 border-amber-200';
     return 'bg-rose-50 text-rose-700 border-rose-200';
   }

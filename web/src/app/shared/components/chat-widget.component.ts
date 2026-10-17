@@ -25,7 +25,7 @@ const SALUDO = '¡Hola! Preguntame sobre el catálogo o tus compras/reservas.';
     <button
       *ngIf="!abierto()"
       (click)="abrir()"
-      class="fixed bottom-6 right-24 z-40 w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg flex items-center justify-center transition-colors cursor-pointer"
+      class="fixed bottom-6 right-24 z-40 w-14 h-14 rounded-full bg-[#38133E] hover:bg-[#260B2B] text-white shadow-lg flex items-center justify-center transition-colors cursor-pointer"
       aria-label="Abrir asistente virtual"
       title="Asistente virtual"
     >
@@ -34,32 +34,32 @@ const SALUDO = '¡Hola! Preguntame sobre el catálogo o tus compras/reservas.';
 
     <div
       *ngIf="abierto()"
-      class="fixed bottom-6 right-24 z-40 w-80 sm:w-96 h-[28rem] max-h-[70vh] bg-white rounded-2xl border border-gray-200 shadow-2xl flex flex-col overflow-hidden"
+      class="fixed bottom-6 right-24 z-40 w-80 sm:w-96 h-[28rem] max-h-[70vh] bg-white rounded-2xl border border-[#E8E2DA] shadow-2xl flex flex-col overflow-hidden"
     >
-      <div class="px-4 py-3 bg-indigo-600 text-white flex items-center justify-between shrink-0">
+      <div class="px-4 py-3 bg-[#38133E] text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <span class="material-symbols-outlined text-[20px]">smart_toy</span>
           <span class="text-sm font-bold">Asistente YouShop</span>
         </div>
-        <button (click)="cerrar()" class="hover:bg-indigo-700 rounded-lg p-1 transition-colors cursor-pointer" aria-label="Cerrar">
+        <button (click)="cerrar()" class="hover:bg-[#260B2B] rounded-lg p-1 transition-colors cursor-pointer" aria-label="Cerrar">
           <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
 
-      <div #mensajesEl class="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
+      <div #mensajesEl class="flex-1 overflow-y-auto p-3 space-y-2 bg-[#FAF8F5]">
         <div *ngFor="let m of mensajes()" class="flex" [class.justify-end]="m.role === 'user'">
           <div
             class="max-w-[85%] px-3 py-2 rounded-xl text-xs leading-relaxed"
             [ngClass]="m.role === 'user'
-              ? 'bg-indigo-600 text-white rounded-br-sm'
-              : (m.esSaludo ? 'bg-white border border-gray-200 text-gray-600 italic rounded-bl-sm' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm')"
+              ? 'bg-[#38133E] text-white rounded-br-sm'
+              : (m.esSaludo ? 'bg-white border border-[#E8E2DA] text-[#5A5561] italic rounded-bl-sm' : 'bg-white border border-[#E8E2DA] text-[#17141A] rounded-bl-sm')"
           >
             {{ m.texto }}
           </div>
         </div>
 
         <div *ngIf="cargando()" class="flex justify-start">
-          <div class="bg-white border border-gray-200 rounded-xl rounded-bl-sm px-3 py-2 text-xs text-gray-400">
+          <div class="bg-white border border-[#E8E2DA] rounded-xl rounded-bl-sm px-3 py-2 text-xs text-[#9B94A3]">
             Escribiendo…
           </div>
         </div>
@@ -71,19 +71,19 @@ const SALUDO = '¡Hola! Preguntame sobre el catálogo o tus compras/reservas.';
         </div>
       </div>
 
-      <form (ngSubmit)="enviar()" class="p-2.5 border-t border-gray-200 flex items-center gap-2 shrink-0">
+      <form (ngSubmit)="enviar()" class="p-2.5 border-t border-[#E8E2DA] flex items-center gap-2 shrink-0 bg-white">
         <input
           type="text"
           [(ngModel)]="textoInput"
           name="mensaje"
           [disabled]="cargando()"
           placeholder="Escribí tu pregunta…"
-          class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:bg-gray-50"
+          class="flex-1 px-3 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none disabled:bg-[#FAF8F5]"
         />
         <button
           type="submit"
           [disabled]="cargando() || !textoInput.trim()"
-          class="w-9 h-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+          class="w-9 h-9 rounded-lg bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white flex items-center justify-center shrink-0 transition-colors cursor-pointer"
           aria-label="Enviar"
         >
           <span class="material-symbols-outlined text-[18px]">send</span>

@@ -29,17 +29,17 @@ import { PaymentsService } from '../../core/services/payments.service';
   imports: [CommonModule],
   template: `
     <div class="space-y-4">
-      <p *ngIf="concepto()" class="text-sm font-semibold text-gray-700">
+      <p *ngIf="concepto()" class="text-sm font-semibold text-[#17141A]">
         {{ concepto() }}
       </p>
 
-      <div #paymentElementHost class="rounded-lg border border-gray-200 p-3"></div>
+      <div #paymentElementHost class="rounded-lg border border-[#E8E2DA] p-3"></div>
 
       <div class="flex justify-end gap-2">
         <button
           type="button"
           (click)="onCancelar()"
-          class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+          class="px-4 py-2 text-sm font-medium text-[#5A5561] hover:text-[#17141A] transition-colors"
         >
           Cancelar
         </button>
@@ -47,7 +47,7 @@ import { PaymentsService } from '../../core/services/payments.service';
           type="button"
           (click)="onConfirmar()"
           [disabled]="procesando() || !clientSecret()"
-          class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 rounded-lg bg-[#38133E] text-white text-sm font-semibold hover:bg-[#260B2B] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {{ procesando() ? 'Procesando…' : 'Pagar' }}
         </button>

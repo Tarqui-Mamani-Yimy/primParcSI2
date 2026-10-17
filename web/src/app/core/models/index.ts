@@ -712,3 +712,96 @@ export type MultitenantErrorDetail =
   | PlanLimitReachedErrorDetail
   | SubscriptionInactiveErrorDetail;
 
+// ─────────────────────────────────────────────
+// OFFLINE SYNC MODELS (Fase 2 Offline Mode)
+// ─────────────────────────────────────────────
+
+export interface SyncDeleted {
+  productos: number[];
+  inventario: number[];
+  reservas: number[];
+}
+
+export interface SyncPullResponse {
+  serverTime: string;
+  full: boolean;
+  productos: ProductOut[];
+  sucursales: CachedSucursal[];
+  inventario: CachedInventario[];
+  reservas: CachedReserva[];
+  ventas: CachedVenta[];
+  cliente: CachedCliente | null;
+  deleted: SyncDeleted;
+}
+
+export interface CachedSucursal {
+  codigoSucursal: number;
+  idEmpresa: number;
+  nombre: string;
+  direccion: string;
+  idCiudad: number;
+  fechaActualizacion?: string;
+  ciudad?: string;
+}
+
+export interface CachedInventario {
+  idInv: number;
+  idEmpresa: number;
+  cantidad_actual: number;
+  cantidad_reservada: number;
+  codigoSucursal: number;
+  idProducto: number;
+  fechaActualizacion?: string;
+}
+
+export interface CachedReserva {
+  codigoReserva: number;
+  idEmpresa: number;
+  fecha: string;
+  horario: string;
+  estado: string;
+  idCliente: number;
+  codigoSucursal: number;
+  idProducto: number;
+  idMetPago?: number | null;
+  montoDeposito?: number | null;
+  fechaActualizacion?: string;
+  producto_nombre?: string;
+  sucursal_nombre?: string;
+}
+
+export interface CachedVenta {
+  idVenta: number;
+  idEmpresa: number;
+  fecha: string;
+  total: number;
+  idCliente: number;
+  idMetPago: number;
+  fechaActualizacion?: string;
+  origen: string;
+  comprobanteLocal?: string | null;
+  discrepanciaStock: boolean;
+  discrepanciaResueltaEn?: string | null;
+  discrepanciaNota?: string | null;
+  detalles?: any[];
+}
+
+export interface CachedCliente {
+  idCliente: number;
+  nombre: string;
+  telefono?: string | null;
+  direccion?: string | null;
+  idUser: number;
+  idEmpresa: number;
+  altura?: number | null;
+  pecho?: number | null;
+  cintura?: number | null;
+  tiro?: number | null;
+  fechaActualizacion?: string;
+}
+
+export interface CachedMeta {
+  key: string;
+  value: string;
+}
+

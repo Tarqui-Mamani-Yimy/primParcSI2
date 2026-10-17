@@ -16,7 +16,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Administración</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Administración</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Ciudades y Sucursales</h1>
           <p class="text-xs text-gray-500 mt-1">
             Administración de ciudades y sucursales del sistema.
@@ -27,7 +27,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
           <button
             *ngIf="activeTab() === 'ciudades'"
             (click)="openCreateCityModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nueva Ciudad</span>
@@ -35,7 +35,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
           <button
             *ngIf="activeTab() === 'sucursales'"
             (click)="openCreateBranchModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nueva Sucursal</span>
@@ -47,8 +47,8 @@ type LocationsTab = 'ciudades' | 'sucursales';
       <div class="flex items-center gap-1 border-b border-gray-200">
         <button
           (click)="activeTab.set('ciudades')"
-          [class.text-indigo-600]="activeTab() === 'ciudades'"
-          [class.border-indigo-600]="activeTab() === 'ciudades'"
+          [class.text-ys-primary]="activeTab() === 'ciudades'"
+          [class.border-ys-primary]="activeTab() === 'ciudades'"
           [class.text-gray-500]="activeTab() !== 'ciudades'"
           [class.border-transparent]="activeTab() !== 'ciudades'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -57,8 +57,8 @@ type LocationsTab = 'ciudades' | 'sucursales';
         </button>
         <button
           (click)="activeTab.set('sucursales')"
-          [class.text-indigo-600]="activeTab() === 'sucursales'"
-          [class.border-indigo-600]="activeTab() === 'sucursales'"
+          [class.text-ys-primary]="activeTab() === 'sucursales'"
+          [class.border-ys-primary]="activeTab() === 'sucursales'"
           [class.text-gray-500]="activeTab() !== 'sucursales'"
           [class.border-transparent]="activeTab() !== 'sucursales'"
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
@@ -87,7 +87,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
                   <div class="inline-flex items-center space-x-2">
                     <button
                       (click)="openEditCityModal(c)"
-                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
+                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-[#F5EBF7] hover:text-[#38133E] text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
                       title="Editar"
                     >
                       <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -135,7 +135,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
                   <div class="inline-flex items-center space-x-2">
                     <button
                       (click)="openEditBranchModal(s)"
-                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
+                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-[#F5EBF7] hover:text-[#38133E] text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
                       title="Editar"
                     >
                       <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -162,27 +162,27 @@ type LocationsTab = 'ciudades' | 'sucursales';
     </div>
 
     <!-- Modal: Crear/Editar ciudad -->
-    <div *ngIf="showCityModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showCityModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showCityModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showCityModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Administración</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Administración</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">{{ editingCityId() ? 'Editar Ciudad' : 'Nueva Ciudad' }}</h2>
         </div>
 
         <form (ngSubmit)="saveCity()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="cityForm.nombCiudad" name="nombCiudad" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="cityForm.nombCiudad" name="nombCiudad" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
 
           <button
             type="submit"
             [disabled]="!cityForm.nombCiudad"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ editingCityId() ? 'Guardar Cambios' : 'Crear Ciudad' }}
           </button>
@@ -191,29 +191,29 @@ type LocationsTab = 'ciudades' | 'sucursales';
     </div>
 
     <!-- Modal: Crear/Editar sucursal -->
-    <div *ngIf="showBranchModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showBranchModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showBranchModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showBranchModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Administración</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Administración</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">{{ editingBranchId() ? 'Editar Sucursal' : 'Nueva Sucursal' }}</h2>
         </div>
 
         <form (ngSubmit)="saveBranch()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="branchForm.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="branchForm.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Dirección</label>
-            <input type="text" [(ngModel)]="branchForm.direccion" name="direccion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="branchForm.direccion" name="direccion" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Ciudad</label>
-            <select [(ngModel)]="branchForm.idCiudad" name="idCiudad" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white">
+            <select [(ngModel)]="branchForm.idCiudad" name="idCiudad" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white">
               <option [ngValue]="0" disabled>Seleccionar ciudad</option>
               <option *ngFor="let c of locationsAdminService.cities()" [ngValue]="c.idCiudad">{{ c.nombCiudad }}</option>
             </select>
@@ -222,7 +222,7 @@ type LocationsTab = 'ciudades' | 'sucursales';
           <button
             type="submit"
             [disabled]="!isBranchFormValid()"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ editingBranchId() ? 'Guardar Cambios' : 'Crear Sucursal' }}
           </button>

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { TenantBannerService } from './core/services/tenant-banner.service';
 import { NotificationService } from './core/services/notification.service';
+import { SyncService } from './core/services/sync.service';
+import { PwaService } from './core/services/pwa.service';
 import { LoginComponent } from './features/auth/login.component';
 import { RegisterComponent } from './features/auth/register.component';
 import { LandingComponent } from './components/landing/landing.component';
@@ -53,6 +55,43 @@ import { PlatformComponent } from './features/platform/platform.component';
     PlatformComponent
   ],
   template: `
+    <!-- Banner PWA Update (Pantallas Públicas) -->
+    <div
+      *ngIf="pwaService.needRefresh() && (!authService.isAuthenticated() || showAuthScreen())"
+      class="fixed top-0 left-0 right-0 z-50 bg-[#38133E] text-white px-4 py-2.5 text-xs font-medium flex items-center justify-between shadow-md"
+    >
+      <div class="flex items-center space-x-2">
+        <span class="material-symbols-outlined text-[18px]">system_update</span>
+        <span>Nueva versión disponible de YouShop.</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <button
+          (click)="pwaService.update()"
+          class="px-3 py-1 bg-white hover:bg-[#F5EBF7] text-[#38133E] rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+        >
+          Actualizar
+        </button>
+        <button
+          (click)="pwaService.dismiss()"
+          class="p-1 hover:bg-white/10 rounded text-white/80 hover:text-white transition-colors cursor-pointer"
+          title="Cerrar aviso"
+        >
+          <span class="material-symbols-outlined text-[16px]">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Banner Offline (Pantallas Públicas) -->
+    <div
+      *ngIf="!syncService.isOnline() && (!authService.isAuthenticated() || showAuthScreen())"
+      class="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2 text-xs font-medium flex items-center justify-between shadow-md"
+    >
+      <div class="flex items-center space-x-2">
+        <span class="material-symbols-outlined text-[18px]">wifi_off</span>
+        <span>Sin conexión — mostrando datos guardados (actualizado {{ syncService.getTimeSinceLastSyncLabel() }})</span>
+      </div>
+    </div>
+
     <!-- Top Level Screen Router: Show Landing/Login/Register or Authenticated Portal -->
     <ng-container *ngIf="!authService.isAuthenticated() || showAuthScreen(); else authGate">
       <app-landing
@@ -77,32 +116,32 @@ import { PlatformComponent } from './features/platform/platform.component';
       <!-- Pantalla de Confirmación de Compra desde Landing (LW3) -->
       <section
         *ngIf="publicScreen() === 'signup-success'"
-        class="min-h-screen w-full flex items-center justify-center p-6 bg-gray-50 text-gray-900 font-sans"
+        class="min-h-screen w-full flex items-center justify-center p-6 bg-[#FAF8F5] text-[#17141A] font-sans"
       >
-        <div class="max-w-md w-full bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center animate-in fade-in zoom-in duration-200">
-          <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-5 shadow-xs">
+        <div class="max-w-md w-full bg-white rounded-2xl border border-[#E8E2DA] shadow-xl p-8 text-center animate-in fade-in zoom-in duration-200">
+          <div class="w-16 h-16 rounded-2xl bg-[#DCFCE7] text-[#16A34A] flex items-center justify-center mx-auto mb-5 shadow-xs">
             <span class="material-symbols-outlined text-[36px]">check_circle</span>
           </div>
 
-          <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+          <span class="text-[10px] font-bold uppercase tracking-widest text-[#38133E] bg-[#F5EBF7] px-3 py-1 rounded-full border border-[#E8E2DA]">
             Suscripción Confirmada
           </span>
 
-          <h2 class="text-2xl font-bold text-gray-900 mt-3 tracking-tight">¡Pago Recibido con Éxito!</h2>
+          <h2 class="text-2xl font-bold text-[#17141A] mt-3 tracking-tight">¡Pago Recibido con Éxito!</h2>
 
-          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+          <p class="text-sm text-[#5A5561] mt-3 leading-relaxed">
             Te enviamos un correo electrónico a
-            <strong class="text-indigo-600 break-all">{{ signupEmail() }}</strong>
+            <strong class="text-[#38133E] break-all">{{ signupEmail() }}</strong>
             para crear tu contraseña de acceso y activar tu consola.
           </p>
 
-          <div class="my-6 p-4 rounded-xl bg-gray-50 border border-gray-200 text-left text-xs text-gray-600 space-y-2">
+          <div class="my-6 p-4 rounded-xl bg-[#F3EFEA] border border-[#E8E2DA] text-left text-xs text-[#5A5561] space-y-2">
             <div class="flex items-start space-x-2">
-              <span class="material-symbols-outlined text-indigo-600 text-[18px] shrink-0 mt-0.5">mail</span>
+              <span class="material-symbols-outlined text-[#38133E] text-[18px] shrink-0 mt-0.5">mail</span>
               <span>Revisa tu bandeja de entrada o carpeta de spam.</span>
             </div>
             <div class="flex items-start space-x-2">
-              <span class="material-symbols-outlined text-indigo-600 text-[18px] shrink-0 mt-0.5">schedule</span>
+              <span class="material-symbols-outlined text-[#38133E] text-[18px] shrink-0 mt-0.5">schedule</span>
               <span>El enlace de activación es válido por <strong>48 horas</strong>.</span>
             </div>
           </div>
@@ -111,7 +150,7 @@ import { PlatformComponent } from './features/platform/platform.component';
             <button
               type="button"
               (click)="goToLogin()"
-              class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
+              class="w-full py-3 px-4 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
             >
               <span class="material-symbols-outlined text-[18px]">login</span>
               <span>Ir a Iniciar Sesión</span>
@@ -120,7 +159,7 @@ import { PlatformComponent } from './features/platform/platform.component';
             <button
               type="button"
               (click)="goToLanding()"
-              class="w-full py-2.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              class="w-full py-2.5 px-4 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#17141A] rounded-xl text-xs font-semibold transition-colors cursor-pointer"
             >
               Volver a la Página Principal
             </button>
@@ -141,14 +180,23 @@ import { PlatformComponent } from './features/platform/platform.component';
     </ng-template>
 
     <ng-template #loadingState>
-      <div class="flex h-screen w-screen items-center justify-center bg-gray-50 text-gray-500 text-sm font-medium">
+      <div class="flex flex-col h-screen w-screen items-center justify-center bg-[#FAF8F5] text-[#5A5561] text-sm font-medium">
+        <div
+          *ngIf="!syncService.isOnline()"
+          class="w-full fixed top-0 px-6 py-2.5 bg-amber-500 text-white text-xs font-medium flex items-center justify-between shrink-0 shadow-xs"
+        >
+          <div class="flex items-center space-x-2">
+            <span class="material-symbols-outlined text-[18px]">wifi_off</span>
+            <span>Sin conexión — mostrando datos guardados (actualizado {{ syncService.getTimeSinceLastSyncLabel() }})</span>
+          </div>
+        </div>
         Cargando sesión…
       </div>
     </ng-template>
 
     <!-- Main Operational Workspace Shell -->
     <ng-template #portalLayout>
-      <div class="flex h-screen w-screen overflow-hidden bg-gray-50 text-gray-900 font-sans">
+      <div class="flex h-screen w-screen overflow-hidden bg-[#FAF8F5] text-[#17141A] font-sans">
         
         <!-- Desktop Sidebar Navigation -->
         <div class="hidden md:block h-full shrink-0">
@@ -163,7 +211,7 @@ import { PlatformComponent } from './features/platform/platform.component';
         <!-- Mobile Drawer Navigation -->
         <div
           *ngIf="mobileMenuOpen()"
-          class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-xs md:hidden animate-in fade-in"
+          class="fixed inset-0 z-50 bg-[#17141A]/40 backdrop-blur-xs md:hidden animate-in fade-in"
           (click)="mobileMenuOpen.set(false)"
         >
           <div
@@ -189,6 +237,43 @@ import { PlatformComponent } from './features/platform/platform.component';
             (logout)="onLogout()"
           ></app-header>
 
+          <!-- Banner PWA Update (Staff Portal) -->
+          <div
+            *ngIf="pwaService.needRefresh()"
+            class="px-6 py-2.5 bg-[#38133E] text-white text-xs font-medium flex items-center justify-between shrink-0 shadow-xs"
+          >
+            <div class="flex items-center space-x-2">
+              <span class="material-symbols-outlined text-[18px]">system_update</span>
+              <span>Nueva versión disponible de YouShop.</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button
+                (click)="pwaService.update()"
+                class="px-3 py-1 bg-white hover:bg-[#F5EBF7] text-[#38133E] rounded-md text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Actualizar
+              </button>
+              <button
+                (click)="pwaService.dismiss()"
+                class="p-1 hover:bg-white/10 rounded text-white/80 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar aviso"
+              >
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner Offline (Staff Portal) -->
+          <div
+            *ngIf="!syncService.isOnline()"
+            class="px-6 py-2.5 bg-amber-500 text-white text-xs font-medium flex items-center justify-between shrink-0 shadow-xs"
+          >
+            <div class="flex items-center space-x-2">
+              <span class="material-symbols-outlined text-[18px]">wifi_off</span>
+              <span>Sin conexión — mostrando datos guardados (actualizado {{ syncService.getTimeSinceLastSyncLabel() }})</span>
+            </div>
+          </div>
+
           <!-- Banner Global de Tenant / Suscripción -->
           <div
             *ngIf="tenantBannerService.banner() as b"
@@ -210,7 +295,7 @@ import { PlatformComponent } from './features/platform/platform.component';
               <button
                 *ngIf="b.type === 'error' && activeView() !== 'subscription' && !authService.isSuperAdmin()"
                 (click)="onViewChange('subscription')"
-                class="px-2.5 py-1 bg-white hover:bg-gray-50 border border-rose-300 text-rose-700 font-bold rounded-md text-[11px] uppercase tracking-wider transition-colors cursor-pointer shadow-2xs"
+                class="px-2.5 py-1 bg-white hover:bg-[#F3EFEA] border border-rose-300 text-rose-700 font-bold rounded-md text-[11px] uppercase tracking-wider transition-colors cursor-pointer shadow-2xs"
               >
                 Pagar suscripción
               </button>
@@ -218,7 +303,7 @@ import { PlatformComponent } from './features/platform/platform.component';
               <button
                 *ngIf="b.dismissible"
                 (click)="tenantBannerService.dismiss()"
-                class="p-1 hover:bg-black/5 rounded text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+                class="p-1 hover:bg-black/5 rounded text-[#5A5561] hover:text-[#17141A] transition-colors cursor-pointer"
                 title="Cerrar aviso"
               >
                 <span class="material-symbols-outlined text-[16px]">close</span>
@@ -227,7 +312,7 @@ import { PlatformComponent } from './features/platform/platform.component';
           </div>
 
           <!-- Scrollable View Container -->
-          <main class="flex-1 overflow-y-auto bg-gray-50">
+          <main class="flex-1 overflow-y-auto bg-[#FAF8F5]">
             <app-dashboard
               *ngIf="activeView() === 'dashboard'"
               (navigate)="onViewChange($event)"
@@ -314,7 +399,9 @@ export class AppComponent implements OnInit {
   constructor(
     public authService: AuthService,
     public tenantBannerService: TenantBannerService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    public syncService: SyncService,
+    public pwaService: PwaService,
   ) {
     effect(() => {
       if (this.authService.isSuperAdmin()) {

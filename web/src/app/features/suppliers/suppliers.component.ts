@@ -14,7 +14,7 @@ import { Proveedor, ProveedorIn } from '../../core/models';
       <!-- Encabezado -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
         <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Red de Abastecimiento</span>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Red de Abastecimiento</span>
           <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Gestión de Proveedores</h1>
           <p class="text-xs text-gray-500 mt-1">
             Directorio de proveedores de mercancía y sus datos de contacto.
@@ -24,7 +24,7 @@ import { Proveedor, ProveedorIn } from '../../core/models';
         <div class="flex items-center space-x-3">
           <button
             (click)="openCreateModal()"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
+            class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer"
           >
             <span class="material-symbols-outlined text-[18px]">add</span>
             <span>Nuevo Proveedor</span>
@@ -56,7 +56,7 @@ import { Proveedor, ProveedorIn } from '../../core/models';
                   <div class="inline-flex items-center space-x-2">
                     <button
                       (click)="openEditModal(p)"
-                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
+                      class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-[#F5EBF7] hover:text-[#38133E] text-gray-600 flex items-center justify-center transition-colors cursor-pointer border border-gray-200"
                       title="Editar"
                     >
                       <span class="material-symbols-outlined text-[16px]">edit</span>
@@ -83,35 +83,35 @@ import { Proveedor, ProveedorIn } from '../../core/models';
     </div>
 
     <!-- Modal: Crear/Editar proveedor -->
-    <div *ngIf="showModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div *ngIf="showModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div class="bg-white max-w-md w-full rounded-2xl border border-gray-200 shadow-xl p-6 md:p-8 relative">
-        <button (click)="showModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1">
+        <button (click)="showModal.set(false)" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-1 cursor-pointer">
           <span class="material-symbols-outlined text-[20px]">close</span>
         </button>
 
         <div class="mb-5">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Abastecimiento</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#38133E]">Abastecimiento</span>
           <h2 class="text-lg font-bold text-gray-900 mt-0.5">{{ editingId() ? 'Editar Proveedor' : 'Nuevo Proveedor' }}</h2>
         </div>
 
         <form (ngSubmit)="save()" class="space-y-4">
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Nombre</label>
-            <input type="text" [(ngModel)]="form.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="form.nombre" name="nombre" required class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Teléfono</label>
-            <input type="text" [(ngModel)]="form.telefono" name="telefono" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="text" [(ngModel)]="form.telefono" name="telefono" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
           <div>
             <label class="text-xs font-bold text-gray-700 uppercase tracking-wide">Correo</label>
-            <input type="email" [(ngModel)]="form.correo" name="correo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none" />
+            <input type="email" [(ngModel)]="form.correo" name="correo" class="w-full mt-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none" />
           </div>
 
           <button
             type="submit"
             [disabled]="!form.nombre"
-            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4"
+            class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs mt-4 cursor-pointer"
           >
             {{ editingId() ? 'Guardar Cambios' : 'Crear Proveedor' }}
           </button>

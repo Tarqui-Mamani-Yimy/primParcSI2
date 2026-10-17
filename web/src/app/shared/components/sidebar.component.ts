@@ -23,24 +23,24 @@ export type AppView =
   standalone: true,
   imports: [CommonModule],
   template: `
-    <aside class="w-64 bg-white text-gray-900 flex flex-col justify-between h-full border-r border-gray-200 select-none">
+    <aside class="w-64 bg-white text-[#17141A] flex flex-col justify-between h-full border-r border-[#E8E2DA] select-none">
 
       <!-- Sección superior -->
       <div class="flex-1 overflow-y-auto">
 
         <!-- Encabezado de marca y empresa en sidebar -->
-        <div class="p-5 border-b border-gray-100">
+        <div class="p-5 border-b border-[#E8E2DA]">
           <div *ngIf="isSuperAdmin; else tenantHeader" class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <div class="w-9 h-9 bg-purple-700 rounded-xl flex items-center justify-center text-white font-bold shadow-xs">
+              <div class="w-9 h-9 bg-[#38133E] rounded-xl flex items-center justify-center text-white font-bold shadow-xs">
                 <span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
               </div>
               <div>
-                <span class="font-bold text-sm tracking-tight text-gray-900 block leading-tight">Plataforma SaaS</span>
-                <span class="text-[10px] uppercase tracking-wider text-purple-600 font-bold">Operador Global</span>
+                <span class="font-bold text-sm tracking-tight text-[#17141A] block leading-tight">Plataforma SaaS</span>
+                <span class="text-[10px] uppercase tracking-wider text-[#38133E] font-bold">Operador Global</span>
               </div>
             </div>
-            <span class="text-[9px] font-black px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full border border-purple-200 uppercase tracking-wider">
+            <span class="text-[9px] font-black px-2 py-0.5 bg-[#F5EBF7] text-[#38133E] rounded-full border border-[#E8E2DA] uppercase tracking-wider">
               SUPERADMIN
             </span>
           </div>
@@ -48,14 +48,14 @@ export type AppView =
           <ng-template #tenantHeader>
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-3 min-w-0">
-                <div class="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs">
+                <div class="w-9 h-9 bg-[#38133E] rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs">
                   {{ empresaNombre.substring(0, 1).toUpperCase() }}
                 </div>
                 <div class="min-w-0">
-                  <span class="font-bold text-sm tracking-tight text-gray-900 block leading-tight truncate">
+                  <span class="font-bold text-sm tracking-tight text-[#17141A] block leading-tight truncate">
                     {{ empresaNombre }}
                   </span>
-                  <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold block truncate">
+                  <span class="text-[10px] uppercase tracking-wider text-[#9B94A3] font-bold block truncate">
                     {{ empresaSlug }}
                   </span>
                 </div>
@@ -72,23 +72,23 @@ export type AppView =
 
         <!-- Navegación: Vista SuperAdmin -->
         <nav *ngIf="isSuperAdmin; else tenantNav" class="p-4 space-y-1">
-          <div class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
+          <div class="text-[10px] uppercase tracking-widest text-[#9B94A3] font-bold mb-2 px-2">
             Panel de Operador
           </div>
 
           <button
             (click)="selectView('platform')"
-            [class.bg-purple-50]="currentView === 'platform'"
-            [class.text-purple-700]="currentView === 'platform'"
+            [class.bg-ys-primary-soft]="currentView === 'platform'"
+            [class.text-ys-primary]="currentView === 'platform'"
             [class.font-semibold]="currentView === 'platform'"
-            [class.text-gray-600]="currentView !== 'platform'"
-            class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors hover:bg-purple-50/50 hover:text-purple-900 cursor-pointer group"
+            [class.text-ys-muted]="currentView !== 'platform'"
+            class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left text-sm transition-colors hover:bg-[#F5EBF7] hover:text-[#38133E] cursor-pointer group"
           >
             <div
-              [class.bg-purple-700]="currentView === 'platform'"
+              [class.bg-ys-primary]="currentView === 'platform'"
               [class.text-white]="currentView === 'platform'"
-              [class.bg-gray-100]="currentView !== 'platform'"
-              [class.text-gray-500]="currentView !== 'platform'"
+              [class.bg-ys-surface]="currentView !== 'platform'"
+              [class.text-ys-muted]="currentView !== 'platform'"
               class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
             >
               <span class="material-symbols-outlined text-[18px]">domain</span>
@@ -100,24 +100,24 @@ export type AppView =
         <!-- Navegación: Vista Tenant (filtrada por features del plan) -->
         <ng-template #tenantNav>
           <nav class="p-4 space-y-1">
-            <div class="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
+            <div class="text-[10px] uppercase tracking-widest text-[#9B94A3] font-bold mb-2 px-2">
               Módulos Principales
             </div>
 
             <!-- Centro de Operaciones -->
             <button
               (click)="selectView('dashboard')"
-              [class.bg-indigo-50]="currentView === 'dashboard'"
-              [class.text-indigo-700]="currentView === 'dashboard'"
+              [class.bg-ys-primary-soft]="currentView === 'dashboard'"
+              [class.text-ys-primary]="currentView === 'dashboard'"
               [class.font-semibold]="currentView === 'dashboard'"
-              [class.text-gray-600]="currentView !== 'dashboard'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'dashboard'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'dashboard'"
+                [class.bg-ys-primary]="currentView === 'dashboard'"
                 [class.text-white]="currentView === 'dashboard'"
-                [class.bg-gray-100]="currentView !== 'dashboard'"
-                [class.text-gray-500]="currentView !== 'dashboard'"
+                [class.bg-ys-surface]="currentView !== 'dashboard'"
+                [class.text-ys-muted]="currentView !== 'dashboard'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">dashboard</span>
@@ -128,17 +128,17 @@ export type AppView =
             <!-- Archivo y Catálogo -->
             <button
               (click)="selectView('archive')"
-              [class.bg-indigo-50]="currentView === 'archive'"
-              [class.text-indigo-700]="currentView === 'archive'"
+              [class.bg-ys-primary-soft]="currentView === 'archive'"
+              [class.text-ys-primary]="currentView === 'archive'"
               [class.font-semibold]="currentView === 'archive'"
-              [class.text-gray-600]="currentView !== 'archive'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'archive'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'archive'"
+                [class.bg-ys-primary]="currentView === 'archive'"
                 [class.text-white]="currentView === 'archive'"
-                [class.bg-gray-100]="currentView !== 'archive'"
-                [class.text-gray-500]="currentView !== 'archive'"
+                [class.bg-ys-surface]="currentView !== 'archive'"
+                [class.text-ys-muted]="currentView !== 'archive'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">checkroom</span>
@@ -150,17 +150,17 @@ export type AppView =
             <button
               *ngIf="canViewInventory"
               (click)="selectView('inventory')"
-              [class.bg-indigo-50]="currentView === 'inventory'"
-              [class.text-indigo-700]="currentView === 'inventory'"
+              [class.bg-ys-primary-soft]="currentView === 'inventory'"
+              [class.text-ys-primary]="currentView === 'inventory'"
               [class.font-semibold]="currentView === 'inventory'"
-              [class.text-gray-600]="currentView !== 'inventory'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'inventory'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'inventory'"
+                [class.bg-ys-primary]="currentView === 'inventory'"
                 [class.text-white]="currentView === 'inventory'"
-                [class.bg-gray-100]="currentView !== 'inventory'"
-                [class.text-gray-500]="currentView !== 'inventory'"
+                [class.bg-ys-surface]="currentView !== 'inventory'"
+                [class.text-ys-muted]="currentView !== 'inventory'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">inventory_2</span>
@@ -172,17 +172,17 @@ export type AppView =
             <button
               *ngIf="canViewLogistics"
               (click)="selectView('logistics')"
-              [class.bg-indigo-50]="currentView === 'logistics'"
-              [class.text-indigo-700]="currentView === 'logistics'"
+              [class.bg-ys-primary-soft]="currentView === 'logistics'"
+              [class.text-ys-primary]="currentView === 'logistics'"
               [class.font-semibold]="currentView === 'logistics'"
-              [class.text-gray-600]="currentView !== 'logistics'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'logistics'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'logistics'"
+                [class.bg-ys-primary]="currentView === 'logistics'"
                 [class.text-white]="currentView === 'logistics'"
-                [class.bg-gray-100]="currentView !== 'logistics'"
-                [class.text-gray-500]="currentView !== 'logistics'"
+                [class.bg-ys-surface]="currentView !== 'logistics'"
+                [class.text-ys-muted]="currentView !== 'logistics'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">local_shipping</span>
@@ -193,17 +193,17 @@ export type AppView =
             <!-- Proveedores -->
             <button
               (click)="selectView('suppliers')"
-              [class.bg-indigo-50]="currentView === 'suppliers'"
-              [class.text-indigo-700]="currentView === 'suppliers'"
+              [class.bg-ys-primary-soft]="currentView === 'suppliers'"
+              [class.text-ys-primary]="currentView === 'suppliers'"
               [class.font-semibold]="currentView === 'suppliers'"
-              [class.text-gray-600]="currentView !== 'suppliers'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'suppliers'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'suppliers'"
+                [class.bg-ys-primary]="currentView === 'suppliers'"
                 [class.text-white]="currentView === 'suppliers'"
-                [class.bg-gray-100]="currentView !== 'suppliers'"
-                [class.text-gray-500]="currentView !== 'suppliers'"
+                [class.bg-ys-surface]="currentView !== 'suppliers'"
+                [class.text-ys-muted]="currentView !== 'suppliers'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">handshake</span>
@@ -214,17 +214,17 @@ export type AppView =
             <!-- Temporadas y Colecciones -->
             <button
               (click)="selectView('seasons')"
-              [class.bg-indigo-50]="currentView === 'seasons'"
-              [class.text-indigo-700]="currentView === 'seasons'"
+              [class.bg-ys-primary-soft]="currentView === 'seasons'"
+              [class.text-ys-primary]="currentView === 'seasons'"
               [class.font-semibold]="currentView === 'seasons'"
-              [class.text-gray-600]="currentView !== 'seasons'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'seasons'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'seasons'"
+                [class.bg-ys-primary]="currentView === 'seasons'"
                 [class.text-white]="currentView === 'seasons'"
-                [class.bg-gray-100]="currentView !== 'seasons'"
-                [class.text-gray-500]="currentView !== 'seasons'"
+                [class.bg-ys-surface]="currentView !== 'seasons'"
+                [class.text-ys-muted]="currentView !== 'seasons'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">event_note</span>
@@ -236,17 +236,17 @@ export type AppView =
             <button
               *ngIf="canViewReservations"
               (click)="selectView('reservations')"
-              [class.bg-indigo-50]="currentView === 'reservations'"
-              [class.text-indigo-700]="currentView === 'reservations'"
+              [class.bg-ys-primary-soft]="currentView === 'reservations'"
+              [class.text-ys-primary]="currentView === 'reservations'"
               [class.font-semibold]="currentView === 'reservations'"
-              [class.text-gray-600]="currentView !== 'reservations'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'reservations'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'reservations'"
+                [class.bg-ys-primary]="currentView === 'reservations'"
                 [class.text-white]="currentView === 'reservations'"
-                [class.bg-gray-100]="currentView !== 'reservations'"
-                [class.text-gray-500]="currentView !== 'reservations'"
+                [class.bg-ys-surface]="currentView !== 'reservations'"
+                [class.text-ys-muted]="currentView !== 'reservations'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">event_available</span>
@@ -258,17 +258,17 @@ export type AppView =
             <button
               *ngIf="canOpenPos"
               (click)="selectView('pos')"
-              [class.bg-indigo-50]="currentView === 'pos'"
-              [class.text-indigo-700]="currentView === 'pos'"
+              [class.bg-ys-primary-soft]="currentView === 'pos'"
+              [class.text-ys-primary]="currentView === 'pos'"
               [class.font-semibold]="currentView === 'pos'"
-              [class.text-gray-600]="currentView !== 'pos'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'pos'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'pos'"
+                [class.bg-ys-primary]="currentView === 'pos'"
                 [class.text-white]="currentView === 'pos'"
-                [class.bg-gray-100]="currentView !== 'pos'"
-                [class.text-gray-500]="currentView !== 'pos'"
+                [class.bg-ys-surface]="currentView !== 'pos'"
+                [class.text-ys-muted]="currentView !== 'pos'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">point_of_sale</span>
@@ -276,24 +276,24 @@ export type AppView =
               <span class="font-medium tracking-tight">Caja</span>
             </button>
 
-            <div class="pt-4 text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-2 px-2">
+            <div class="pt-4 text-[10px] uppercase tracking-widest text-[#9B94A3] font-bold mb-2 px-2">
               Administración
             </div>
 
             <!-- Personal y Nodos -->
             <button
               (click)="selectView('team')"
-              [class.bg-indigo-50]="currentView === 'team'"
-              [class.text-indigo-700]="currentView === 'team'"
+              [class.bg-ys-primary-soft]="currentView === 'team'"
+              [class.text-ys-primary]="currentView === 'team'"
               [class.font-semibold]="currentView === 'team'"
-              [class.text-gray-600]="currentView !== 'team'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'team'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'team'"
+                [class.bg-ys-primary]="currentView === 'team'"
                 [class.text-white]="currentView === 'team'"
-                [class.bg-gray-100]="currentView !== 'team'"
-                [class.text-gray-500]="currentView !== 'team'"
+                [class.bg-ys-surface]="currentView !== 'team'"
+                [class.text-ys-muted]="currentView !== 'team'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">shield_person</span>
@@ -304,17 +304,17 @@ export type AppView =
             <!-- Ciudades y Sucursales -->
             <button
               (click)="selectView('locations')"
-              [class.bg-indigo-50]="currentView === 'locations'"
-              [class.text-indigo-700]="currentView === 'locations'"
+              [class.bg-ys-primary-soft]="currentView === 'locations'"
+              [class.text-ys-primary]="currentView === 'locations'"
               [class.font-semibold]="currentView === 'locations'"
-              [class.text-gray-600]="currentView !== 'locations'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'locations'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'locations'"
+                [class.bg-ys-primary]="currentView === 'locations'"
                 [class.text-white]="currentView === 'locations'"
-                [class.bg-gray-100]="currentView !== 'locations'"
-                [class.text-gray-500]="currentView !== 'locations'"
+                [class.bg-ys-surface]="currentView !== 'locations'"
+                [class.text-ys-muted]="currentView !== 'locations'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">location_city</span>
@@ -326,17 +326,17 @@ export type AppView =
             <button
               *ngIf="canViewReports"
               (click)="selectView('reports')"
-              [class.bg-indigo-50]="currentView === 'reports'"
-              [class.text-indigo-700]="currentView === 'reports'"
+              [class.bg-ys-primary-soft]="currentView === 'reports'"
+              [class.text-ys-primary]="currentView === 'reports'"
               [class.font-semibold]="currentView === 'reports'"
-              [class.text-gray-600]="currentView !== 'reports'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'reports'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'reports'"
+                [class.bg-ys-primary]="currentView === 'reports'"
                 [class.text-white]="currentView === 'reports'"
-                [class.bg-gray-100]="currentView !== 'reports'"
-                [class.text-gray-500]="currentView !== 'reports'"
+                [class.bg-ys-surface]="currentView !== 'reports'"
+                [class.text-ys-muted]="currentView !== 'reports'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">summarize</span>
@@ -348,17 +348,17 @@ export type AppView =
             <button
               *ngIf="canViewIndicadores"
               (click)="selectView('indicadores')"
-              [class.bg-indigo-50]="currentView === 'indicadores'"
-              [class.text-indigo-700]="currentView === 'indicadores'"
+              [class.bg-ys-primary-soft]="currentView === 'indicadores'"
+              [class.text-ys-primary]="currentView === 'indicadores'"
               [class.font-semibold]="currentView === 'indicadores'"
-              [class.text-gray-600]="currentView !== 'indicadores'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'indicadores'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div
-                [class.bg-indigo-600]="currentView === 'indicadores'"
+                [class.bg-ys-primary]="currentView === 'indicadores'"
                 [class.text-white]="currentView === 'indicadores'"
-                [class.bg-gray-100]="currentView !== 'indicadores'"
-                [class.text-gray-500]="currentView !== 'indicadores'"
+                [class.bg-ys-surface]="currentView !== 'indicadores'"
+                [class.text-ys-muted]="currentView !== 'indicadores'"
                 class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
               >
                 <span class="material-symbols-outlined text-[18px]">insights</span>
@@ -369,18 +369,18 @@ export type AppView =
             <!-- Mi Suscripción (Nuevo) -->
             <button
               (click)="selectView('subscription')"
-              [class.bg-indigo-50]="currentView === 'subscription'"
-              [class.text-indigo-700]="currentView === 'subscription'"
+              [class.bg-ys-primary-soft]="currentView === 'subscription'"
+              [class.text-ys-primary]="currentView === 'subscription'"
               [class.font-semibold]="currentView === 'subscription'"
-              [class.text-gray-600]="currentView !== 'subscription'"
-              class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              [class.text-ys-muted]="currentView !== 'subscription'"
+              class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
             >
               <div class="flex items-center space-x-3 min-w-0">
                 <div
-                  [class.bg-indigo-600]="currentView === 'subscription'"
+                  [class.bg-ys-primary]="currentView === 'subscription'"
                   [class.text-white]="currentView === 'subscription'"
-                  [class.bg-gray-100]="currentView !== 'subscription'"
-                  [class.text-gray-500]="currentView !== 'subscription'"
+                  [class.bg-ys-surface]="currentView !== 'subscription'"
+                  [class.text-ys-muted]="currentView !== 'subscription'"
                   class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
                 >
                   <span class="material-symbols-outlined text-[18px]">workspace_premium</span>
@@ -399,24 +399,24 @@ export type AppView =
       </div>
 
       <!-- Sección inferior: SuperAdmin o Bóveda y acciones -->
-      <div class="p-4 border-t border-gray-100 space-y-2">
-        <div *ngIf="isSuperAdmin; else vaultBox" class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+      <div class="p-4 border-t border-[#E8E2DA] space-y-2">
+        <div *ngIf="isSuperAdmin; else vaultBox" class="p-3 bg-[#F5EBF7] rounded-lg border border-[#E8E2DA]">
           <div class="flex items-center space-x-2 mb-1">
-            <span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
-            <p class="text-[11px] font-bold text-purple-900 uppercase tracking-tight">Control Global Activo</p>
+            <span class="w-2 h-2 rounded-full bg-[#38133E] animate-pulse"></span>
+            <p class="text-[11px] font-bold text-[#38133E] uppercase tracking-tight">Control Global Activo</p>
           </div>
-          <p class="text-xs text-purple-700 leading-relaxed">
+          <p class="text-xs text-[#5A5561] leading-relaxed">
             Gestión multitenant sin restricción de empresa.
           </p>
         </div>
 
         <ng-template #vaultBox>
-          <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div class="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2DA]">
             <div class="flex items-center space-x-2 mb-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <p class="text-[11px] font-bold text-gray-900 uppercase tracking-tight">Bóveda de Zurich Activa</p>
+              <span class="w-2 h-2 rounded-full bg-[#16A34A]"></span>
+              <p class="text-[11px] font-bold text-[#17141A] uppercase tracking-tight">Bóveda de Zurich Activa</p>
             </div>
-            <p class="text-xs text-gray-500 leading-relaxed">
+            <p class="text-xs text-[#5A5561] leading-relaxed">
               Sincronizada con ateliers de París y Ginza.
             </p>
           </div>
@@ -425,9 +425,9 @@ export type AppView =
         <button
           *ngIf="!isSuperAdmin"
           (click)="viewAuthScreen.emit()"
-          class="w-full py-2 px-3 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
+          class="w-full py-2 px-3 rounded-lg bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#17141A] font-semibold text-xs transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-2xs"
         >
-          <span class="material-symbols-outlined text-[16px] text-gray-500">lock_reset</span>
+          <span class="material-symbols-outlined text-[16px] text-[#5A5561]">lock_reset</span>
           <span>Cambiar a Vista de Inicio de Sesión</span>
         </button>
 
@@ -514,8 +514,8 @@ export class SidebarComponent {
 
   getPlanBadgeColor(codigo: string): string {
     const c = (codigo || '').toLowerCase();
-    if (c === 'avanzado') return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (c === 'intermedio') return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    return 'bg-blue-50 text-blue-700 border-blue-200';
+    if (c === 'avanzado') return 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]';
+    if (c === 'intermedio') return 'bg-[#F3EFEA] text-[#17141A] border-[#E8E2DA]';
+    return 'bg-[#FAF8F5] text-[#5A5561] border-[#E8E2DA]';
   }
 }
