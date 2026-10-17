@@ -373,18 +373,26 @@ export type AppView =
               [class.text-indigo-700]="currentView === 'subscription'"
               [class.font-semibold]="currentView === 'subscription'"
               [class.text-gray-600]="currentView !== 'subscription'"
-              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
+              class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-gray-50 hover:text-gray-900 cursor-pointer group"
             >
-              <div
-                [class.bg-indigo-600]="currentView === 'subscription'"
-                [class.text-white]="currentView === 'subscription'"
-                [class.bg-gray-100]="currentView !== 'subscription'"
-                [class.text-gray-500]="currentView !== 'subscription'"
-                class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
-              >
-                <span class="material-symbols-outlined text-[18px]">workspace_premium</span>
+              <div class="flex items-center space-x-3 min-w-0">
+                <div
+                  [class.bg-indigo-600]="currentView === 'subscription'"
+                  [class.text-white]="currentView === 'subscription'"
+                  [class.bg-gray-100]="currentView !== 'subscription'"
+                  [class.text-gray-500]="currentView !== 'subscription'"
+                  class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+                >
+                  <span class="material-symbols-outlined text-[18px]">workspace_premium</span>
+                </div>
+                <span class="font-medium tracking-tight truncate">Mi Suscripción</span>
               </div>
-              <span class="font-medium tracking-tight">Mi Suscripción</span>
+              <span
+                *ngIf="isSubscriptionInactive"
+                class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 shrink-0"
+              >
+                Pagar
+              </span>
             </button>
           </nav>
         </ng-template>
@@ -488,6 +496,11 @@ export class SidebarComponent {
   get canViewIndicadores(): boolean {
     const hasPerm = this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
     return hasPerm && this.authService.hasFeature('reportes_avanzados');
+  }
+
+  get isSubscriptionInactive(): boolean {
+    const s = this.authService.suscripcion();
+    return !!s?.estado && s.estado !== 'activa';
   }
 
   selectView(view: AppView) {

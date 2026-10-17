@@ -551,17 +551,21 @@ export interface TenantMeResponse {
   plan: PlanInfo;
   suscripcion: SuscripcionInfo;
   uso: TenantUso;
+  facturacion?: FacturacionTenant | null;
 }
 
 // ─────────────────────────────────────────────
 // PLATFORM (SUPERADMIN)
 // ─────────────────────────────────────────────
 
+export type BillingCycle = 'mensual' | 'anual';
+
 export interface PlatformPlan {
   idPlan: number;
   codigo: string;
   nombre: string;
   precioMensual: number;
+  precioAnual?: number;
   features: string[];
   limites: PlanLimites;
 }
@@ -581,6 +585,82 @@ export interface PlatformEmpresa {
     fechaFin: string | null;
   };
   uso: TenantUso;
+  facturacion?: FacturacionPlatform | null;
+}
+
+// ─────────────────────────────────────────────
+// STRIPE BILLING & AUTOMATIC CHARGING
+// ─────────────────────────────────────────────
+
+export interface FacturacionTenant {
+  modo: 'stripe' | 'manual';
+  renovacionAutomatica: boolean;
+  proximoCobro: string | null;
+  cancelaAlFinal: boolean;
+  ciclo?: BillingCycle;
+}
+
+export interface FacturacionPlatform {
+  modo: 'stripe' | 'manual';
+  proximoCobro: string | null;
+  ciclo?: BillingCycle;
+}
+
+export interface CheckoutRequest {
+  codigoPlan: 'basico' | 'intermedio' | 'avanzado' | string;
+  ciclo?: BillingCycle;
+}
+
+export interface CheckoutResponse {
+  url: string;
+}
+
+export interface PortalResponse {
+  url: string;
+}
+
+export type BillingErrorCode =
+  | 'billing_already_active'
+  | 'billing_not_configured'
+  | 'stripe_not_configured';
+
+export interface BillingErrorDetail {
+  code: BillingErrorCode | string;
+}
+
+// ─────────────────────────────────────────────
+// PUBLIC SIGNUP & PLANS (LANDING)
+// ─────────────────────────────────────────────
+
+export interface PublicPlan {
+  codigo: string;
+  nombre: string;
+  precioMensual: number;
+  precioAnual: number;
+  features: string[];
+  limites: PlanLimites;
+}
+
+export interface PublicSignupRequest {
+  empresa: string;
+  nombre: string;
+  correo: string;
+  codigoPlan: 'basico' | 'intermedio' | 'avanzado' | string;
+  ciclo: BillingCycle;
+}
+
+export interface PublicSignupResponse {
+  url: string;
+}
+
+export type SignupErrorCode =
+  | 'email_in_use'
+  | 'invalid_plan'
+  | 'too_many_requests'
+  | 'stripe_not_configured';
+
+export interface SignupErrorDetail {
+  code: SignupErrorCode | string;
 }
 
 export interface CreateEmpresaIn {

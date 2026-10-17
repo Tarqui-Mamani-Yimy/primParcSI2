@@ -196,9 +196,15 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
         <!-- Paso 2: Ingresar nueva contraseña -->
         <div *ngIf="recoveryStep() === 2">
           <div class="mb-5">
-            <span class="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">Nueva Contraseña</span>
-            <h3 class="text-lg font-bold text-gray-900 mt-1">Establezca su Contraseña</h3>
-            <p class="text-xs text-gray-500 mt-1">Ingrese y confirme su nueva contraseña.</p>
+            <span class="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">
+              {{ isWelcomeFlow() ? 'Bienvenido a YouShop' : 'Nueva Contraseña' }}
+            </span>
+            <h3 class="text-lg font-bold text-gray-900 mt-1">
+              {{ isWelcomeFlow() ? 'Crea tu Contraseña' : 'Establezca su Contraseña' }}
+            </h3>
+            <p class="text-xs text-gray-500 mt-1">
+              {{ isWelcomeFlow() ? 'Establece tu contraseña de administrador para activar tu cuenta y comenzar a operar.' : 'Ingrese y confirme su nueva contraseña.' }}
+            </p>
           </div>
           <div class="space-y-4">
             <div>
@@ -244,7 +250,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
               [disabled]="!isRecoveryPasswordValid()"
               class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Establecer Contraseña
+              {{ isWelcomeFlow() ? 'Activar Cuenta' : 'Establecer Contraseña' }}
             </button>
           </div>
         </div>
@@ -255,10 +261,14 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             <div class="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <span class="material-symbols-outlined text-[28px] text-emerald-600">check_circle</span>
             </div>
-            <h3 class="text-lg font-bold text-gray-900">Contraseña Actualizada</h3>
-            <p class="text-xs text-gray-500 mt-2">Su contraseña ha sido restablecida exitosamente. Ahora puede iniciar sesión con su nueva contraseña.</p>
+            <h3 class="text-lg font-bold text-gray-900">
+              {{ isWelcomeFlow() ? '¡Cuenta Activada con Éxito!' : 'Contraseña Actualizada' }}
+            </h3>
+            <p class="text-xs text-gray-500 mt-2">
+              {{ isWelcomeFlow() ? 'Tu contraseña ha sido establecida correctamente. Ya puedes iniciar sesión con tus credenciales corporativas.' : 'Su contraseña ha sido restablecida exitosamente. Ahora puede iniciar sesión con su nueva contraseña.' }}
+            </p>
             <button (click)="showForgotModal.set(false)" class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs">
-              Cerrar
+              {{ isWelcomeFlow() ? 'Iniciar Sesión' : 'Cerrar' }}
             </button>
           </div>
         </div>
@@ -320,6 +330,7 @@ export class LoginComponent implements OnInit {
 
   showForgotModal = signal<boolean>(false);
   showRequestModal = signal<boolean>(false);
+  isWelcomeFlow = signal<boolean>(false);
 
   recoveryStep = signal<number>(1);
   recoveryEmail = '';
@@ -337,7 +348,9 @@ export class LoginComponent implements OnInit {
   ngOnInit() {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('reset_token');
+    const bienvenida = params.get('bienvenida') === '1';
     if (token) {
+      this.isWelcomeFlow.set(bienvenida);
       this.recoveryToken = token;
       this.recoveryNewPassword = '';
       this.recoveryConfirmPassword = '';
@@ -368,6 +381,7 @@ export class LoginComponent implements OnInit {
   }
 
   openForgotPassword() {
+    this.isWelcomeFlow.set(false);
     this.recoveryStep.set(1);
     this.recoveryEmail = '';
     this.recoveryNewPassword = '';

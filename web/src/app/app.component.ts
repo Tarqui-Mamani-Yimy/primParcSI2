@@ -1,7 +1,8 @@
-import { Component, computed, effect, signal } from '@angular/core';
+import { Component, computed, effect, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './core/services/auth.service';
 import { TenantBannerService } from './core/services/tenant-banner.service';
+import { NotificationService } from './core/services/notification.service';
 import { LoginComponent } from './features/auth/login.component';
 import { RegisterComponent } from './features/auth/register.component';
 import { LandingComponent } from './components/landing/landing.component';
@@ -72,6 +73,60 @@ import { PlatformComponent } from './features/platform/platform.component';
         (backToLogin)="goToLogin()"
         (backToLanding)="goToLanding()"
       ></app-register>
+
+      <!-- Pantalla de Confirmación de Compra desde Landing (LW3) -->
+      <section
+        *ngIf="publicScreen() === 'signup-success'"
+        class="min-h-screen w-full flex items-center justify-center p-6 bg-gray-50 text-gray-900 font-sans"
+      >
+        <div class="max-w-md w-full bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center animate-in fade-in zoom-in duration-200">
+          <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-5 shadow-xs">
+            <span class="material-symbols-outlined text-[36px]">check_circle</span>
+          </div>
+
+          <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+            Suscripción Confirmada
+          </span>
+
+          <h2 class="text-2xl font-bold text-gray-900 mt-3 tracking-tight">¡Pago Recibido con Éxito!</h2>
+
+          <p class="text-sm text-gray-600 mt-3 leading-relaxed">
+            Te enviamos un correo electrónico a
+            <strong class="text-indigo-600 break-all">{{ signupEmail() }}</strong>
+            para crear tu contraseña de acceso y activar tu consola.
+          </p>
+
+          <div class="my-6 p-4 rounded-xl bg-gray-50 border border-gray-200 text-left text-xs text-gray-600 space-y-2">
+            <div class="flex items-start space-x-2">
+              <span class="material-symbols-outlined text-indigo-600 text-[18px] shrink-0 mt-0.5">mail</span>
+              <span>Revisa tu bandeja de entrada o carpeta de spam.</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <span class="material-symbols-outlined text-indigo-600 text-[18px] shrink-0 mt-0.5">schedule</span>
+              <span>El enlace de activación es válido por <strong>48 horas</strong>.</span>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <button
+              type="button"
+              (click)="goToLogin()"
+              class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-xs flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <span class="material-symbols-outlined text-[18px]">login</span>
+              <span>Ir a Iniciar Sesión</span>
+            </button>
+
+            <button
+              type="button"
+              (click)="goToLanding()"
+              class="w-full py-2.5 px-4 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+            >
+              Volver a la Página Principal
+            </button>
+          </div>
+        </div>
+      </section>
     </ng-container>
 
     <!-- Authenticated but currentUser() not yet resolved: neutral loading state to avoid
@@ -151,14 +206,24 @@ import { PlatformComponent } from './features/platform/platform.component';
               </span>
             </div>
 
-            <button
-              *ngIf="b.dismissible"
-              (click)="tenantBannerService.dismiss()"
-              class="p-1 hover:bg-black/5 rounded text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
-              title="Cerrar aviso"
-            >
-              <span class="material-symbols-outlined text-[16px]">close</span>
-            </button>
+            <div class="flex items-center space-x-2 shrink-0">
+              <button
+                *ngIf="b.type === 'error' && activeView() !== 'subscription' && !authService.isSuperAdmin()"
+                (click)="onViewChange('subscription')"
+                class="px-2.5 py-1 bg-white hover:bg-gray-50 border border-rose-300 text-rose-700 font-bold rounded-md text-[11px] uppercase tracking-wider transition-colors cursor-pointer shadow-2xs"
+              >
+                Pagar suscripción
+              </button>
+
+              <button
+                *ngIf="b.dismissible"
+                (click)="tenantBannerService.dismiss()"
+                class="p-1 hover:bg-black/5 rounded text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+                title="Cerrar aviso"
+              >
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
           </div>
 
           <!-- Scrollable View Container -->
@@ -228,24 +293,28 @@ import { PlatformComponent } from './features/platform/platform.component';
     <app-toast-container></app-toast-container>
   `
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   activeView = signal<AppView>('dashboard');
   showAuthScreen = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
 
-  // Si la URL contiene ?reset_token=..., ir directamente a login sin pasar por landing
-  private hasResetToken(): boolean {
-    if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).has('reset_token');
+  private getInitialPublicScreen(): 'landing' | 'login' | 'register' | 'signup-success' {
+    if (typeof window === 'undefined') return 'landing';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('signup') === 'success') return 'signup-success';
+    if (params.has('reset_token')) return 'login';
+    return 'landing';
   }
 
-  publicScreen = signal<'landing' | 'login' | 'register'>(this.hasResetToken() ? 'login' : 'landing');
+  publicScreen = signal<'landing' | 'login' | 'register' | 'signup-success'>(this.getInitialPublicScreen());
+  signupEmail = signal<string>('');
 
   isCustomer = computed(() => this.authService.currentUser()?.rol === 'Cliente');
 
   constructor(
     public authService: AuthService,
-    public tenantBannerService: TenantBannerService
+    public tenantBannerService: TenantBannerService,
+    private notificationService: NotificationService
   ) {
     effect(() => {
       if (this.authService.isSuperAdmin()) {
@@ -256,6 +325,72 @@ export class AppComponent {
         this.activeView.set('dashboard');
       }
     });
+  }
+
+  ngOnInit() {
+    this.handleUrlReturns();
+  }
+
+  private handleUrlReturns(): void {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+
+    // Retorno de compra desde Landing (?signup=success|cancel)
+    const signup = params.get('signup');
+    if (signup === 'success') {
+      const email = params.get('correo') ? decodeURIComponent(params.get('correo')!) : '';
+      this.signupEmail.set(email);
+      this.publicScreen.set('signup-success');
+      this.showAuthScreen.set(false);
+      this.cleanUrlParams(['signup', 'correo']);
+    } else if (signup === 'cancel') {
+      this.publicScreen.set('landing');
+      this.showAuthScreen.set(false);
+      this.notificationService.info(
+        'Suscripción cancelada',
+        'El proceso de compra en Stripe fue cancelado. No se realizó ningún cargo.'
+      );
+      this.cleanUrlParams(['signup']);
+    }
+
+    // Retorno de facturación interna de tenant (?billing=success|cancel)
+    const billing = params.get('billing');
+    if (billing === 'success') {
+      this.activeView.set('subscription');
+      this.showAuthScreen.set(false);
+      this.notificationService.success(
+        'Pago completado',
+        'Tu suscripción se ha procesado con éxito en Stripe. Los datos de tu plan se actualizarán a la brevedad.'
+      );
+      if (this.authService.isAuthenticated()) {
+        this.authService.fetchCurrentUser();
+        // Webhook might take a moment to update DB, schedule follow-up refresh
+        setTimeout(() => {
+          if (this.authService.isAuthenticated()) {
+            this.authService.fetchCurrentUser();
+          }
+        }, 3000);
+      }
+      this.cleanUrlParams(['billing']);
+    } else if (billing === 'cancel') {
+      this.activeView.set('subscription');
+      this.showAuthScreen.set(false);
+      this.notificationService.info(
+        'Operación cancelada',
+        'El proceso de suscripción en Stripe no se completó. No se realizó ningún cargo.'
+      );
+      this.cleanUrlParams(['billing']);
+    }
+  }
+
+  private cleanUrlParams(keysToRemove: string[]): void {
+    const url = new URL(window.location.href);
+    for (const key of keysToRemove) {
+      url.searchParams.delete(key);
+    }
+    const cleanUrl = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + url.hash;
+    window.history.replaceState({}, '', cleanUrl);
   }
 
   goToLogin() {

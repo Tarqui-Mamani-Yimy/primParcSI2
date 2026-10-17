@@ -149,6 +149,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                 <th class="py-3 px-6">Empresa</th>
                 <th class="py-3 px-6">Plan Asignado</th>
                 <th class="py-3 px-6">Estado Suscripción</th>
+                <th class="py-3 px-6">Facturación</th>
                 <th class="py-3 px-6">Uso de Capacidad</th>
                 <th class="py-3 px-6 text-right">Acciones de Gestión</th>
               </tr>
@@ -193,6 +194,28 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                   <p class="text-[10px] text-gray-400 mt-1">
                     Vence: {{ emp.suscripcion?.fechaFin || 'Sin límite' }}
                   </p>
+                </td>
+
+                <!-- Columna Facturación (Stripe / Manual + Próximo Cobro) -->
+                <td class="py-4 px-6">
+                  <div *ngIf="emp.facturacion?.modo === 'stripe'; else manualBilling">
+                    <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      <span class="material-symbols-outlined text-[13px]">credit_card</span>
+                      <span>Stripe{{ emp.facturacion?.ciclo ? (' (' + emp.facturacion.ciclo + ')') : '' }}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-1">
+                      {{ emp.facturacion?.proximoCobro ? ('Cobro: ' + emp.facturacion?.proximoCobro) : 'Sin fecha de cobro' }}
+                    </p>
+                  </div>
+                  <ng-template #manualBilling>
+                    <div>
+                      <div class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+                        <span class="material-symbols-outlined text-[13px]">tune</span>
+                        <span>Manual</span>
+                      </div>
+                      <p class="text-[10px] text-gray-400 mt-1">SuperAdmin</p>
+                    </div>
+                  </ng-template>
                 </td>
 
                 <!-- Columna Uso -->
@@ -258,7 +281,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
               </tr>
 
               <tr *ngIf="filteredEmpresas().length === 0">
-                <td colspan="5" class="py-12 text-center text-gray-400">
+                <td colspan="6" class="py-12 text-center text-gray-400">
                   <span class="material-symbols-outlined text-3xl mb-1 text-gray-300">search_off</span>
                   <p class="text-sm font-medium">No se encontraron empresas con los criterios seleccionados.</p>
                 </td>
@@ -268,7 +291,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
         </div>
       </div>
 
-      <!-- Sección: Planes de Suscripción Disponibles (19/49/99 USD) -->
+      <!-- Sección: Planes de Suscripción Disponibles (290/690/1490 USD) -->
       <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-xs space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-100 pb-4">
           <div>
@@ -280,7 +303,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
             <p class="text-xs text-gray-500 mt-0.5">Precios oficiales y capacidades asignadas a cada nivel de tenant.</p>
           </div>
           <span class="text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-full border border-gray-200 self-start sm:self-auto">
-            Moneda: USD mensual
+            Moneda: USD (mensual / anual)
           </span>
         </div>
 
@@ -303,10 +326,13 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
 
               <div class="mb-4">
                 <div class="flex items-baseline space-x-1">
-                  <span class="text-3xl font-black text-gray-900">{{ p.precioMensual }}</span>
+                  <span class="text-3xl font-black text-gray-900">\${{ p.precioMensual }}</span>
                   <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">USD / mes</span>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-0.5">Facturación mensual por tenant</p>
+                <p class="text-[11px] text-gray-600 mt-0.5" *ngIf="p.precioAnual">
+                  Anual: \${{ p.precioAnual }} USD / año (-20%)
+                </p>
+                <p class="text-[11px] text-gray-400 mt-0.5" *ngIf="!p.precioAnual">Facturación mensual por tenant</p>
               </div>
 
               <!-- Límites de capacidad -->
@@ -629,9 +655,9 @@ export class PlatformComponent implements OnInit {
       error: () => {
         // Fallback para planes estándar de acuerdo al contrato
         this.plans.set([
-          { idPlan: 1, codigo: 'basico', nombre: 'Básico', precioMensual: 19, features: ['pos', 'inventario', 'ventas', 'reportes'], limites: { sucursales: 1, usuarios: 3, productos: 200 } },
-          { idPlan: 2, codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 49, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados'], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
-          { idPlan: 3, codigo: 'avanzado', nombre: 'Avanzado', precioMensual: 99, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador'], limites: { sucursales: null, usuarios: null, productos: null } }
+          { idPlan: 1, codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: ['pos', 'inventario', 'ventas', 'reportes'], limites: { sucursales: 1, usuarios: 3, productos: 200 } },
+          { idPlan: 2, codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados'], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
+          { idPlan: 3, codigo: 'avanzado', nombre: 'Avanzado', precioMensual: 1490, precioAnual: 14304, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador'], limites: { sucursales: null, usuarios: null, productos: null } }
         ]);
       }
     });

@@ -842,10 +842,10 @@
               <div class="mt-8 flex flex-col gap-2">
                 <button
                   type="button"
-                  (click)="onBuyOrSubscribe('Plan Básico')"
+                  (click)="openSignupModal('basico')"
                   class="w-full inline-flex items-center justify-center py-3 px-5 rounded-lg bg-[#F4F1EA] dark:bg-[#1E141A] text-[#1C1618] dark:text-[#FDFCF7] font-title-sm text-title-sm font-semibold hover:bg-[#EDE8DE] dark:hover:bg-[#251820] border border-[#E8E3D9] dark:border-[#38242C] transition-colors text-center cursor-pointer gap-2">
-                  <span>Comprar / Iniciar Sesión</span>
-                  <span class="material-symbols-outlined text-[18px]">shopping_bag</span>
+                  <span>Elegir plan</span>
+                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <button
                   type="button"
@@ -910,10 +910,10 @@
               <div class="mt-8 flex flex-col gap-2">
                 <button
                   type="button"
-                  (click)="onBuyOrSubscribe('Plan Intermedio')"
+                  (click)="openSignupModal('intermedio')"
                   class="w-full inline-flex items-center justify-center py-3.5 px-5 rounded-lg bg-[#6E1D2D] hover:bg-[#531320] text-white font-title-sm text-title-sm font-semibold shadow-[0_4px_20px_-2px_rgba(110,29,45,0.3)] transition-all duration-200 text-center gap-2 cursor-pointer">
-                  <span>Comprar / Iniciar Sesión</span>
-                  <span class="material-symbols-outlined text-[18px]">shopping_bag</span>
+                  <span>Elegir plan</span>
+                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <button
                   type="button"
@@ -924,22 +924,22 @@
               </div>
             </div>
 
-            <!-- Plan 3: Plan Pro (Replaced Enterprise Consorcio with full paid tier) -->
+            <!-- Plan 3: Plan Avanzado (formerly Pro) -->
             <div class="bg-white dark:bg-[#150E12] p-6 sm:p-8 rounded-2xl flex flex-col justify-between shadow-sm dark:shadow-xl border border-[#C29B38]/50 dark:border-[#ECC15A]/40 hover:shadow-xl hover:border-[#C29B38] transition-all duration-300">
               <div>
                 <div class="flex items-center justify-between">
-                  <span class="font-label-code text-label-code text-[#C29B38] dark:text-[#ECC15A] uppercase font-bold">ALTO RENDIMIENTO • PRO</span>
+                  <span class="font-label-code text-label-code text-[#C29B38] dark:text-[#ECC15A] uppercase font-bold">ALTO RENDIMIENTO • AVANZADO</span>
                   <span class="material-symbols-outlined text-[#C29B38] dark:text-[#ECC15A] text-[22px]">workspace_premium</span>
                 </div>
-                <h3 class="mt-2 font-headline-md text-headline-md font-bold text-[#1C1618] dark:text-[#FFFFFF]">Plan Pro</h3>
+                <h3 class="mt-2 font-headline-md text-headline-md font-bold text-[#1C1618] dark:text-[#FFFFFF]">Plan Avanzado</h3>
                 <p class="mt-1 font-body-sm text-body-sm text-[#5C5254] dark:text-[#A8989C]">Para grandes firmas de moda, consorcios multimarca y redes internacionales.</p>
 
                 <div class="mt-6 pt-4 pb-4 border-y border-[#E8E3D9] dark:border-[#2D1B22] bg-[#FAF8F5] dark:bg-[#1A1216] -mx-6 sm:-mx-8 px-6 sm:px-8">
                   <div class="flex items-baseline gap-1">
-                    <span class="font-display-hero text-[34px] sm:text-[36px] font-extrabold text-[#765900] dark:text-[#ECC15A]">{{ proPrice() }}</span>
+                    <span class="font-display-hero text-[34px] sm:text-[36px] font-extrabold text-[#765900] dark:text-[#ECC15A]">{{ avanzadoPrice() }}</span>
                     <span class="font-label-code text-label-code text-[#5C5254] dark:text-[#A8989C]">USD / mes</span>
                   </div>
-                  <span class="font-label-caps text-label-caps text-[#765900] dark:text-[#ECC15A] uppercase mt-1 block font-semibold">o aprox. {{ proPriceBs() }}</span>
+                  <span class="font-label-caps text-label-caps text-[#765900] dark:text-[#ECC15A] uppercase mt-1 block font-semibold">o aprox. {{ avanzadoPriceBs() }}</span>
                 </div>
 
                 <ul class="mt-6 space-y-3 font-body-sm text-body-sm text-[#1C1618] dark:text-[#FFFFFF]">
@@ -977,14 +977,14 @@
               <div class="mt-8 flex flex-col gap-2">
                 <button
                   type="button"
-                  (click)="onBuyOrSubscribe('Plan Pro')"
+                  (click)="openSignupModal('avanzado')"
                   class="w-full inline-flex items-center justify-center py-3 px-5 rounded-lg bg-[#581C35] hover:bg-[#6E1D2D] text-white font-title-sm text-title-sm font-semibold shadow-md transition-colors text-center cursor-pointer gap-2">
-                  <span>Comprar / Iniciar Sesión</span>
-                  <span class="material-symbols-outlined text-[18px]">shopping_bag</span>
+                  <span>Elegir plan</span>
+                  <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
                 <button
                   type="button"
-                  (click)="selectPlanAndScroll('Plan Pro ($1.490/mes)')"
+                  (click)="selectPlanAndScroll('Plan Avanzado ($1.490/mes)')"
                   class="w-full text-center text-xs text-[#5C5254] dark:text-[#A8989C] hover:underline cursor-pointer py-1">
                   O solicitar demostración asistida
                 </button>
@@ -1358,6 +1358,154 @@
           Cerrar Registro
         </button>
       </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL: REGISTRO Y CONTRATACIÓN DE PLAN (SELF-SERVICE SIGNUP) -->
+@if (signupModalOpen()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="bg-white dark:bg-[#150E12] rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-[#E8E3D9] dark:border-[#2D1B22] relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto">
+      <button
+        type="button"
+        (click)="closeSignupModal()"
+        class="absolute top-4 right-4 p-2 text-[#5C5254] dark:text-[#A8989C] hover:text-[#1C1618] dark:hover:text-white rounded-full hover:bg-[#F4F1EA] dark:hover:bg-[#1E141A] transition-colors cursor-pointer"
+        aria-label="Cerrar modal">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-[#6E1D2D] text-white flex items-center justify-center shadow-md shrink-0">
+          <span class="material-symbols-outlined text-[22px]">shopping_bag</span>
+        </div>
+        <div>
+          <span class="font-label-caps text-label-caps text-[#C29B38] dark:text-[#ECC15A] uppercase font-bold">Contratación YouShop</span>
+          <h3 class="font-headline-md text-headline-md font-bold text-[#1C1618] dark:text-[#FFFFFF]">Elegir Plan & Facturación</h3>
+        </div>
+      </div>
+
+      <!-- Resumen del Plan Seleccionado -->
+      <div class="p-4 rounded-xl bg-[#FAF8F5] dark:bg-[#1E141A] border border-[#E8E3D9] dark:border-[#2D1B22] mb-5">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <span class="font-bold text-sm text-[#1C1618] dark:text-white block">{{ getSelectedPlanSummary().nombre }}</span>
+            <span class="text-[11px] text-[#5C5254] dark:text-[#A8989C]">Suscripción multitenant</span>
+          </div>
+
+          <!-- Selector de ciclo dentro del modal -->
+          <div class="inline-flex p-0.5 rounded-lg bg-[#E8E3D9] dark:bg-[#2D1B22] shrink-0">
+            <button
+              type="button"
+              (click)="setSignupCiclo('mensual')"
+              class="px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer"
+              [class]="signupCiclo() === 'mensual' ? 'bg-white dark:bg-[#150E12] text-[#6E1D2D] dark:text-[#FFB2BA] shadow-xs' : 'text-[#5C5254] dark:text-[#A8989C]'">
+              Mensual
+            </button>
+            <button
+              type="button"
+              (click)="setSignupCiclo('anual')"
+              class="px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer"
+              [class]="signupCiclo() === 'anual' ? 'bg-white dark:bg-[#150E12] text-[#6E1D2D] dark:text-[#FFB2BA] shadow-xs' : 'text-[#5C5254] dark:text-[#A8989C]'">
+              Anual (-20%)
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-baseline justify-between text-xs pt-2 border-t border-[#E8E3D9]/60 dark:border-[#2D1B22]">
+          <span class="text-[#5C5254] dark:text-[#A8989C]">Importe a pagar en Stripe:</span>
+          <span class="text-base font-extrabold text-[#6E1D2D] dark:text-[#FFB2BA]">
+            @if (signupCiclo() === 'mensual') {
+              ${{ getSelectedPlanSummary().monthly }} USD / mes
+            } @else {
+              ${{ getSelectedPlanSummary().annual }} USD / año (${{ getSelectedPlanSummary().annualPerMonth }} USD/mes)
+            }
+          </span>
+        </div>
+      </div>
+
+      <!-- Formulario de Registro -->
+      <form [formGroup]="signupForm" (ngSubmit)="submitSignup()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-[#1C1618] dark:text-[#FFFFFF] uppercase tracking-wider mb-1" for="signup-empresa">
+            Nombre de la Empresa o Boutique *
+          </label>
+          <input
+            id="signup-empresa"
+            type="text"
+            formControlName="empresa"
+            placeholder="ej. Atelier Alta Costura"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E3D9] dark:border-[#2D1B22] bg-white dark:bg-[#20141B] text-[#1C1618] dark:text-[#FFFFFF] text-xs focus:ring-2 focus:ring-[#6E1D2D] focus:outline-none transition-all"
+          />
+          @if (signupForm.get('empresa')?.touched && signupForm.get('empresa')?.invalid) {
+            <p class="text-[11px] text-rose-600 mt-1">El nombre de la empresa es obligatorio (mínimo 2 caracteres).</p>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#1C1618] dark:text-[#FFFFFF] uppercase tracking-wider mb-1" for="signup-nombre">
+            Nombre del Administrador *
+          </label>
+          <input
+            id="signup-nombre"
+            type="text"
+            formControlName="nombre"
+            placeholder="ej. Valentina Rosales"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E3D9] dark:border-[#2D1B22] bg-white dark:bg-[#20141B] text-[#1C1618] dark:text-[#FFFFFF] text-xs focus:ring-2 focus:ring-[#6E1D2D] focus:outline-none transition-all"
+          />
+          @if (signupForm.get('nombre')?.touched && signupForm.get('nombre')?.invalid) {
+            <p class="text-[11px] text-rose-600 mt-1">El nombre del administrador es obligatorio (mínimo 2 caracteres).</p>
+          }
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#1C1618] dark:text-[#FFFFFF] uppercase tracking-wider mb-1" for="signup-correo">
+            Correo Electrónico (Login) *
+          </label>
+          <input
+            id="signup-correo"
+            type="email"
+            formControlName="correo"
+            placeholder="ej. valentina@atelier.com"
+            class="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E3D9] dark:border-[#2D1B22] bg-white dark:bg-[#20141B] text-[#1C1618] dark:text-[#FFFFFF] text-xs focus:ring-2 focus:ring-[#6E1D2D] focus:outline-none transition-all"
+          />
+          @if (signupForm.get('correo')?.touched && signupForm.get('correo')?.invalid) {
+            <p class="text-[11px] text-rose-600 mt-1">Ingresa un correo electrónico válido.</p>
+          } @else {
+            <p class="text-[10px] text-[#5C5254] dark:text-[#A8989C] mt-1">
+              Te enviaremos el enlace seguro para crear tu contraseña a este correo tras confirmar el pago.
+            </p>
+          }
+        </div>
+
+        <!-- Banner de Error si la llamada a signup falla -->
+        @if (signupError()) {
+          <div class="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px] shrink-0 mt-0.5">error</span>
+            <span>{{ signupError() }}</span>
+          </div>
+        }
+
+        <div class="pt-4 border-t border-[#E8E3D9] dark:border-[#2D1B22] flex items-center justify-end gap-3">
+          <button
+            type="button"
+            (click)="closeSignupModal()"
+            class="px-4 py-2.5 rounded-lg bg-[#F4F1EA] dark:bg-[#1E141A] text-[#1C1618] dark:text-[#FFFFFF] font-title-sm text-xs font-semibold hover:bg-[#EDE8DE] dark:hover:bg-[#251820] transition-colors cursor-pointer">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="isSubmittingSignup() || signupForm.invalid"
+            class="px-5 py-2.5 rounded-lg bg-[#6E1D2D] hover:bg-[#531320] disabled:opacity-50 text-white font-title-sm text-xs font-semibold shadow-md transition-all cursor-pointer flex items-center gap-2">
+            @if (isSubmittingSignup()) {
+              <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+              <span>Procesando…</span>
+            } @else {
+              <span class="material-symbols-outlined text-[16px]">credit_card</span>
+              <span>Proceder al Pago con Stripe</span>
+            }
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 }

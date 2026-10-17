@@ -13,6 +13,8 @@ import {
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { RevealOnScroll } from './reveal-on-scroll';
+import { BillingService } from '../../core/services/billing.service';
+import { BillingCycle, PublicPlan } from '../../core/models';
 
 export interface BoutiqueNode {
   name: string;
@@ -39,6 +41,7 @@ export interface CustodyLog {
 })
 export class LandingComponent implements OnInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly billingService = inject(BillingService);
 
   @Output() login = new EventEmitter<void>();
 
@@ -58,28 +61,76 @@ export class LandingComponent implements OnInit, OnDestroy {
   // Modals
   vaultModalOpen = signal<boolean>(false);
   historyModalOpen = signal<boolean>(false);
+  signupModalOpen = signal<boolean>(false);
   formSubmitted = signal<boolean>(false);
   submittedData = signal<{ boutique: string; email: string } | null>(null);
+
+  // Signup State
+  selectedPlanCode = signal<'basico' | 'intermedio' | 'avanzado'>('basico');
+  signupCiclo = signal<BillingCycle>('mensual');
+  isSubmittingSignup = signal<boolean>(false);
+  signupError = signal<string | null>(null);
+
+  signupForm = new FormGroup({
+    empresa: new FormControl('', [Validators.required, Validators.minLength(2)]),
+    nombre: new FormControl('', [Validators.required, Validators.minLength(2)]),
+    correo: new FormControl('', [Validators.required, Validators.email]),
+  });
 
   // Live Telemetry Auto-refresh timer
   lastRefreshedSeconds = signal<number>(3);
   private timerInterval?: ReturnType<typeof setInterval>;
 
-  // Pricing calculations for 3 paid plans: Básico, Intermedio, Pro
-  basicPrice = computed(() => (this.billingCycle() === 'monthly' ? '$290' : '$232'));
+  // Public plans from backend with decided fallbacks
+  publicPlans = signal<PublicPlan[]>([
+    { codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: [], limites: { sucursales: 1, usuarios: 3, productos: 200 } },
+    { codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: [], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
+    { codigo: 'avanzado', nombre: 'Avanzado', precioMensual: 1490, precioAnual: 14304, features: [], limites: { sucursales: null, usuarios: null, productos: null } },
+  ]);
+
+  getPlan(codigo: string): { monthly: number; annual: number; annualPerMonth: number } {
+    const p = this.publicPlans().find((item) => item.codigo === codigo);
+    if (p) {
+      return {
+        monthly: p.precioMensual,
+        annual: p.precioAnual,
+        annualPerMonth: Math.round(p.precioAnual / 12),
+      };
+    }
+    if (codigo === 'intermedio') return { monthly: 690, annual: 6624, annualPerMonth: 552 };
+    if (codigo === 'avanzado') return { monthly: 1490, annual: 14304, annualPerMonth: 1192 };
+    return { monthly: 290, annual: 2784, annualPerMonth: 232 };
+  }
+
+  // Pricing calculations for 3 paid plans: Básico, Intermedio, Avanzado
+  basicPrice = computed(() => {
+    const p = this.getPlan('basico');
+    return this.billingCycle() === 'monthly' ? `$${p.monthly}` : `$${p.annualPerMonth}`;
+  });
   basicPriceBs = computed(() =>
     this.billingCycle() === 'monthly' ? '2.000 Bs / mes' : '1.600 Bs / mes (Ahorro anual)'
   );
 
-  intermediatePrice = computed(() => (this.billingCycle() === 'monthly' ? '$690' : '$552'));
+  intermediatePrice = computed(() => {
+    const p = this.getPlan('intermedio');
+    return this.billingCycle() === 'monthly' ? `$${p.monthly}` : `$${p.annualPerMonth}`;
+  });
   intermediatePriceBs = computed(() =>
     this.billingCycle() === 'monthly' ? '4.800 Bs / mes' : '3.840 Bs / mes (Ahorro anual)'
   );
 
-  proPrice = computed(() => (this.billingCycle() === 'monthly' ? '$1.490' : '$1.192'));
-  proPriceBs = computed(() =>
+  avanzadoPrice = computed(() => {
+    const p = this.getPlan('avanzado');
+    const val = this.billingCycle() === 'monthly' ? p.monthly : p.annualPerMonth;
+    return `$${val >= 1000 ? val.toLocaleString('es-ES') : val}`;
+  });
+  avanzadoPriceBs = computed(() =>
     this.billingCycle() === 'monthly' ? '10.400 Bs / mes' : '8.320 Bs / mes (Ahorro anual)'
   );
+
+  // Backward-compatibility aliases
+  proPrice = this.avanzadoPrice;
+  proPriceBs = this.avanzadoPriceBs;
 
   // Boutiques table
   nodes: BoutiqueNode[] = [
@@ -125,6 +176,18 @@ export class LandingComponent implements OnInit, OnDestroy {
         // Ignorar si localStorage no está disponible
       }
     }
+
+    // Load public plans from backend
+    this.billingService.getPublicPlans().subscribe({
+      next: (plans) => {
+        if (plans && plans.length > 0) {
+          this.publicPlans.set(plans);
+        }
+      },
+      error: () => {
+        // Keep fallbacks
+      },
+    });
 
     // Auto refresh ticker
     this.timerInterval = setInterval(() => {
@@ -200,16 +263,97 @@ export class LandingComponent implements OnInit, OnDestroy {
     this.historyModalOpen.set(false);
   }
 
+  openSignupModal(codigo: 'basico' | 'intermedio' | 'avanzado') {
+    this.selectedPlanCode.set(codigo);
+    this.signupCiclo.set(this.billingCycle() === 'annual' ? 'anual' : 'mensual');
+    this.signupError.set(null);
+    this.signupForm.reset();
+    this.signupModalOpen.set(true);
+  }
+
+  closeSignupModal() {
+    this.signupModalOpen.set(false);
+    this.signupError.set(null);
+  }
+
+  setSignupCiclo(ciclo: BillingCycle) {
+    this.signupCiclo.set(ciclo);
+  }
+
+  getSelectedPlanSummary() {
+    const codigo = this.selectedPlanCode();
+    const p = this.getPlan(codigo);
+    const nombre = codigo === 'basico' ? 'Plan Básico' : (codigo === 'intermedio' ? 'Plan Intermedio' : 'Plan Avanzado');
+    return {
+      codigo,
+      nombre,
+      monthly: p.monthly,
+      annual: p.annual,
+      annualPerMonth: p.annualPerMonth,
+    };
+  }
+
+  submitSignup() {
+    if (this.signupForm.invalid) {
+      this.signupForm.markAllAsTouched();
+      return;
+    }
+
+    const val = this.signupForm.value;
+    const codigo = this.selectedPlanCode();
+    const ciclo = this.signupCiclo();
+
+    this.isSubmittingSignup.set(true);
+    this.signupError.set(null);
+
+    this.billingService.publicSignup({
+      empresa: (val.empresa || '').trim(),
+      nombre: (val.nombre || '').trim(),
+      correo: (val.correo || '').trim().toLowerCase(),
+      codigoPlan: codigo,
+      ciclo: ciclo,
+    }).subscribe({
+      next: (res) => {
+        if (res.url) {
+          window.location.href = res.url;
+        } else {
+          this.isSubmittingSignup.set(false);
+          this.signupError.set('No se recibió la dirección de pago de Stripe.');
+        }
+      },
+      error: (err) => {
+        this.isSubmittingSignup.set(false);
+        const code = err.error?.detail?.code;
+        if (code === 'email_in_use') {
+          this.signupError.set('Este correo ya está registrado en la plataforma. Inicia sesión o utiliza otro correo electrónico.');
+        } else if (code === 'invalid_plan') {
+          this.signupError.set('El plan seleccionado no es válido.');
+        } else if (code === 'too_many_requests' || err.status === 429) {
+          this.signupError.set('Demasiadas solicitudes. Por favor, intenta de nuevo en unos minutos.');
+        } else if (code === 'stripe_not_configured' || err.status === 503) {
+          this.signupError.set('El servicio de facturación no se encuentra disponible temporalmente. Contacta a soporte.');
+        } else {
+          const detail = err.error?.detail;
+          const msg = typeof detail === 'string' ? detail : 'No se pudo iniciar el proceso de compra. Por favor intenta nuevamente.';
+          this.signupError.set(msg);
+        }
+      },
+    });
+  }
+
   selectPlanAndScroll(planName: string) {
     this.deploymentForm.patchValue({ selectedPlan: planName });
     this.scrollToSection('demostracion');
   }
 
   onBuyOrSubscribe(planName: string) {
-    this.closeMobileMenu();
-    this.closeVaultModal();
-    this.closeHistoryModal();
-    this.login.emit();
+    if (planName.includes('Básico') || planName.includes('Basico')) {
+      this.openSignupModal('basico');
+    } else if (planName.includes('Intermedio')) {
+      this.openSignupModal('intermedio');
+    } else {
+      this.openSignupModal('avanzado');
+    }
   }
 
   onLogin() {
