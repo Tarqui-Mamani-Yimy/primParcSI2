@@ -84,12 +84,12 @@ def create_refresh_token(user_id: int) -> str:
     )
 
 
-def create_pwd_reset_token(user_id: int) -> str:
+def create_pwd_reset_token(user_id: int, expires_minutes: int | None = None) -> str:
     """Crea un JWT de corta duracion para recuperacion de contrasena (stateless)."""
     return create_token(
         subject=str(user_id),
         claims={"purpose": "pwd_reset"},
-        expires_delta=timedelta(minutes=PWD_RESET_TOKEN_EXPIRE_MINUTES),
+        expires_delta=timedelta(minutes=expires_minutes or PWD_RESET_TOKEN_EXPIRE_MINUTES),
     )
 
 
@@ -221,7 +221,8 @@ def require_active_subscription():
     from app.models import Suscripcion
 
     async def dependency(request: Request, payload: dict = Depends(get_current_payload), session=Depends(get_tenant_db)):
-        if request.method in {"GET", "HEAD", "OPTIONS"}:
+        path = getattr(getattr(request, "url", None), "path", "")
+        if request.method in {"GET", "HEAD", "OPTIONS"} or path.startswith("/api/billing/"):
             return None
         result = await session.execute(select(Suscripcion.estado, Suscripcion.fechaFin).where(Suscripcion.idEmpresa == payload.get("empresa")))
         row = result.one_or_none()

@@ -24,7 +24,7 @@ class Session:
     async def execute(self, query):
         sql = str(query)
         if 'FROM "Plan"' in sql:
-            return Result([SimpleNamespace(idPlan=2, codigo='basico', nombre='Básico', precioMensual=49, features=['pos'], limites={'sucursales': 1, 'usuarios': 3, 'productos': 200})])
+            return Result([SimpleNamespace(idPlan=2, codigo='basico', nombre='Básico', precioMensual=49, precioAnual=470.4, features=['pos'], limites={'sucursales': 1, 'usuarios': 3, 'productos': 200})])
         if 'FROM "Empresa"' in sql and 'JOIN' in sql: return Result([])
         if 'FROM "Suscripcion"' in sql:
             return Result((SimpleNamespace(estado='activa', fechaFin=None), SimpleNamespace(codigo='basico', nombre='Básico', features=['pos'], limites={'sucursales': 1, 'usuarios': 3, 'productos': 200})))
@@ -51,7 +51,7 @@ def test_platform_plans_and_companies_have_exact_contract_shapes():
         token = create_access_token(4, {'rol': 'SuperAdmin', 'permisos': ['plataforma.admin'], 'empresa': None, 'plan': None})
         response = TestClient(app).get('/api/platform/plans', headers={'Authorization': f'Bearer {token}'})
         assert response.status_code == 200
-        assert response.json() == [{'idPlan': 2, 'codigo': 'basico', 'nombre': 'Básico', 'precioMensual': 49.0,
+        assert response.json() == [{'idPlan': 2, 'codigo': 'basico', 'nombre': 'Básico', 'precioMensual': 49.0, 'precioAnual': 470.4,
                                     'features': ['pos'], 'limites': {'sucursales': 1, 'usuarios': 3, 'productos': 200}}]
         companies = TestClient(app).get('/api/platform/empresas', headers={'Authorization': f'Bearer {token}'})
         assert companies.status_code == 200 and companies.json() == []
@@ -70,5 +70,6 @@ def test_tenant_me_uses_jwt_tenant_and_contract_keys():
             'empresa': {'idEmpresa': 7, 'nombre': 'Tienda', 'slug': 'tienda', 'logoUrl': None},
             'plan': {'codigo': 'basico', 'nombre': 'Básico', 'features': ['pos'], 'limites': {'sucursales': 1, 'usuarios': 3, 'productos': 200}},
             'suscripcion': {'estado': 'activa', 'fechaFin': None}, 'uso': {'sucursales': 0, 'usuarios': 0, 'productos': 0},
+            'facturacion': {'modo': 'manual', 'renovacionAutomatica': False, 'proximoCobro': None, 'cancelaAlFinal': False, 'ciclo': 'mensual'},
         }
     finally: app.dependency_overrides.clear()

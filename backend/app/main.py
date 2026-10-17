@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.routers import (
     auth,
+    billing,
     branches,
     chat,
     cities,
@@ -81,6 +82,8 @@ async def health():
 
 for router in (
     auth.router,
+    billing.router,
+    billing.public_router,
     products.router,
     inventory.router,
     dispatches.router,

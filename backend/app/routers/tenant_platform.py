@@ -63,6 +63,18 @@ def _subscription_dict(subscription: Suscripcion) -> dict:
     return {"estado": subscription.estado, "fechaFin": subscription.fechaFin}
 
 
+def _billing_dict(company: Empresa, subscription: Suscripcion) -> dict:
+    stripe_subscription_id = getattr(subscription, "stripeSubscriptionId", None)
+    cancels_at_end = bool(getattr(subscription, "cancelaAlFinal", False))
+    return {
+        "modo": "stripe" if stripe_subscription_id else "manual",
+        "renovacionAutomatica": bool(stripe_subscription_id and not cancels_at_end),
+        "proximoCobro": subscription.fechaFin if stripe_subscription_id else None,
+        "cancelaAlFinal": cancels_at_end,
+        "ciclo": getattr(subscription, "ciclo", "mensual"),
+    }
+
+
 async def _usage(session: AsyncSession, empresa_id: int) -> dict:
     result = {}
     for key, model in (("sucursales", Sucursal), ("usuarios", Usuario), ("productos", Producto)):
@@ -90,6 +102,7 @@ async def tenant_me(payload: dict = Depends(get_current_payload), session: Async
     return {
         "empresa": {"idEmpresa": company.idEmpresa, "nombre": company.nombre, "slug": company.slug, "logoUrl": company.logoUrl},
         "plan": _plan_dict(plan), "suscripcion": _subscription_dict(subscription),
+        "facturacion": _billing_dict(company, subscription),
         "uso": await _usage(session, empresa_id),
     }
 
@@ -98,7 +111,8 @@ async def tenant_me(payload: dict = Depends(get_current_payload), session: Async
 async def list_plans(session: AsyncSession = Depends(get_platform_db)):
     rows = (await session.execute(select(Plan).order_by(Plan.idPlan))).scalars().all()
     return [{"idPlan": plan.idPlan, "codigo": plan.codigo, "nombre": plan.nombre,
-             "precioMensual": float(plan.precioMensual), "features": plan.features, "limites": plan.limites}
+             "precioMensual": float(plan.precioMensual), "precioAnual": float(plan.precioAnual),
+             "features": plan.features, "limites": plan.limites}
             for plan in rows]
 
 
@@ -111,7 +125,11 @@ async def list_empresas(session: AsyncSession = Depends(get_platform_db)):
     return [{"idEmpresa": company.idEmpresa, "nombre": company.nombre, "slug": company.slug,
              "logoUrl": company.logoUrl, "estado": company.estado,
              "plan": {"codigo": plan.codigo, "nombre": plan.nombre},
-             "suscripcion": _subscription_dict(subscription), "uso": await _usage(session, company.idEmpresa)}
+             "suscripcion": _subscription_dict(subscription),
+             "facturacion": {"modo": "stripe" if subscription.stripeSubscriptionId else "manual",
+                             "proximoCobro": subscription.fechaFin if subscription.stripeSubscriptionId else None,
+                             "ciclo": subscription.ciclo},
+             "uso": await _usage(session, company.idEmpresa)}
             for company, subscription, plan in rows]
 
 
@@ -155,6 +173,26 @@ async def change_plan(empresa_id: int, payload: ChangePlan, session: AsyncSessio
     plan = (await session.execute(select(Plan).where(Plan.codigo == payload.codigoPlan))).scalar_one_or_none()
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
+    if subscription.stripeSubscriptionId:
+        from app.config import get_settings
+        from fastapi import HTTPException
+        import anyio
+        from app import stripe_provider
+
+        settings = get_settings()
+        if (not settings.STRIPE_SECRET_KEY or not settings.STRIPE_SECRET_KEY.startswith("sk_test_")
+                or not (plan.stripePriceId if subscription.ciclo == "mensual" else plan.stripePriceIdAnual)):
+            raise HTTPException(status_code=503, detail={"code": "stripe_not_configured"})
+        try:
+            current = await anyio.to_thread.run_sync(lambda: stripe_provider.retrieve_subscription(
+                subscription_id=subscription.stripeSubscriptionId, api_key=settings.STRIPE_SECRET_KEY))
+            item = current["items"]["data"][0]
+            price_id = plan.stripePriceId if subscription.ciclo == "mensual" else plan.stripePriceIdAnual
+            await anyio.to_thread.run_sync(lambda: stripe_provider.update_subscription(
+                api_key=settings.STRIPE_SECRET_KEY, subscription_id=subscription.stripeSubscriptionId,
+                items=[{"id": item["id"], "price": price_id}], proration_behavior="create_prorations"))
+        except stripe_provider.StripeError as exc:
+            raise HTTPException(status_code=502, detail={"code": "stripe_request_failed"}) from exc
     subscription.idPlan = plan.idPlan
     await session.commit()
     return {"codigoPlan": plan.codigo}

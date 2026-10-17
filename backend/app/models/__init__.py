@@ -87,6 +87,7 @@ class Empresa(Base):
     slug: Mapped[str] = mapped_column(String(100), nullable=False)
     logoUrl: Mapped[str | None] = mapped_column(Text)
     estado: Mapped[str] = mapped_column(String(20), nullable=False)
+    stripeCustomerId: Mapped[str | None] = mapped_column(String(255))
 
 
 class Plan(Base):
@@ -96,8 +97,11 @@ class Plan(Base):
     codigo: Mapped[str] = mapped_column(String(30), nullable=False)
     nombre: Mapped[str] = mapped_column(String(50), nullable=False)
     precioMensual: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    precioAnual: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     features: Mapped[list] = mapped_column(JSON, nullable=False)
     limites: Mapped[dict] = mapped_column(JSON, nullable=False)
+    stripePriceId: Mapped[str | None] = mapped_column(String(255))
+    stripePriceIdAnual: Mapped[str | None] = mapped_column(String(255))
 
 
 class Suscripcion(Base):
@@ -109,6 +113,9 @@ class Suscripcion(Base):
     estado: Mapped[str] = mapped_column(String(20), nullable=False)
     fechaInicio: Mapped[date] = mapped_column(Date, nullable=False)
     fechaFin: Mapped[date | None] = mapped_column(Date)
+    stripeSubscriptionId: Mapped[str | None] = mapped_column(String(255))
+    cancelaAlFinal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ciclo: Mapped[str] = mapped_column(String(10), default="mensual", nullable=False)
 
 
 class Sucursal(Base):

@@ -82,6 +82,14 @@ async def get_platform_db(_payload=Depends(require_platform_admin)) -> AsyncSess
         yield session
 
 
+async def get_billing_webhook_db() -> AsyncSession:
+    """Yield a platform-scoped session only for the verified server webhook."""
+    async with AsyncSessionLocal() as session:
+        connection = await session.connection()
+        await connection.execute(text("SELECT set_config('app.billing_webhook', 'true', true)"))
+        yield session
+
+
 async def bind_session_tenant(session: AsyncSession, tenant_id: int) -> None:
     """Bind a known tenant for the current and all later session transactions."""
     if tenant_id is None or tenant_id <= 0:
@@ -149,7 +157,8 @@ async def get_tenant_db(request: Request, tenant_id: int | None = Depends(get_te
         session.info.update(tenant_scoped=True, tenant_id=tenant_id)
         # Subscription state is checked from the database for every mutation;
         # reads remain available so users can inspect data and subscription status.
-        if request is not None and request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if (request is not None and request.method not in {"GET", "HEAD", "OPTIONS"}
+                and not request.url.path.startswith("/api/billing/")):
             from sqlalchemy import select
             from app.models import Suscripcion
             subscription = (await session.execute(

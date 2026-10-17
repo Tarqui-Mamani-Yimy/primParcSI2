@@ -17,10 +17,12 @@ import anyio
 
 from app.config import get_settings
 
+from app import stripe_provider
 try:
-    import stripe
-except ImportError:  # pragma: no cover - stripe siempre deberia estar instalado
-    stripe = None
+    from app.stripe_provider import StripeError
+except ImportError:  # pragma: no cover
+    StripeError = RuntimeError
+    stripe_provider = None
 
 settings = get_settings()
 
@@ -35,7 +37,7 @@ class StripePagoError(RuntimeError):
 
 def stripe_configurado() -> bool:
     """True solo si el paquete `stripe` esta importado Y hay una secret key."""
-    return stripe is not None and bool(settings.STRIPE_SECRET_KEY)
+    return stripe_provider is not None and bool(settings.STRIPE_SECRET_KEY)
 
 
 def _api_key() -> str:
@@ -60,8 +62,8 @@ async def crear_payment_intent(
     api_key = _api_key()
     centavos = int((monto_usd * 100).to_integral_value())
 
-    def _crear() -> "stripe.PaymentIntent":
-        return stripe.PaymentIntent.create(
+    def _crear():
+        return stripe_provider.create_payment_intent(
             amount=centavos,
             currency="usd",
             metadata=metadata,
@@ -71,7 +73,7 @@ async def crear_payment_intent(
 
     try:
         intent = await anyio.to_thread.run_sync(_crear)
-    except stripe.error.StripeError as exc:  # type: ignore[union-attr]
+    except StripeError as exc:
         raise StripePagoError(str(exc)) from exc
 
     return {
@@ -90,12 +92,12 @@ async def obtener_payment_intent(payment_intent_id: str) -> dict:
     """
     api_key = _api_key()
 
-    def _consultar() -> "stripe.PaymentIntent":
-        return stripe.PaymentIntent.retrieve(payment_intent_id, api_key=api_key)
+    def _consultar():
+        return stripe_provider.retrieve_payment_intent(api_key=api_key, payment_intent_id=payment_intent_id)
 
     try:
         intent = await anyio.to_thread.run_sync(_consultar)
-    except stripe.error.StripeError as exc:  # type: ignore[union-attr]
+    except StripeError as exc:
         raise StripePagoError(str(exc)) from exc
 
     return {

@@ -10,7 +10,7 @@ settings = get_settings()
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
-def send_reset_email(to_email: str, reset_link: str) -> bool:
+def send_reset_email(to_email: str, reset_link: str, welcome_name: str | None = None) -> bool:
     """Envia el correo de recuperacion de contrasena via la API
     transaccional de Brevo (https://api.brevo.com/v3/smtp/email) — ya no
     via SMTP.
@@ -27,17 +27,24 @@ def send_reset_email(to_email: str, reset_link: str) -> bool:
     if not settings.BREVO_API_KEY or not settings.BREVO_SENDER_EMAIL:
         return False
 
-    cuerpo = (
-        "Recibimos una solicitud para restablecer tu contrasena.\n\n"
-        f"Haz clic en el siguiente enlace para continuar:\n{reset_link}\n\n"
-        "Si no solicitaste esto, puedes ignorar este correo. "
-        "El enlace expira en 15 minutos."
-    )
+    if welcome_name:
+        subject = "Bienvenida a YouShop: crea tu contraseña"
+        cuerpo = (f"Hola {welcome_name}, tu pago fue recibido y tu cuenta ya está lista.\n\n"
+                  f"Crea tu contraseña en este enlace:\n{reset_link}\n\n"
+                  "El enlace expira en 48 horas.")
+    else:
+        subject = "Restablece tu contrasena"
+        cuerpo = (
+            "Recibimos una solicitud para restablecer tu contrasena.\n\n"
+            f"Haz clic en el siguiente enlace para continuar:\n{reset_link}\n\n"
+            "Si no solicitaste esto, puedes ignorar este correo. "
+            "El enlace expira en 15 minutos."
+        )
 
     payload = {
         "sender": {"name": settings.BREVO_SENDER_NAME, "email": settings.BREVO_SENDER_EMAIL},
         "to": [{"email": to_email}],
-        "subject": "Restablece tu contrasena",
+        "subject": subject,
         "textContent": cuerpo,
     }
     headers = {
