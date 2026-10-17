@@ -156,6 +156,13 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
                 Crear cuenta
               </button>
             </div>
+
+            <div class="pt-2 text-center border-t border-gray-100">
+              <button type="button" (click)="onBackToLanding()" class="text-xs text-gray-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Volver a YouShop</span>
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -304,6 +311,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
 export class LoginComponent implements OnInit {
   @Output() loggedIn = new EventEmitter<void>();
   @Output() showRegister = new EventEmitter<void>();
+  @Output() backToLanding = new EventEmitter<void>();
 
   email = '';
   password = '';
@@ -402,6 +410,10 @@ export class LoginComponent implements OnInit {
 
   onShowRegister() {
     this.showRegister.emit();
+  }
+
+  onBackToLanding() {
+    this.backToLanding.emit();
   }
 
   submitNewPassword() {

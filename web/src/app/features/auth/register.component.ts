@@ -140,6 +140,13 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
                 Iniciar sesión
               </button>
             </div>
+
+            <div class="pt-2 text-center border-t border-gray-100">
+              <button type="button" (click)="onBackToLanding()" class="text-xs text-gray-500 hover:text-gray-900 transition-colors inline-flex items-center gap-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Volver a YouShop</span>
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -149,6 +156,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
 export class RegisterComponent {
   @Output() registered = new EventEmitter<void>();
   @Output() backToLogin = new EventEmitter<void>();
+  @Output() backToLanding = new EventEmitter<void>();
 
   nombre = '';
   email = '';
@@ -222,5 +230,9 @@ export class RegisterComponent {
 
   onBackToLogin() {
     this.backToLogin.emit();
+  }
+
+  onBackToLanding() {
+    this.backToLanding.emit();
   }
 }

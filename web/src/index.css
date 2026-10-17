@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --color-bg-base: #f9fafb;
@@ -65,5 +67,39 @@
   aside,
   header {
     display: none !important;
+  }
+}
+
+/* Scroll reveal (see app/reveal-on-scroll.ts) */
+.reveal-pending {
+  opacity: 0;
+  transform: var(--reveal-from, translateY(2rem));
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.reveal-pending.reveal-visible {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 1s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+}
+
+[data-reveal='fade'] { --reveal-from: none; }
+[data-reveal='slide-left'] { --reveal-from: translateX(-2rem); }
+[data-reveal='slide-right'] { --reveal-from: translateX(2rem); }
+[data-reveal='slide-down'] { --reveal-from: translateY(-3rem); }
+[data-reveal='zoom'] { --reveal-from: scale(0.85); }
+[data-reveal='spin-left'] { --reveal-from: rotate(-12deg) translateY(2rem); }
+[data-reveal='spin-right'] { --reveal-from: rotate(12deg) translateY(2rem); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pending,
+  .reveal-pending.reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
