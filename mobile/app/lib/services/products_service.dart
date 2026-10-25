@@ -1,3 +1,4 @@
+import '../data/offline_cache.dart';
 import '../models/product_model.dart';
 import 'api_client.dart';
 
@@ -45,6 +46,31 @@ class ProductsService {
     int page = 1,
     int size = 20,
   }) async {
+    final cached = await OfflineCache.read('productos');
+    if (cached.isNotEmpty ||
+        (!OfflineCache.isOnline && await OfflineCache.hasSnapshot)) {
+      return _filterCached(cached, tipo: tipo, talla: talla, color: color, q: q)
+          .skip((page - 1) * size)
+          .take(size)
+          .map(_fromApi)
+          .toList();
+    }
+
+    final cacheSession = OfflineCache.captureSession();
+    final items = await _fetchProducts(
+        tipo: tipo, talla: talla, color: color, q: q, page: page, size: size);
+    await OfflineCache.putAll('productos', items, session: cacheSession);
+    return items.map(_fromApi).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchProducts({
+    String? tipo,
+    String? talla,
+    String? color,
+    String? q,
+    required int page,
+    required int size,
+  }) async {
     final data = await _api.get(
       '/api/products',
       auth: false,
@@ -58,13 +84,35 @@ class ProductsService {
       },
     ) as Map<String, dynamic>;
 
-    final items = (data['items'] as List).cast<Map<String, dynamic>>();
-    return items.map(_fromApi).toList();
+    return (data['items'] as List).cast<Map<String, dynamic>>();
+  }
+
+  List<Map<String, dynamic>> _filterCached(
+    List<Map<String, dynamic>> rows, {
+    String? tipo,
+    String? talla,
+    String? color,
+    String? q,
+  }) {
+    return rows.where((row) {
+      if (tipo != null && row['tipo'] != tipo) return false;
+      if (talla != null && row['talla'] != talla) return false;
+      if (color != null && row['color'] != color) return false;
+      if (q != null &&
+          !'${row['nombre'] ?? ''} ${row['descripcion'] ?? ''}'
+              .toLowerCase()
+              .contains(q.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   Product _fromApi(Map<String, dynamic> json) {
     final nombreColor = (json['color'] as String?)?.toLowerCase().trim();
-    final colorHex = nombreColor != null ? (_colorHexAproximado[nombreColor] ?? '#9CA3AF') : '#9CA3AF';
+    final colorHex = nombreColor != null
+        ? (_colorHexAproximado[nombreColor] ?? '#9CA3AF')
+        : '#9CA3AF';
     final talla = json['talla'] as String?;
     final imagen = json['imagen_url'] as String?;
 

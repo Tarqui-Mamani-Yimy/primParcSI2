@@ -65,4 +65,34 @@ export class SalesService {
       return null;
     });
   }
+
+  /**
+   * Obtiene ventas marcadas con discrepancia de stock (OX6).
+   */
+  listarVentasDiscrepantes(): Promise<Venta[]> {
+    return firstValueFrom(
+      this.http.get<Venta[]>(`${API_URL}/api/sales?discrepancia=true`)
+    ).catch((err) => {
+      const msg = err.error?.detail || 'No se pudieron cargar las ventas con discrepancia.';
+      this.notificationService.error('Error', msg);
+      return [];
+    });
+  }
+
+  /**
+   * Resuelve una discrepancia de stock con nota de ajuste (OX6).
+   */
+  resolverDiscrepancia(idVenta: number, nota: string): Promise<any> {
+    return firstValueFrom(
+      this.http.patch(`${API_URL}/api/sales/${idVenta}/resolve-discrepancy`, { nota })
+    ).then((res) => {
+      this.notificationService.success('Discrepancia Resuelta', 'La nota de ajuste fue registrada correctamente.');
+      return res;
+    }).catch((err) => {
+      const msg = err.error?.detail || 'No se pudo resolver la discrepancia.';
+      this.notificationService.error('Error', msg);
+      throw err;
+    });
+  }
 }
+

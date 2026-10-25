@@ -8,6 +8,7 @@ import '../models/product_model.dart';
 import '../services/api_client.dart';
 import '../services/customer_service.dart';
 import '../services/size_chart.dart';
+import '../utils/fit_scale.dart';
 import 'ar_try_on_screen.dart';
 import 'reservation_form_screen.dart';
 
@@ -51,52 +52,7 @@ class TryOnScreen extends StatelessWidget {
             product: product,
             isSimulatingTryOn: appState.isSimulatingTryOn,
             selectedSize: appState.selectedSize,
-          ),
-
-          const SizedBox(height: 14),
-
-          // 2. Avatar Presets Carousel
-          Text('AVATAR 3D / MODELO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 46,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: dummyAvatars.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final avatar = dummyAvatars[index];
-                final isSelected = appState.selectedAvatar.id == avatar.id;
-                return InkWell(
-                  onTap: () => appState.selectAvatar(avatar),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
-                      border: Border.all(color: isSelected ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundImage: NetworkImage(avatar.imageUrl),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(avatar.name, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w600)),
-                            Text(avatar.height, style: GoogleFonts.sourceSerif4(fontSize: 9, color: const Color(0xFF7B776E))),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+            fitMode: appState.fitMode,
           ),
 
           const SizedBox(height: 14),
@@ -296,11 +252,13 @@ class _MirrorCanvas extends StatefulWidget {
   final Product product;
   final bool isSimulatingTryOn;
   final String selectedSize;
+  final String fitMode;
 
   const _MirrorCanvas({
     required this.product,
     required this.isSimulatingTryOn,
     required this.selectedSize,
+    required this.fitMode,
   });
 
   @override
@@ -343,11 +301,16 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
               // cambiar de prenda y reiniciaria la camara en cada cambio.
               // Sin Key, el mismo State persiste y `widget.product` se
               // actualiza solo — ver el comentario en `ArTryOnScreen.build`.
-              ArTryOnScreen(product: widget.product)
+              ArTryOnScreen(product: widget.product, fitMode: widget.fitMode)
             else ...[
-              CachedNetworkImage(
-                imageUrl: widget.product.imageUrl,
-                fit: BoxFit.cover,
+              // Escala visual segun "Silueta y Caida" — puramente estetico,
+              // nunca afecta el veredicto real de `determinarAjuste`.
+              Transform.scale(
+                scale: fitModeFactor(widget.fitMode),
+                child: CachedNetworkImage(
+                  imageUrl: widget.product.imageUrl,
+                  fit: BoxFit.cover,
+                ),
               ),
               if (widget.isSimulatingTryOn)
                 Container(
@@ -424,7 +387,21 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                 shape: const CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),
-                  onTap: () => setState(() => _arActivo = !_arActivo),
+                  onTap: () {
+                    // El overlay RA se ancla a los hombros — no tiene
+                    // sentido para pantalones (el ancla quedaria en el
+                    // lugar equivocado del cuerpo). Se avisa en vez de
+                    // mostrar algo roto o enganoso.
+                    if (!_arActivo && widget.product.category.toLowerCase().contains('pantal')) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('El probador RA se ancla a los hombros — no está pensado para pantalones.'),
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() => _arActivo = !_arActivo);
+                  },
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Icon(

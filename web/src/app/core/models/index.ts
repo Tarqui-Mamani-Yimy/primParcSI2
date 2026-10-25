@@ -288,6 +288,11 @@ export interface Venta {
   idCliente: number;
   idMetPago: number;
   detalles: DetalleVenta[];
+  origen?: string;
+  comprobanteLocal?: string | null;
+  discrepanciaStock?: boolean;
+  discrepanciaResueltaEn?: string | null;
+  discrepanciaNota?: string | null;
 }
 
 export interface MetodoPago {
@@ -803,5 +808,54 @@ export interface CachedCliente {
 export interface CachedMeta {
   key: string;
   value: string;
+}
+
+// ─────────────────────────────────────────────
+// OFFLINE OUTBOX & PHASE 3 MODELS
+// ─────────────────────────────────────────────
+
+export type PendingOpStatus = 'pending' | 'sending' | 'failed' | 'done';
+export type PendingOpType = 'pos_sale' | 'reservation' | 'customer_profile';
+
+export interface PendingOp {
+  id: string; // uuid, also used as Idempotency-Key
+  type: PendingOpType | string;
+  payload: any;
+  createdAt: string; // ISO 8601
+  lastAttemptAt?: string | null; // ISO 8601 of last retry attempt
+  status: PendingOpStatus;
+  attempts: number;
+  lastError: string | null;
+}
+
+export interface OfflineSaleItem {
+  idProducto: number;
+  cantidad: number;
+}
+
+export interface OfflineSalePayment {
+  tipo: 'Efectivo' | string;
+  monto: number;
+}
+
+export interface OfflineSaleIn {
+  idLocal: string; // uuid
+  comprobanteLocal: string; // e.g. "OFF-0001"
+  fechaLocal: string; // ISO 8601
+  codigoSucursal: number;
+  idCliente: number | null;
+  pago: OfflineSalePayment;
+  items: OfflineSaleItem[];
+}
+
+export interface ResolveDiscrepancyIn {
+  nota: string;
+}
+
+export interface ResolveDiscrepancyOut {
+  idVenta: number;
+  discrepanciaStock: boolean;
+  discrepanciaResueltaEn: string | null;
+  discrepanciaNota: string | null;
 }
 

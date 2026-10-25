@@ -8,6 +8,7 @@ import type {
   CachedVenta,
   CachedCliente,
   CachedMeta,
+  PendingOp,
 } from '../models';
 
 export class YouShopDexie extends Dexie {
@@ -18,6 +19,7 @@ export class YouShopDexie extends Dexie {
   ventas!: Table<CachedVenta, number>;
   cliente!: Table<CachedCliente, number>;
   meta!: Table<CachedMeta, string>;
+  pending_ops!: Table<PendingOp, string>;
 
   constructor(dbName: string) {
     super(dbName);
@@ -29,6 +31,9 @@ export class YouShopDexie extends Dexie {
       ventas: 'idVenta, idCliente, fecha, origen, discrepanciaStock',
       cliente: 'idCliente, idUser, idEmpresa',
       meta: 'key',
+    });
+    this.version(2).stores({
+      pending_ops: 'id, type, status, createdAt',
     });
   }
 }
@@ -149,22 +154,40 @@ export class OfflineDbService {
   }
 
   /**
-   * Wipes all cached tables and deletes the IndexedDB instance on logout.
+   * Cleans cached tables on logout, while preserving any unsynced pending_ops
+   * in the per-user database so flushing can resume when the same user logs back in.
    */
   async wipeOnLogout(): Promise<void> {
     if (this.db) {
       try {
-        await Promise.all([
-          this.db.productos.clear(),
-          this.db.sucursales.clear(),
-          this.db.inventario.clear(),
-          this.db.reservas.clear(),
-          this.db.ventas.clear(),
-          this.db.cliente.clear(),
-          this.db.meta.clear(),
-        ]);
-        this.db.close();
-        await this.db.delete();
+        let hasUnsyncedOps = false;
+        try {
+          const unsynced = await this.db.pending_ops
+            .where('status')
+            .anyOf(['pending', 'sending', 'failed'])
+            .count();
+          hasUnsyncedOps = unsynced > 0;
+        } catch {
+          // If pending_ops doesn't exist, proceed with full wipe
+        }
+
+        if (hasUnsyncedOps) {
+          // Unsynced operations present: preserve the per-user database
+          this.db.close();
+        } else {
+          await Promise.all([
+            this.db.productos.clear(),
+            this.db.sucursales.clear(),
+            this.db.inventario.clear(),
+            this.db.reservas.clear(),
+            this.db.ventas.clear(),
+            this.db.cliente.clear(),
+            this.db.meta.clear(),
+            this.db.pending_ops.clear(),
+          ]);
+          this.db.close();
+          await this.db.delete();
+        }
       } catch (err) {
         console.warn('Error wiping offline DB on logout:', err);
       } finally {

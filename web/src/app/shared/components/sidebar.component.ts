@@ -1,11 +1,13 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { OutboxService } from '../../core/services/outbox.service';
 
 export type AppView =
   | 'dashboard'
   | 'archive'
   | 'inventory'
+  | 'discrepancies'
   | 'logistics'
   | 'suppliers'
   | 'seasons'
@@ -166,6 +168,28 @@ export type AppView =
                 <span class="material-symbols-outlined text-[18px]">inventory_2</span>
               </div>
               <span class="font-medium tracking-tight">Inventario Global</span>
+            </button>
+
+            <!-- Discrepancias Offline (Gating: inventario.ajustar) -->
+            <button
+              *ngIf="canAdjustInventory"
+              (click)="selectView('discrepancies')"
+              [class.bg-ys-primary-soft]="currentView === 'discrepancies'"
+              [class.text-ys-primary]="currentView === 'discrepancies'"
+              [class.font-semibold]="currentView === 'discrepancies'"
+              [class.text-ys-muted]="currentView !== 'discrepancies'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
+            >
+              <div
+                [class.bg-ys-primary]="currentView === 'discrepancies'"
+                [class.text-white]="currentView === 'discrepancies'"
+                [class.bg-ys-surface]="currentView !== 'discrepancies'"
+                [class.text-ys-muted]="currentView !== 'discrepancies'"
+                class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]">rule</span>
+              </div>
+              <span class="font-medium tracking-tight">Discrepancias Stock</span>
             </button>
 
             <!-- Despachos y Logística (Gating: despachos) -->
@@ -449,7 +473,10 @@ export class SidebarComponent {
   @Output() viewAuthScreen = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
 
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private outboxService: OutboxService,
+  ) {}
 
   get isSuperAdmin(): boolean {
     return this.authService.isSuperAdmin();
@@ -473,6 +500,10 @@ export class SidebarComponent {
 
   get canViewInventory(): boolean {
     return this.authService.hasFeature('inventario');
+  }
+
+  get canAdjustInventory(): boolean {
+    return this.authService.hasPermission('inventario.ajustar');
   }
 
   get canViewLogistics(): boolean {
@@ -508,6 +539,13 @@ export class SidebarComponent {
   }
 
   onLogout() {
+    const pending = this.outboxService.totalActiveCount();
+    if (pending > 0) {
+      const msg = `Tenés ${pending} ${pending === 1 ? 'operación' : 'operaciones'} sin sincronizar. Si cerrás sesión, quedarán guardadas localmente hasta que vuelvas a iniciar sesión con este usuario. ¿Deseás continuar?`;
+      if (!window.confirm(msg)) {
+        return;
+      }
+    }
     this.authService.logout();
     this.logout.emit();
   }

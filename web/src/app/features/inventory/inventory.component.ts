@@ -1,23 +1,53 @@
-import { Component, signal, computed, OnInit } from '@angular/core';
+import { Component, signal, computed, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../core/services/inventory.service';
 import { ArchiveService } from '../../core/services/archive.service';
 import { SyncService } from '../../core/services/sync.service';
+import { AuthService } from '../../core/services/auth.service';
+import { DiscrepanciesComponent } from './discrepancies.component';
 import { InventoryStockEntry } from '../../core/models';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DiscrepanciesComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
-      <!-- Encabezado -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
-        <div>
-          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Red Multi-Sucursal</span>
-          <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Matriz Global de Asignación de Stock</h1>
+      <!-- Pestañas: Matriz de Stock vs Discrepancias Offline (OX6) -->
+      <div class="flex items-center space-x-2 border-b border-gray-200 pb-3" *ngIf="canAdjustInventory()">
+        <button
+          (click)="activeTab.set('stock')"
+          [class.bg-ys-primary]="activeTab() === 'stock'"
+          [class.text-white]="activeTab() === 'stock'"
+          [class.bg-white]="activeTab() !== 'stock'"
+          [class.text-gray-700]="activeTab() !== 'stock'"
+          class="px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-gray-200 shadow-2xs"
+        >
+          Matriz de Stock
+        </button>
+        <button
+          (click)="activeTab.set('discrepancies')"
+          [class.bg-ys-primary]="activeTab() === 'discrepancies'"
+          [class.text-white]="activeTab() === 'discrepancies'"
+          [class.bg-white]="activeTab() !== 'discrepancies'"
+          [class.text-gray-700]="activeTab() !== 'discrepancies'"
+          class="px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-gray-200 shadow-2xs flex items-center space-x-1.5"
+        >
+          <span class="material-symbols-outlined text-[16px]">rule</span>
+          <span>Discrepancias Offline</span>
+        </button>
+      </div>
+
+      <app-discrepancies *ngIf="activeTab() === 'discrepancies'"></app-discrepancies>
+
+      <ng-container *ngIf="activeTab() === 'stock'">
+        <!-- Encabezado -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-gray-200">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Red Multi-Sucursal</span>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight mt-0.5">Matriz Global de Asignación de Stock</h1>
           <p class="text-xs text-gray-500 mt-1">
             Conteos de inventario en tiempo real en todas las sucursales registradas.
           </p>
@@ -148,6 +178,7 @@ import { InventoryStockEntry } from '../../core/models';
           No se encontraron registros de inventario.
         </div>
       </div>
+      </ng-container>
 
     </div>
 
@@ -282,6 +313,10 @@ import { InventoryStockEntry } from '../../core/models';
   `
 })
 export class InventoryComponent implements OnInit {
+  public authService = inject(AuthService);
+  activeTab = signal<'stock' | 'discrepancies'>('stock');
+  canAdjustInventory = computed(() => this.authService.hasPermission('inventario.ajustar'));
+
   selectedLocation = signal<string>('ALL');
   showTransferModal = signal<boolean>(false);
   showLoteModal = signal<boolean>(false);

@@ -1,0 +1,6 @@
+{
+  "name": "YouShop - Infraestructura Digital de Alta Gama para el Archivo Textil",
+  "description": "Plataforma de telemetría de inventarios, bóveda de archivo y sincronización en tiempo real para ateliers y boutiques de alta costura.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

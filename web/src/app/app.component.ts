@@ -26,6 +26,7 @@ import { ReportsComponent } from './features/reports/reports.component';
 import { IndicadoresComponent } from './features/indicadores/indicadores.component';
 import { SubscriptionComponent } from './features/subscription/subscription.component';
 import { PlatformComponent } from './features/platform/platform.component';
+import { DiscrepanciesComponent } from './features/inventory/discrepancies.component';
 
 @Component({
   selector: 'app-root',
@@ -41,6 +42,7 @@ import { PlatformComponent } from './features/platform/platform.component';
     DashboardComponent,
     ArchiveComponent,
     InventoryComponent,
+    DiscrepanciesComponent,
     LogisticsComponent,
     SuppliersComponent,
     SeasonsComponent,
@@ -326,6 +328,10 @@ import { PlatformComponent } from './features/platform/platform.component';
               *ngIf="activeView() === 'inventory'"
             ></app-inventory>
 
+            <app-discrepancies
+              *ngIf="activeView() === 'discrepancies'"
+            ></app-discrepancies>
+
             <app-logistics
               *ngIf="activeView() === 'logistics'"
             ></app-logistics>
@@ -526,6 +532,8 @@ export class AppComponent implements OnInit {
         return 'Archivo y Catálogo de Prendas';
       case 'inventory':
         return 'Asignación Global de Stock';
+      case 'discrepancies':
+        return 'Discrepancias de Stock Offline';
       case 'logistics':
         return 'Despachos y Tránsito Seguro';
       case 'suppliers':

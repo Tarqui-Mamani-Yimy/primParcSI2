@@ -72,6 +72,24 @@ export class AuthService {
     return this.planSignal()?.features?.includes(key) ?? false;
   }
 
+  hasPermission(permission: string): boolean {
+    if (this.isSuperAdmin()) return true;
+    return this.currentUserSignal()?.permisos?.includes(permission) ?? false;
+  }
+
+  updateCurrentUserName(nombre: string): void {
+    const cur = this.currentUserSignal();
+    if (cur) {
+      const updated = { ...cur, nombre };
+      this.currentUserSignal.set(updated);
+      try {
+        localStorage.setItem('user', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   private setTenantState(
     empresa?: EmpresaInfo | null,
     plan?: PlanInfo | null,

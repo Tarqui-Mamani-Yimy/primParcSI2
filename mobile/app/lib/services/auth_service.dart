@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/api_config.dart';
+import '../data/offline_database.dart';
 import 'api_client.dart';
 
 /// Usuario autenticado — mapea 1:1 el `UserSummary` que devuelve el
@@ -13,6 +14,7 @@ class AuthUser {
   final String correo;
   final String rol;
   final List<String> permisos;
+  final int? idEmpresa;
 
   AuthUser({
     required this.idUser,
@@ -20,6 +22,7 @@ class AuthUser {
     required this.correo,
     required this.rol,
     required this.permisos,
+    this.idEmpresa,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
@@ -28,6 +31,10 @@ class AuthUser {
         correo: json['correo'] as String,
         rol: json['rol'] as String,
         permisos: (json['permisos'] as List).map((p) => p.toString()).toList(),
+        idEmpresa:
+            ((json['empresa'] as Map<String, dynamic>?)?['idEmpresa'] as num?)
+                    ?.toInt() ??
+                (json['idEmpresa'] as num?)?.toInt(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +43,7 @@ class AuthUser {
         'correo': correo,
         'rol': rol,
         'permisos': permisos,
+        'idEmpresa': idEmpresa,
       };
 }
 
@@ -49,9 +57,16 @@ class AuthService {
   AuthService(this._api);
 
   Future<void> _guardarSesion(Map<String, dynamic> tokenResponse) async {
-    await _storage.write(key: ApiConfig.tokenStorageKey, value: tokenResponse['access_token'] as String);
-    await _storage.write(key: ApiConfig.refreshTokenStorageKey, value: tokenResponse['refresh_token'] as String);
-    await _storage.write(key: ApiConfig.userStorageKey, value: jsonEncode(tokenResponse['user']));
+    await _storage.write(
+        key: ApiConfig.tokenStorageKey,
+        value: tokenResponse['access_token'] as String);
+    await _storage.write(
+        key: ApiConfig.refreshTokenStorageKey,
+        value: tokenResponse['refresh_token'] as String);
+    final user = Map<String, dynamic>.from(tokenResponse['user'] as Map);
+    user['empresa'] = tokenResponse['empresa'];
+    await _storage.write(
+        key: ApiConfig.userStorageKey, value: jsonEncode(user));
   }
 
   /// Lanza [ApiException] con el mensaje REAL del backend en caso de
@@ -65,7 +80,10 @@ class AuthService {
       body: {'email': email, 'password': password},
     ) as Map<String, dynamic>;
     await _guardarSesion(data);
-    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+    return AuthUser.fromJson({
+      ...data['user'] as Map<String, dynamic>,
+      'empresa': data['empresa'],
+    });
   }
 
   /// Misma regla de fortaleza de contraseña que el resto del proyecto
@@ -73,14 +91,18 @@ class AuthService {
   /// validada tambien del lado servidor
   /// (`backend/app/security.py::validate_password_strength`); el registro
   /// deja al usuario logueado de una, igual que login.
-  Future<AuthUser> register(String nombre, String email, String password) async {
+  Future<AuthUser> register(
+      String nombre, String email, String password) async {
     final data = await _api.post(
       '/api/auth/register',
       auth: false,
       body: {'nombre': nombre, 'email': email, 'password': password},
     ) as Map<String, dynamic>;
     await _guardarSesion(data);
-    return AuthUser.fromJson(data['user'] as Map<String, dynamic>);
+    return AuthUser.fromJson({
+      ...data['user'] as Map<String, dynamic>,
+      'empresa': data['empresa'],
+    });
   }
 
   Future<void> logout() async {
@@ -103,11 +125,47 @@ class AuthService {
       // `/me` devuelve el mismo shape que `UserSummary`
       // (idUser/nombre/correo/rol/permisos) — se re-guarda por si cambio
       // algo (ej. permisos) desde el ultimo login.
-      await _storage.write(key: ApiConfig.userStorageKey, value: jsonEncode(data));
+      await _storage.write(
+          key: ApiConfig.userStorageKey, value: jsonEncode(data));
       return AuthUser.fromJson(data);
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) {
+        final cached = await _storage.read(key: ApiConfig.userStorageKey);
+        AuthUser? cachedUser;
+        if (cached != null && cached.isNotEmpty) {
+          try {
+            cachedUser =
+                AuthUser.fromJson(jsonDecode(cached) as Map<String, dynamic>);
+          } catch (_) {
+            cachedUser = null;
+          }
+        }
+        await logout();
+        if (cachedUser?.idEmpresa != null) {
+          await OfflineDatabaseRegistry.wipeForIdentity(
+            idEmpresa: cachedUser!.idEmpresa!,
+            idUser: cachedUser.idUser,
+          );
+        }
+        return null;
+      }
+      final storedUser = await _storage.read(key: ApiConfig.userStorageKey);
+      if (storedUser == null || storedUser.isEmpty) return null;
+      try {
+        return AuthUser.fromJson(
+            jsonDecode(storedUser) as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
     } catch (_) {
-      await logout();
-      return null;
+      final storedUser = await _storage.read(key: ApiConfig.userStorageKey);
+      if (storedUser == null || storedUser.isEmpty) return null;
+      try {
+        return AuthUser.fromJson(
+            jsonDecode(storedUser) as Map<String, dynamic>);
+      } catch (_) {
+        return null;
+      }
     }
   }
 }

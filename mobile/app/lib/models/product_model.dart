@@ -26,20 +26,6 @@ class Product {
   });
 }
 
-class AvatarModel {
-  final String id;
-  final String name;
-  final String height;
-  final String imageUrl;
-
-  const AvatarModel({
-    required this.id,
-    required this.name,
-    required this.height,
-    required this.imageUrl,
-  });
-}
-
 class OutfitLook {
   final String id;
   final String title;
@@ -204,27 +190,6 @@ const List<Product> dummyProducts = [
     description: 'Camisa de lino teñida en pieza, relajada, diseñada para usarse abierta como capa ligera o abotonada como sastrería independiente.',
     details: ['100% Lino Belga', 'Teñida en pieza', 'Bolsillo parche en pecho', 'Ribete curvo'],
     sizes: ['S', 'M', 'L', 'XL'],
-  ),
-];
-
-const List<AvatarModel> dummyAvatars = [
-  AvatarModel(
-    id: 'm1',
-    name: 'Andrógino 01',
-    height: '182cm',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWVEjDuUQ_X1l6JvlGJvjXr68r55cZvMqHoC2dCPjlzv-t0nbhrhq4Qt_M_rHaKnhnkmFT9VkhJw7xmdGauzKUYocKh5oT8KKBmmKVpNPtmgqEAlTXR8sVFtg1gPM6FDbsWDApruzAx205g6Z7njnP5tC_1lM3Jy_74UDWgFyxNjMIdyZ6nN-Hvr22utV3vMdZESNVnP_ZSU4cLhu9Ca4obAm09F1M04b9BiLkQp8f03j57smqHSsmVg',
-  ),
-  AvatarModel(
-    id: 'm2',
-    name: 'Arquitectónico 02',
-    height: '175cm',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAS3Pgr-0HgR4Y0c4vqpLSMDp_dsZDI731uVLYgd1CdUge1VDz-M8HK6l6G9T33kVjLXo4sWDNh7mtpECNpkpTXXBQ3EqIdPAk3CJHSqnIBJaNn-2cnXgZWUaKQTZjaC4VUkoYzOGZi1S7Xx1ip8ukqbqcnwR607-p6Q1v57oJxhCSlkKlK_ZF-IB0MEXjJqeVbYI1AuCUG8qynAJpvtY6spCP32IjzrkuWCo1L4cejXujb7-q3K9O4Fg',
-  ),
-  AvatarModel(
-    id: 'm3',
-    name: 'Minimalista 03',
-    height: '188cm',
-    imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAo6aSAMiLjGR6AThLG6TY56gqfRtEkLKK9c3iZFnD6ty3dvwxoVeI0KClyHsfkzpuMYiCl-mvAzhXIw3-ywvPRpllarVhAgWgOHpVwrZBtu8-5B88SAOg64fKMeuv5ngwYx6L7vM3NZKp9eTip_vE2jSGHL8_7QkAdFug926R6RAdrGzCHtMcPw0RIuiN85Ar5c2vvXXWZimGqchi3gfsylj_Nt0Wd5TqQ9s9wVLfgXauPCM1PGPFFTg',
   ),
 ];
 

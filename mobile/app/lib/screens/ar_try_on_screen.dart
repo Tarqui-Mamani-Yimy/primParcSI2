@@ -11,6 +11,7 @@ import '../services/api_client.dart';
 import '../services/customer_service.dart';
 import '../services/size_chart.dart';
 import '../theme/aether_theme.dart';
+import '../utils/fit_scale.dart';
 
 /// CU11 — Vestidor Virtual (RA), version acotada: camara real en vivo +
 /// deteccion de pose (hombros) para anclar la imagen del producto sobre el
@@ -20,8 +21,9 @@ import '../theme/aether_theme.dart';
 /// transparente que sigue el cuerpo, no una prenda "puesta" fotorealista.
 class ArTryOnScreen extends StatefulWidget {
   final Product product;
+  final String fitMode;
 
-  const ArTryOnScreen({super.key, required this.product});
+  const ArTryOnScreen({super.key, required this.product, required this.fitMode});
 
   @override
   State<ArTryOnScreen> createState() => _ArTryOnScreenState();
@@ -37,6 +39,8 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
   final CustomerService _customerService = CustomerService(ApiClient());
   int? _pecho;
   int? _cintura;
+  CameraLensDirection _lenteDeseado = CameraLensDirection.front;
+  bool _tieneCamaraTrasera = false;
 
   @override
   void initState() {
@@ -66,8 +70,9 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
         setState(() => _errorMessage = 'No se encontro ninguna camara disponible en este dispositivo.');
         return;
       }
+      _tieneCamaraTrasera = cameras.any((c) => c.lensDirection == CameraLensDirection.back);
       final camera = cameras.firstWhere(
-        (c) => c.lensDirection == CameraLensDirection.front,
+        (c) => c.lensDirection == _lenteDeseado,
         orElse: () => cameras.first,
       );
       final controller = CameraController(
@@ -103,6 +108,28 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
       if (!mounted) return;
       setState(() => _errorMessage = 'No se pudo iniciar la camara.');
     }
+  }
+
+  /// Alterna frontal/trasera. Solo cámara frontal obligaba a estirar el
+  /// brazo para encuadrar los hombros — con trasera, alguien mas puede
+  /// sostener el telefono o se usa frente a un espejo.
+  Future<void> _flipCamera() async {
+    final controller = _controller;
+    if (controller != null) {
+      if (controller.value.isStreamingImages) {
+        await controller.stopImageStream();
+      }
+      await controller.dispose();
+    }
+    if (!mounted) return;
+    setState(() {
+      _controller = null;
+      _lastPose = null;
+      _lenteDeseado = _lenteDeseado == CameraLensDirection.front
+          ? CameraLensDirection.back
+          : CameraLensDirection.front;
+    });
+    await _initCamera();
   }
 
   void _processCameraImage(CameraImage image) {
@@ -216,7 +243,12 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             ),
           ),
         if (pose != null)
-          _GarmentOverlay(previewSize: controller.value.previewSize, pose: pose, imageUrl: widget.product.imageUrl)
+          _GarmentOverlay(
+            previewSize: controller.value.previewSize,
+            pose: pose,
+            imageUrl: widget.product.imageUrl,
+            fitMode: widget.fitMode,
+          )
         else
           Positioned(
             bottom: 16,
@@ -230,6 +262,26 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
               ),
             ),
           ),
+        if (_tieneCamaraTrasera)
+          Positioned(
+            // 50, no 8: el botón de apagar RA de _MirrorCanvas (padre) vive
+            // siempre en top:8/right:8, incluso con la cámara activa — este
+            // botón va debajo para no superponerse.
+            top: 50,
+            right: 8,
+            child: Material(
+              color: Colors.black.withOpacity(0.6),
+              shape: const CircleBorder(),
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: _flipCamera,
+                child: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(Icons.cameraswitch_outlined, color: AetherTheme.sandLight, size: 18),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -239,8 +291,14 @@ class _GarmentOverlay extends StatelessWidget {
   final Size? previewSize;
   final Pose pose;
   final String imageUrl;
+  final String fitMode;
 
-  const _GarmentOverlay({required this.previewSize, required this.pose, required this.imageUrl});
+  const _GarmentOverlay({
+    required this.previewSize,
+    required this.pose,
+    required this.imageUrl,
+    required this.fitMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +329,9 @@ class _GarmentOverlay extends StatelessWidget {
         final midY = (left.y + right.y) / 2 * scaleY;
         final shoulderWidthPx = (left.x - right.x).abs() * scaleX;
 
-        final overlayWidth = shoulderWidthPx.clamp(20.0, constraints.maxWidth) * 2.2;
+        // Silueta y Caida (Relajado/Talla Real/Oversized) — factor visual
+        // aplicado sobre el ancho base, nunca sobre el veredicto de ajuste.
+        final overlayWidth = shoulderWidthPx.clamp(20.0, constraints.maxWidth) * 2.2 * fitModeFactor(fitMode);
         final overlayHeight = overlayWidth * 1.3;
 
         return Positioned(

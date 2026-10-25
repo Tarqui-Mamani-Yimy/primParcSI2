@@ -1,3 +1,4 @@
+import '../data/offline_cache.dart';
 import 'api_client.dart';
 
 /// Mobile Fase 3: `POST /api/reservations` / `GET /api/reservations`
@@ -34,7 +35,15 @@ class ReservationsService {
 
   /// Auto-escopado al Cliente autenticado del lado del servidor.
   Future<List<Map<String, dynamic>>> getMisReservas() async {
+    final cached = await OfflineCache.read('reservas');
+    if (cached.isNotEmpty ||
+        (!OfflineCache.isOnline && await OfflineCache.hasSnapshot)) {
+      return cached;
+    }
+    final cacheSession = OfflineCache.captureSession();
     final data = await _api.get('/api/reservations') as List;
-    return data.cast<Map<String, dynamic>>();
+    final rows = data.cast<Map<String, dynamic>>();
+    await OfflineCache.putAll('reservas', rows, session: cacheSession);
+    return rows;
   }
 }

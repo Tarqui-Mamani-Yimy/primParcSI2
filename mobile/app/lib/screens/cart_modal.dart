@@ -44,6 +44,7 @@ class _CartModalState extends State<CartModal> {
   }
 
   Future<void> _iniciarCheckout(AppState appState) async {
+    if (!appState.isOnline) return;
     final items = _itemsDesdeCarrito(appState);
     setState(() {
       _status = _CheckoutStatus.cobrando;
@@ -283,6 +284,11 @@ class _CartModalState extends State<CartModal> {
                         style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700),
                       ),
                     ),
+                  if (!appState.isOnline)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Text('El pago con tarjeta no está disponible sin conexión.'),
+                    ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -300,7 +306,7 @@ class _CartModalState extends State<CartModal> {
                         foregroundColor: AetherTheme.sandLight,
                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       ),
-                      onPressed: cobrando
+                      onPressed: cobrando || !appState.isOnline
                           ? null
                           : cobradoSinVenta
                               ? () => _reintentarVenta(appState)

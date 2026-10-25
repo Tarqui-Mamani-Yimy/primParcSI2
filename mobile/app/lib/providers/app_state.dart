@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../data/offline_database.dart';
 import '../models/product_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/offline_sync_service.dart';
 import '../services/products_service.dart';
 
 class CartItem {
@@ -21,9 +25,15 @@ class AppState extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   late final AuthService _authService = AuthService(_api);
   late final ProductsService _productsService = ProductsService(_api);
+  late final OfflineSyncService _offlineSyncService = OfflineSyncService(
+    _api,
+    onUnauthorized: _handleSyncUnauthorized,
+  );
+  bool _offlineListenerAttached = false;
 
   bool _isAuthenticated = false;
   bool get isAuthenticated => _isAuthenticated;
+  bool get isOnline => _offlineSyncService.isOnline;
 
   AuthUser? _currentUser;
   AuthUser? get currentUser => _currentUser;
@@ -49,6 +59,7 @@ class AppState extends ChangeNotifier {
     _currentUser = user;
     _isAuthenticated = user != null;
     notifyListeners();
+    if (user != null) await _activateOfflineSync(user);
     await loadProducts();
   }
 
@@ -60,6 +71,7 @@ class AppState extends ChangeNotifier {
       final user = await _authService.login(email, password);
       _currentUser = user;
       _isAuthenticated = true;
+      await _activateOfflineSync(user);
       return true;
     } on ApiException catch (e) {
       _authError = e.message;
@@ -81,6 +93,7 @@ class AppState extends ChangeNotifier {
       final user = await _authService.register(nombre, email, password);
       _currentUser = user;
       _isAuthenticated = true;
+      await _activateOfflineSync(user);
       return true;
     } on ApiException catch (e) {
       _authError = e.message;
@@ -98,10 +111,39 @@ class AppState extends ChangeNotifier {
   /// (el catalogo es publico). Esto es exclusivamente para un logout
   /// explicito de una sesion que si existia.
   Future<void> logout() async {
+    await _offlineSyncService.logoutAndWipe();
     await _authService.logout();
     _currentUser = null;
     _isAuthenticated = false;
     notifyListeners();
+  }
+
+  Future<void> _handleSyncUnauthorized() async {
+    await _offlineSyncService.logoutAndWipe();
+    await _authService.logout();
+    _currentUser = null;
+    _isAuthenticated = false;
+    notifyListeners();
+  }
+
+  Future<void> _activateOfflineSync(AuthUser user) async {
+    final idEmpresa = user.idEmpresa;
+    if (idEmpresa == null) {
+      await OfflineDatabaseRegistry.closeActiveDatabase();
+      return;
+    }
+    if (!_offlineListenerAttached) {
+      _offlineSyncService.addListener(_handleOfflineSyncChange);
+      _offlineListenerAttached = true;
+    }
+    await _offlineSyncService.startForIdentity(idEmpresa: idEmpresa, idUser: user.idUser);
+  }
+
+  void _handleOfflineSyncChange() {
+    notifyListeners();
+    if (!_offlineSyncService.isSyncing) {
+      unawaited(loadProducts());
+    }
   }
 
   Future<void> loadProducts({String? tipo, String? talla, String? color, String? q}) async {
@@ -140,9 +182,6 @@ class AppState extends ChangeNotifier {
   late Product _selectedTryOnProduct;
   Product get selectedTryOnProduct => _selectedTryOnProduct;
 
-  late AvatarModel _selectedAvatar;
-  AvatarModel get selectedAvatar => _selectedAvatar;
-
   String _fitMode = 'Talla Real';
   String get fitMode => _fitMode;
 
@@ -157,7 +196,6 @@ class AppState extends ChangeNotifier {
 
   AppState() {
     _selectedTryOnProduct = _products[0];
-    _selectedAvatar = dummyAvatars[0];
   }
 
   void setTabIndex(int index) {
@@ -213,12 +251,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectAvatar(AvatarModel avatar) {
-    _selectedAvatar = avatar;
-    runSimulation();
-    notifyListeners();
-  }
-
   void setFitMode(String mode) {
     _fitMode = mode;
     runSimulation();
@@ -263,5 +295,14 @@ class AppState extends ChangeNotifier {
     );
     _userProfile = _userProfile.copyWith(measurements: newMeasurements);
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    if (_offlineListenerAttached) {
+      _offlineSyncService.removeListener(_handleOfflineSyncChange);
+    }
+    _offlineSyncService.dispose();
+    super.dispose();
   }
 }

@@ -47,6 +47,7 @@ class MainNavigationShell extends StatelessWidget {
         backgroundColor: AetherTheme.sandLight.withOpacity(0.95),
         elevation: 0,
         actions: [
+          if (appState.isOnline)
           Stack(
             alignment: Alignment.center,
             children: [
@@ -85,12 +86,29 @@ class MainNavigationShell extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(width: 6),
+          if (appState.isOnline) const SizedBox(width: 6),
         ],
       ),
-      body: IndexedStack(
-        index: appState.currentTabIndex,
-        children: _screens,
+      body: Column(
+        children: [
+          if (!appState.isOnline)
+            Container(
+              width: double.infinity,
+              color: AetherTheme.charcoalDark,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              child: Text(
+                'Sin conexión — mostrando datos guardados',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 12),
+              ),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: appState.currentTabIndex,
+              children: _screens,
+            ),
+          ),
+        ],
       ),
       // Mobile Fase 4 (CU23): FAB persistente en el Scaffold unico que
       // envuelve las 5 tabs via IndexedStack — visible sin importar en que

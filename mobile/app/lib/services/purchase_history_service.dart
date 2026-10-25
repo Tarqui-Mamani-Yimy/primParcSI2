@@ -1,3 +1,4 @@
+import '../data/offline_cache.dart';
 import 'api_client.dart';
 import '../models/purchase_history_model.dart';
 
@@ -10,10 +11,15 @@ class PurchaseHistoryService {
   PurchaseHistoryService(this._api);
 
   Future<List<PurchaseHistoryItem>> getHistorialCompras() async {
+    final cached = await OfflineCache.read('compras');
+    if (cached.isNotEmpty ||
+        (!OfflineCache.isOnline && await OfflineCache.hasSnapshot)) {
+      return cached.map(PurchaseHistoryItem.fromJson).toList();
+    }
+    final cacheSession = OfflineCache.captureSession();
     final data = await _api.get('/api/purchase-history') as List;
-    return data
-        .cast<Map<String, dynamic>>()
-        .map(PurchaseHistoryItem.fromJson)
-        .toList();
+    final rows = data.cast<Map<String, dynamic>>();
+    await OfflineCache.replaceAll('compras', rows, session: cacheSession);
+    return rows.map(PurchaseHistoryItem.fromJson).toList();
   }
 }

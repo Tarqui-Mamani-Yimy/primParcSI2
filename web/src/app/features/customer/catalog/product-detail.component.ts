@@ -86,9 +86,7 @@ const API_URL = environment.apiUrl;
               <div class="flex flex-wrap gap-2">
                 <button
                   (click)="reservar.emit(p)"
-                  [disabled]="!syncService.isOnline()"
-                  [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
-                  class="flex-1 py-2.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                  class="flex-1 py-2.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
                 >
                   Reservar
                 </button>

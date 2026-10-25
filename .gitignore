@@ -43,3 +43,7 @@ odd/
 diagramSprint2.md
 plantilla_de_caso_de_uso.md
 modeloC4.md
+docs/
+propuesta.md
+test_multitenant_integration.py
+uso.md

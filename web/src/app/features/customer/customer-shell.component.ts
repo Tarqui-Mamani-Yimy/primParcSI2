@@ -1,20 +1,29 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { CartService } from '../../core/services/cart.service';
 import { SyncService } from '../../core/services/sync.service';
 import { PwaService } from '../../core/services/pwa.service';
+import { OutboxService } from '../../core/services/outbox.service';
 import { CustomerProfileComponent } from './profile/customer-profile.component';
 import { CatalogComponent } from './catalog/catalog.component';
 import { CustomerReservationsComponent } from './reservations/customer-reservations.component';
 import { ChatWidgetComponent } from '../../shared/components/chat-widget.component';
+import { PendingOpsModalComponent } from '../../shared/components/pending-ops-modal.component';
 
 export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
 @Component({
   selector: 'app-customer-shell',
   standalone: true,
-  imports: [CommonModule, CustomerProfileComponent, CatalogComponent, CustomerReservationsComponent, ChatWidgetComponent],
+  imports: [
+    CommonModule,
+    CustomerProfileComponent,
+    CatalogComponent,
+    CustomerReservationsComponent,
+    ChatWidgetComponent,
+    PendingOpsModalComponent,
+  ],
   template: `
     <div class="flex flex-col h-screen w-screen overflow-hidden bg-[#FAF8F5] text-[#17141A] font-sans">
 
@@ -60,6 +69,24 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
         </div>
 
         <div class="flex items-center space-x-3" *ngIf="authService.currentUser() as user">
+          <!-- Indicador de operaciones pendientes fuera de línea (OX5) -->
+          <button
+            *ngIf="outboxService.totalActiveCount() > 0"
+            (click)="showPendingModal.set(true)"
+            class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full border transition-colors cursor-pointer"
+            [class.bg-amber-50]="outboxService.failedCount() === 0"
+            [class.border-amber-200]="outboxService.failedCount() === 0"
+            [class.text-amber-800]="outboxService.failedCount() === 0"
+            [class.bg-rose-50]="outboxService.failedCount() > 0"
+            [class.border-rose-200]="outboxService.failedCount() > 0"
+            [class.text-rose-800]="outboxService.failedCount() > 0"
+            title="Ver operaciones pendientes de sincronización"
+          >
+            <span class="material-symbols-outlined text-[16px]" [class.animate-spin]="outboxService.isFlushing()">sync</span>
+            <span class="text-[11px] font-bold">{{ outboxService.totalActiveCount() }}</span>
+            <span *ngIf="outboxService.failedCount() > 0" class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+          </button>
+
           <button
             (click)="onAbrirCarrito()"
             class="relative p-2 rounded-lg hover:bg-[#F5EBF7] text-[#5A5561] hover:text-[#38133E] transition-colors cursor-pointer"
@@ -167,13 +194,22 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
       </main>
 
       <app-chat-widget></app-chat-widget>
+
+      <!-- Modal de operaciones pendientes (OX5) -->
+      <app-pending-ops-modal
+        *ngIf="showPendingModal()"
+        (close)="showPendingModal.set(false)"
+      />
     </div>
   `
 })
 export class CustomerShellComponent {
   currentView = signal<CustomerView>('catalog');
+  showPendingModal = signal<boolean>(false);
 
   @Output() logout = new EventEmitter<void>();
+
+  public outboxService = inject(OutboxService);
 
   constructor(
     public authService: AuthService,
@@ -183,6 +219,13 @@ export class CustomerShellComponent {
   ) {}
 
   onLogout() {
+    const pending = this.outboxService.totalActiveCount();
+    if (pending > 0) {
+      const msg = `Tenés ${pending} ${pending === 1 ? 'operación' : 'operaciones'} sin sincronizar. Si cerrás sesión, quedarán guardadas localmente hasta que vuelvas a iniciar sesión con este usuario. ¿Deseás continuar?`;
+      if (!window.confirm(msg)) {
+        return;
+      }
+    }
     this.authService.logout();
     this.logout.emit();
   }

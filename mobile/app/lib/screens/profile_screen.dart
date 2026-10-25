@@ -66,6 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditProfileDialog() {
+    if (!context.read<AppState>().isOnline) return;
     final perfil = _miPerfil;
     if (perfil == null) return;
     final nombreCtrl = TextEditingController(text: perfil.nombre);
@@ -101,6 +102,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: guardando
                   ? null
                   : () async {
+                      if (!context.read<AppState>().isOnline) {
+                        setDialogState(() {
+                          guardando = false;
+                          error = 'No se puede guardar el perfil sin conexión.';
+                        });
+                        return;
+                      }
                       setDialogState(() {
                         guardando = true;
                         error = null;
@@ -135,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showRecalibrateDialog(BuildContext context) {
+    if (!context.read<AppState>().isOnline) return;
     final perfil = _miPerfil;
     if (perfil == null) return;
     final hCtrl = TextEditingController(text: perfil.altura?.toString() ?? '');
@@ -172,6 +181,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: guardando
                   ? null
                   : () async {
+                      if (!context.read<AppState>().isOnline) {
+                        setDialogState(() {
+                          guardando = false;
+                          error = 'No se pueden guardar las medidas sin conexión.';
+                        });
+                        return;
+                      }
                       setDialogState(() {
                         guardando = true;
                         error = null;
@@ -267,8 +283,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (!_perfilLoading && _perfilError == null && _miPerfil != null)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 20, color: AetherTheme.charcoalDark),
-                  tooltip: 'Editar Perfil',
-                  onPressed: _showEditProfileDialog,
+                  tooltip: appState.isOnline ? 'Editar Perfil' : 'No disponible sin conexión',
+                  onPressed: appState.isOnline ? _showEditProfileDialog : null,
                 ),
             ],
           ),
@@ -374,7 +390,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       side: const BorderSide(color: AetherTheme.charcoalDark),
                       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                     ),
-                    onPressed: _miPerfil == null ? null : () => _showRecalibrateDialog(context),
+                    onPressed: _miPerfil == null || !appState.isOnline
+                        ? null
+                        : () => _showRecalibrateDialog(context),
                   ),
                 ),
               ],

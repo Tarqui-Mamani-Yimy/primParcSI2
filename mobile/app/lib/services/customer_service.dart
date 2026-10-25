@@ -1,3 +1,4 @@
+import '../data/offline_cache.dart';
 import 'api_client.dart';
 import '../models/customer_model.dart';
 
@@ -11,7 +12,11 @@ class CustomerService {
   CustomerService(this._api);
 
   Future<ClienteMe> getMiPerfil() async {
+    final cached = await OfflineCache.read('cliente');
+    if (cached.isNotEmpty) return ClienteMe.fromJson(cached.first);
+    final cacheSession = OfflineCache.captureSession();
     final data = await _api.get('/api/customers/me') as Map<String, dynamic>;
+    await OfflineCache.putAll('cliente', [data], session: cacheSession);
     return ClienteMe.fromJson(data);
   }
 
@@ -37,7 +42,10 @@ class CustomerService {
     if (cintura != null) body['cintura'] = cintura;
     if (tiro != null) body['tiro'] = tiro;
 
-    final data = await _api.put('/api/customers/me', body: body) as Map<String, dynamic>;
+    final cacheSession = OfflineCache.captureSession();
+    final data =
+        await _api.put('/api/customers/me', body: body) as Map<String, dynamic>;
+    await OfflineCache.putAll('cliente', [data], session: cacheSession);
     return ClienteMe.fromJson(data);
   }
 }

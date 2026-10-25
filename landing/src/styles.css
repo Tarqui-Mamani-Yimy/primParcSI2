@@ -1,0 +1,243 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #6E1D2D;
+  --color-primary-hover: #531320;
+  --color-primary-container: #581C35;
+  --color-on-primary: #FFFFFF;
+  --color-primary-fixed: #FFD9DC;
+  --color-primary-fixed-dim: #FFB2BA;
+  --color-on-primary-fixed: #400010;
+
+  --color-secondary: #C29B38;
+  --color-secondary-container: #F5E7C4;
+  --color-on-secondary: #FFFFFF;
+  --color-on-secondary-container: #765900;
+
+  --color-tertiary: #3B7A57;
+  --color-tertiary-container: #E3F3EB;
+  --color-tertiary-fixed-dim: #73B38C;
+  --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #0B4A2B;
+
+  --color-background: #FDFCF7;
+  --color-surface: #FAF8F5;
+  --color-surface-container-lowest: #FFFFFF;
+  --color-surface-container-low: #FAF8F5;
+  --color-surface-container: #F4F1EA;
+  --color-surface-container-high: #EDE8DE;
+  --color-surface-container-highest: #E4DDD1;
+  --color-outline: #887273;
+  --color-outline-variant: #E8E3D9;
+  --color-on-surface: #1C1618;
+  --color-on-surface-variant: #5C5254;
+  --color-inverse-surface: #1F1418;
+  --color-inverse-on-surface: #FDFCF7;
+
+  --font-display-hero: 'Plus Jakarta Sans', sans-serif;
+  --font-headline-xl: 'Plus Jakarta Sans', sans-serif;
+  --font-headline-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-headline-md: 'Plus Jakarta Sans', sans-serif;
+  --font-title-sm: 'Plus Jakarta Sans', sans-serif;
+  --font-body-lg: 'Plus Jakarta Sans', sans-serif;
+  --font-body-md: 'Plus Jakarta Sans', sans-serif;
+  --font-body-sm: 'Plus Jakarta Sans', sans-serif;
+  --font-label-caps: 'Space Grotesk', monospace;
+  --font-label-code: 'Space Grotesk', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #FDFCF7;
+  color: #1C1618;
+}
+
+html.dark {
+  background-color: #0F0A0C;
+  color: #FDFCF7;
+}
+
+body {
+  color: #1C1618;
+  background-color: #FDFCF7;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark {
+  background-color: #0F0A0C;
+  color: #FDFCF7;
+}
+
+/* Material symbols outlined helper */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Utility Classes */
+.font-display-hero {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+.text-display-hero {
+  font-size: clamp(32px, 5.2vw, 56px);
+  line-height: 1.12;
+}
+
+.font-headline-xl {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.text-headline-xl {
+  font-size: clamp(26px, 3.5vw, 36px);
+  line-height: 1.22;
+}
+
+.font-headline-lg {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+.text-headline-lg {
+  font-size: 28px;
+  line-height: 36px;
+}
+
+.font-headline-md {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.text-headline-md {
+  font-size: 22px;
+  line-height: 30px;
+}
+
+.font-title-sm {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 600;
+}
+.text-title-sm {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.font-body-lg {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+}
+.text-body-lg {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.font-body-md {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+}
+.text-body-md {
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.font-body-sm {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 400;
+}
+.text-body-sm {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.font-label-caps {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.text-label-caps {
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.font-label-code {
+  font-family: 'Space Grotesk', monospace;
+  font-weight: 500;
+}
+.text-label-code {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* Normal, elegant smooth entrance animations */
+@keyframes normalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-normal-fade {
+  animation: normalFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-normal-delay {
+  animation: normalFadeIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+
+/* Scroll reveal (see app/reveal-on-scroll.ts) */
+.reveal-pending {
+  opacity: 0;
+  transform: var(--reveal-from, translateY(2rem));
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.reveal-pending.reveal-visible {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 1s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms),
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1) var(--reveal-delay, 0ms);
+}
+
+[data-reveal='fade'] { --reveal-from: none; }
+[data-reveal='slide-left'] { --reveal-from: translateX(-2rem); }
+[data-reveal='slide-right'] { --reveal-from: translateX(2rem); }
+[data-reveal='slide-down'] { --reveal-from: translateY(-3rem); }
+[data-reveal='zoom'] { --reveal-from: scale(0.85); }
+[data-reveal='spin-left'] { --reveal-from: rotate(-12deg) translateY(2rem); }
+[data-reveal='spin-right'] { --reveal-from: rotate(12deg) translateY(2rem); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pending,
+  .reveal-pending.reveal-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

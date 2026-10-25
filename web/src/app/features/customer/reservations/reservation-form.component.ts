@@ -5,9 +5,10 @@ import { InventoryService } from '../../../core/services/inventory.service';
 import { ReservationsService } from '../../../core/services/reservations.service';
 import { PaymentsService } from '../../../core/services/payments.service';
 import { SyncService } from '../../../core/services/sync.service';
+import { OutboxService } from '../../../core/services/outbox.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
-import type { ProductOut, Reserva } from '../../../core/models';
+import type { ProductOut, Reserva, ReservaIn } from '../../../core/models';
 
 // Formato HH:MM (compatible con `time.fromisoformat` del backend).
 // El regex vive únicamente en este método de la clase — nunca como literal
@@ -103,11 +104,10 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
             </button>
             <button
               type="submit"
-              [disabled]="isSubmitting() || !canSubmit() || !syncService.isOnline()"
-              [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+              [disabled]="isSubmitting() || !canSubmit()"
               class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             >
-              {{ isSubmitting() ? 'Calculando depósito...' : 'Continuar al pago' }}
+              {{ isSubmitting() ? 'Procesando…' : (syncService.isOnline() ? 'Continuar al pago' : 'Solicitar reserva') }}
             </button>
           </div>
         </form>
@@ -185,6 +185,7 @@ export class ReservationFormComponent implements OnInit {
     private paymentsService: PaymentsService,
     private notificationService: NotificationService,
     public syncService: SyncService,
+    private outboxService: OutboxService,
   ) {}
 
   ngOnInit() {
@@ -218,13 +219,40 @@ export class ReservationFormComponent implements OnInit {
   }
 
   // Paso 1 -> 2: crea el Payment Intent del anticipo (proposito=reserva_deposito).
-  // El backend valida stock EN LA SUCURSAL ELEGIDA y aplica el piso minimo
-  // ANTES de llamar a Stripe (Requirement "Branch-Scoped Pre-Charge Stock
-  // Validation" / "Minimum Deposit Floor") — si falla, nunca se cobra nada.
+  // Si está sin conexión, encola la solicitud como pendiente en el Outbox (OX3).
   async onSubmit(): Promise<void> {
     if (!this.canSubmit()) return;
 
     this.submitError.set(null);
+
+    if (!this.syncService.isOnline()) {
+      // Offline reservation: queued as pending request without Stripe (OX3)
+      this.isSubmitting.set(true);
+      try {
+        const idLocal = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `res-${Date.now()}`;
+        const payload: ReservaIn = {
+          fecha: this.fecha,
+          horario: this.horario,
+          codigoSucursal: this.codigoSucursal!,
+          idProducto: this.producto.idProducto,
+          idMetPago: this.idMetPagoActual() ?? 0,
+        };
+
+        await this.outboxService.queueOp('reservation', payload, idLocal);
+
+        this.notificationService.success(
+          'Solicitud de reserva enviada',
+          'Tu solicitud quedó guardada fuera de línea como "Solicitud pendiente". Se confirmará al recuperar la conexión.'
+        );
+        this.cerrar.emit();
+      } catch (err: any) {
+        this.submitError.set(err?.message || 'Error al guardar la solicitud de reserva localmente.');
+      } finally {
+        this.isSubmitting.set(false);
+      }
+      return;
+    }
+
     this.isSubmitting.set(true);
 
     const intent = await this.paymentsService.crearIntent({

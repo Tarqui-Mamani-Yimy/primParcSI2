@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../models/product_model.dart';
 import '../models/sucursal_model.dart';
+import '../providers/app_state.dart';
 import '../services/api_client.dart';
 import '../services/locations_service.dart';
 import '../services/payments_service.dart';
@@ -128,6 +130,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   Future<void> _iniciarReserva() async {
+    if (!context.read<AppState>().isOnline) return;
     final sucursal = _sucursalSeleccionada;
     final fecha = _fechaSeleccionada;
     final horario = _horarioTexto;
@@ -238,6 +241,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   Future<void> _reintentarReserva() async {
+    if (!context.read<AppState>().isOnline) return;
     final idMetPago = _idMetPagoRetenido;
     final fecha = _fechaSeleccionada;
     final horario = _horarioTexto;
@@ -292,6 +296,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isOnline = context.watch<AppState>().isOnline;
     final cargandoSucursales = _status == _ReservaStatus.cargandoSucursales;
     final cobrando = _status == _ReservaStatus.cobrando;
     final cobradoSinReserva = _status == _ReservaStatus.cobradoSinReserva;
@@ -364,6 +369,10 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                   ],
 
                   const SizedBox(height: 28),
+                  if (!isOnline) ...[
+                    const Text('Las reservas y los pagos no están disponibles sin conexión.'),
+                    const SizedBox(height: 12),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     height: 48,
@@ -373,7 +382,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                         foregroundColor: AetherTheme.sandLight,
                         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                       ),
-                      onPressed: cobrando
+                      onPressed: !isOnline || cobrando
                           ? null
                           : cobradoSinReserva
                               ? _reintentarReserva

@@ -1,12 +1,14 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { OutboxService } from '../../core/services/outbox.service';
+import { PendingOpsModalComponent } from './pending-ops-modal.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PendingOpsModalComponent],
   template: `
     <header class="h-16 bg-white border-b border-[#E8E2DA] px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30">
 
@@ -41,6 +43,24 @@ import { AuthService } from '../../core/services/auth.service';
           <span class="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
           <span class="text-[11px] font-bold text-[#16A34A] uppercase tracking-tight">Bóveda Sincronizada</span>
         </div>
+
+        <!-- Indicador de operaciones pendientes fuera de línea (OX5) -->
+        <button
+          *ngIf="outboxService.totalActiveCount() > 0"
+          (click)="showPendingModal.set(true)"
+          class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full border transition-colors cursor-pointer"
+          [class.bg-amber-50]="outboxService.failedCount() === 0"
+          [class.border-amber-200]="outboxService.failedCount() === 0"
+          [class.text-amber-800]="outboxService.failedCount() === 0"
+          [class.bg-rose-50]="outboxService.failedCount() > 0"
+          [class.border-rose-200]="outboxService.failedCount() > 0"
+          [class.text-rose-800]="outboxService.failedCount() > 0"
+          title="Ver operaciones pendientes de sincronización"
+        >
+          <span class="material-symbols-outlined text-[16px]" [class.animate-spin]="outboxService.isFlushing()">sync</span>
+          <span class="text-[11px] font-bold">{{ outboxService.totalActiveCount() }} pendiente{{ outboxService.totalActiveCount() === 1 ? '' : 's' }}</span>
+          <span *ngIf="outboxService.failedCount() > 0" class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+        </button>
 
         <!-- Menú de usuario -->
         <div class="relative" *ngIf="authService.currentUser() as user">
@@ -165,11 +185,17 @@ import { AuthService } from '../../core/services/auth.service';
             [disabled]="!isChangePasswordValid()"
             class="w-full bg-[#38133E] hover:bg-[#260B2B] text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Actualizar Contraseña
+             Actualizar Contraseña
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Modal de operaciones pendientes (OX5) -->
+    <app-pending-ops-modal
+      *ngIf="showPendingModal()"
+      (close)="showPendingModal.set(false)"
+    />
   `
 })
 export class HeaderComponent {
@@ -177,8 +203,11 @@ export class HeaderComponent {
   @Output() toggleMobileMenu = new EventEmitter<void>();
   @Output() logout = new EventEmitter<void>();
 
+  public outboxService = inject(OutboxService);
+
   showUserDropdown = signal<boolean>(false);
   showChangePasswordModal = signal<boolean>(false);
+  showPendingModal = signal<boolean>(false);
 
   currentPassword = '';
   newPassword = '';
@@ -233,6 +262,13 @@ export class HeaderComponent {
 
   onLogout() {
     this.showUserDropdown.set(false);
+    const pending = this.outboxService.totalActiveCount();
+    if (pending > 0) {
+      const msg = `Tenés ${pending} ${pending === 1 ? 'operación' : 'operaciones'} sin sincronizar. Si cerrás sesión, quedarán guardadas localmente hasta que vuelvas a iniciar sesión con este usuario. ¿Deseás continuar?`;
+      if (!window.confirm(msg)) {
+        return;
+      }
+    }
     this.authService.logout();
     this.logout.emit();
   }

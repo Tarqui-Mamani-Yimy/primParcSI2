@@ -12,6 +12,7 @@ import type { Venta } from '../../core/models';
   selector: 'app-receipt-modal',
   standalone: true,
   imports: [CommonModule],
+  styles: [':host { display: block; }'],
   template: `
     <div
       class="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-xs flex items-center justify-center p-4"
@@ -25,7 +26,10 @@ import type { Venta } from '../../core/models';
           <div class="text-center border-b border-dashed border-[#E8E2DA] pb-4">
             <p class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">YouShop</p>
             <h3 class="text-base font-bold text-[#17141A] mt-1">Comprobante de Venta</h3>
-            <p class="text-xs text-[#5A5561] mt-1">N.º de comprobante: {{ venta.idVenta }}</p>
+            <p class="text-xs text-[#5A5561] mt-1">N.º de comprobante: {{ venta.comprobanteLocal || venta.idVenta }}</p>
+            <p *ngIf="venta.origen === 'offline'" class="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-0.5">
+              Comprobante provisional (fuera de línea)
+            </p>
             <p class="text-xs text-[#5A5561]">{{ venta.fecha }}</p>
           </div>
 

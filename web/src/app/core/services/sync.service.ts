@@ -1,8 +1,9 @@
-import { Injectable, effect, signal } from '@angular/core';
+import { Injectable, effect, signal, untracked } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Subject, firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from './auth.service';
 import { OfflineDbService } from './offline-db.service';
+import { OutboxService } from './outbox.service';
 import { environment } from '../../../environments/environment';
 import type { SyncPullResponse } from '../models';
 
@@ -26,11 +27,13 @@ export class SyncService {
   private now = signal<number>(Date.now());
   private periodicTimer?: ReturnType<typeof setInterval>;
   private tickTimer?: ReturnType<typeof setInterval>;
+  private lastSyncedUserKey = '';
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private offlineDbService: OfflineDbService,
+    private outboxService: OutboxService,
   ) {
     this.initLastSyncTime();
     this.initNetworkListeners();
@@ -93,12 +96,29 @@ export class SyncService {
 
   private initAuthEffect(): void {
     effect(() => {
-      const isAuth = this.authService.isAuthenticated();
       const user = this.authService.currentUser();
-      if (isAuth && user && this.isOnline()) {
-        // Trigger pull on authentication state update
-        this.pull();
+      const empresaId = user?.empresa?.idEmpresa || this.authService.empresa()?.idEmpresa || '';
+      const userKey = user ? `${empresaId}-${user.id}` : '';
+
+      if (!userKey) {
+        this.lastSyncedUserKey = '';
+        return;
       }
+
+      // Only trigger when the identity actually changed
+      if (userKey === this.lastSyncedUserKey) {
+        return;
+      }
+
+      this.lastSyncedUserKey = userKey;
+
+      // Untrack pull() execution so its signal reads (isOnline, isSyncing, isFlushing)
+      // do not register as reactive dependencies and create hot loops
+      untracked(() => {
+        if (this.isOnline()) {
+          this.pull();
+        }
+      });
     });
   }
 
@@ -121,6 +141,13 @@ export class SyncService {
 
     this.isSyncing.set(true);
     this.syncError.set(null);
+
+    // Flush outbox operations in FIFO order before pulling delta (OX1)
+    try {
+      await this.outboxService.flush();
+    } catch (err) {
+      console.warn('Outbox flush before pull failed:', err);
+    }
 
     try {
       const db = this.offlineDbService.getActiveDb();
@@ -161,7 +188,19 @@ export class SyncService {
               if (response.sucursales?.length) await db.sucursales.bulkPut(response.sucursales);
               if (response.inventario?.length) await db.inventario.bulkPut(response.inventario);
               if (response.reservas?.length) await db.reservas.bulkPut(response.reservas);
-              if (response.ventas?.length) await db.ventas.bulkPut(response.ventas);
+              if (response.ventas?.length) {
+                for (const sv of response.ventas) {
+                  if (sv.comprobanteLocal) {
+                    const provisional = await db.ventas
+                      .filter((v: any) => v.idVenta < 0 && v.comprobanteLocal === sv.comprobanteLocal)
+                      .toArray();
+                    for (const p of provisional) {
+                      await db.ventas.delete(p.idVenta);
+                    }
+                  }
+                }
+                await db.ventas.bulkPut(response.ventas);
+              }
               if (response.cliente) await db.cliente.put(response.cliente);
 
               // Delta tombstones
