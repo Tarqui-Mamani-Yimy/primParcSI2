@@ -158,7 +158,7 @@ export class SyncService {
    */
   async pull(): Promise<SyncPullResponse | null> {
     if (!this.isOnline()) return null;
-    if (!this.authService.isAuthenticated()) return null;
+    if (!this.hasTenantSession()) return null;
     if (this.isSyncing()) return null;
 
     this.isSyncing.set(true);
@@ -265,7 +265,16 @@ export class SyncService {
     }
   }
 
+  /**
+   * Offline sync only exists for users that belong to a tenant. The platform SuperAdmin has no
+   * empresa, so /api/sync rejects it with 403 "Tenant requerido"; syncing it would retry forever.
+   */
+  private hasTenantSession(): boolean {
+    return this.authService.isAuthenticated() && !this.authService.isSuperAdmin();
+  }
+
   private async syncAll(): Promise<void> {
+    if (!this.hasTenantSession()) return;
     await this.pushPending(false);
     await this.pull();
   }
@@ -347,7 +356,7 @@ export class SyncService {
   }
 
   async pushPending(refreshPull = true): Promise<SyncPushResult[]> {
-    if (!this.isOnline() || !this.authService.isAuthenticated() || this.isPushing()) return [];
+    if (!this.isOnline() || !this.hasTenantSession() || this.isPushing()) return [];
     this.isPushing.set(true);
     this.syncError.set(null);
     let results: SyncPushResult[] = [];
