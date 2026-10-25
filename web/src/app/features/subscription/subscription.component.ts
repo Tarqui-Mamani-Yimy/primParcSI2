@@ -690,9 +690,9 @@ export class SubscriptionComponent implements OnInit {
       nombre: 'Profesional',
       precioMensual: 1490,
       precioAnual: 14304,
-      descripcion: 'Potencia empresarial sin límites con inteligencia artificial y probador virtual.',
+      descripcion: 'Potencia empresarial con inteligencia artificial y probador virtual.',
       limites: { sucursales: 10, usuarios: null, productos: null },
-      features: ['Todo lo de Intermedio', 'Sucursales y productos ilimitados', 'Exportación de Datos', 'Asistente de IA', 'Probador Virtual'],
+      features: ['Todo lo de Intermedio', 'Hasta 10 sucursales y productos ilimitados', 'Exportación de Datos', 'Asistente de IA', 'Probador Virtual'],
     },
   ];
 
