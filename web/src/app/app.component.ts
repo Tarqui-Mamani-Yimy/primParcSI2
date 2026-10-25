@@ -27,6 +27,7 @@ import { IndicadoresComponent } from './features/indicadores/indicadores.compone
 import { SubscriptionComponent } from './features/subscription/subscription.component';
 import { PlatformComponent } from './features/platform/platform.component';
 import { DiscrepanciesComponent } from './features/inventory/discrepancies.component';
+import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
 
 @Component({
   selector: 'app-root',
@@ -50,6 +51,7 @@ import { DiscrepanciesComponent } from './features/inventory/discrepancies.compo
     CustomerShellComponent,
     StaffReservationsComponent,
     PosComponent,
+    SyncQueueComponent,
     LocationsComponent,
     ReportsComponent,
     IndicadoresComponent,
@@ -354,7 +356,13 @@ import { DiscrepanciesComponent } from './features/inventory/discrepancies.compo
 
             <app-pos
               *ngIf="activeView() === 'pos'"
+              (openSyncQueue)="onViewChange('sync-queue')"
             ></app-pos>
+
+            <app-sync-queue
+              *ngIf="activeView() === 'sync-queue'"
+              (navigate)="onViewChange($event)"
+            ></app-sync-queue>
 
             <app-locations
               *ngIf="activeView() === 'locations'"
@@ -546,6 +554,8 @@ export class AppComponent implements OnInit {
         return 'Reservas y Atención en Sucursal';
       case 'pos':
         return 'Caja — Venta Presencial';
+      case 'sync-queue':
+        return 'Cola de Sincronización';
       case 'locations':
         return 'Ciudades y Sucursales';
       case 'reports':

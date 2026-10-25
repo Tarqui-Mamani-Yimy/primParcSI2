@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -52,17 +52,26 @@ type Modalidad = 'efectivo' | 'tarjeta';
       </div>
 
       <div *ngIf="syncService.pendingCount() > 0" class="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-        <span>{{ syncService.pendingCount() }} operación(es) offline pendientes de sincronizar.</span>
-        <button (click)="syncService.pushPending()" [disabled]="!syncService.isOnline() || syncService.isPushing()"
-          class="rounded-md border border-amber-300 px-3 py-1.5 font-semibold disabled:opacity-50">
-          {{ syncService.isPushing() ? 'Sincronizando...' : 'Sincronizar ahora' }}
-        </button>
+        <div class="flex items-center space-x-2">
+          <span class="material-symbols-outlined text-[18px]">sync</span>
+          <span>{{ syncService.pendingCount() }} operación(es) offline pendientes de sincronizar.</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="openSyncQueue.emit()" class="font-semibold underline hover:text-amber-950 cursor-pointer">
+            Ver cola
+          </button>
+          <button type="button" (click)="syncService.pushPending()" [disabled]="!syncService.isOnline() || syncService.isPushing()"
+            class="rounded-md border border-amber-300 px-3 py-1.5 font-semibold disabled:opacity-50 cursor-pointer">
+            {{ syncService.isPushing() ? 'Sincronizando...' : 'Sincronizar ahora' }}
+          </button>
+        </div>
       </div>
       <div *ngFor="let conflict of syncService.syncConflicts()" class="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900">
         <span>Conflicto en {{ conflict.tipo }} {{ conflict.conflicto?.code || 'operación rechazada' }} ({{ conflict.idLocal }}).</span>
-        <div class="flex gap-2">
-          <button *ngIf="conflict.conflicto?.code === 'stock_insufficient'" (click)="syncService.retryConflict(conflict.idLocal)" [disabled]="!syncService.isOnline()" class="font-semibold underline disabled:opacity-50">Reintentar</button>
-          <button (click)="syncService.discardConflict(conflict.idLocal)" class="font-semibold underline">Descartar</button>
+        <div class="flex items-center gap-2">
+          <button type="button" (click)="openSyncQueue.emit()" class="font-semibold underline hover:text-rose-950 cursor-pointer">Ver detalle en cola</button>
+          <button type="button" *ngIf="conflict.conflicto?.code === 'stock_insufficient'" (click)="syncService.retryConflict(conflict.idLocal)" [disabled]="!syncService.isOnline()" class="font-semibold underline disabled:opacity-50 cursor-pointer">Reintentar</button>
+          <button type="button" (click)="syncService.discardConflict(conflict.idLocal)" class="font-semibold underline cursor-pointer">Descartar</button>
         </div>
       </div>
 
@@ -341,6 +350,8 @@ export class PosComponent implements OnInit {
     const id = this.selectedCliente();
     return this.customers().find(c => c.idCliente === id)?.nombre ?? null;
   });
+
+  @Output() openSyncQueue = new EventEmitter<void>();
 
   constructor(
     private http: HttpClient,

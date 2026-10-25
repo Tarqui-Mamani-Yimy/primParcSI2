@@ -35,6 +35,7 @@ export class SyncService {
   readonly isPushing = signal<boolean>(false);
   readonly pendingCount = signal<number>(0);
   readonly syncConflicts = signal<OfflineOperation[]>([]);
+  readonly queueOperations = signal<OfflineOperation[]>([]);
   readonly syncCompleted = new Subject<SyncPullResponse>();
   readonly offlineInventoryChanged = new Subject<void>();
 
@@ -48,12 +49,31 @@ export class SyncService {
     private offlineDbService: OfflineDbService,
     private notificationService: NotificationService,
   ) {
+    void this.initQueueOnStart();
     this.initLastSyncTime();
     this.initNetworkListeners();
     this.initAuthEffect();
     this.startPeriodicSync();
     this.startTicker();
-    void this.refreshPendingState();
+  }
+
+  private async initQueueOnStart(): Promise<void> {
+    await this.resetEnviadoToLocal();
+    await this.refreshPendingState();
+  }
+
+  async resetEnviadoToLocal(): Promise<void> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      await db.operacionesPendientes
+        .where('estado')
+        .equals('enviado')
+        .modify((op: OfflineOperation) => {
+          op.estado = 'local';
+        });
+    } catch (err) {
+      console.warn('Error resetting enviado ops to local:', err);
+    }
   }
 
   private async initLastSyncTime(): Promise<void> {
@@ -116,7 +136,7 @@ export class SyncService {
       if (userId && online && userId !== lastSyncedUserId) {
         lastSyncedUserId = userId;
         untracked(() => {
-          this.syncAll();
+          this.resetEnviadoToLocal().then(() => this.syncAll());
         });
       } else if (!userId) {
         lastSyncedUserId = null;
@@ -162,7 +182,7 @@ export class SyncService {
           'rw',
           [db.productos, db.sucursales, db.inventario, db.reservas, db.ventas, db.cliente, db.meta, db.operacionesPendientes],
           async () => {
-            const pending = await db.operacionesPendientes.where('estado').equals('pending').toArray();
+            const pending = await db.operacionesPendientes.where('estado').anyOf(['local', 'enviado']).toArray();
             const putInventory = async (rows: SyncPullResponse['inventario']) => {
               if (!rows.length) return;
               const projected = rows.map(row => {
@@ -295,7 +315,7 @@ export class SyncService {
           await db.inventario.put(row);
         }
         const operation: OfflineOperation = {
-          idLocal, tipo, estado: 'pending', creadoEn: new Date().toISOString(), payload,
+          idLocal, tipo, estado: 'local', creadoEn: new Date().toISOString(), payload,
         };
         await db.operacionesPendientes.add(operation);
       });
@@ -308,12 +328,19 @@ export class SyncService {
     }
   }
 
-  private async refreshPendingState(): Promise<void> {
+  async refreshPendingState(): Promise<void> {
     try {
       const operations = await this.offlineDbService.getActiveDb().operacionesPendientes.toArray();
-      this.pendingCount.set(operations.filter(item => item.estado === 'pending').length);
-      this.syncConflicts.set(operations.filter(item => item.estado === 'conflict'));
+      operations.sort((a, b) => new Date(b.creadoEn).getTime() - new Date(a.creadoEn).getTime());
+      this.queueOperations.set(operations);
+      this.pendingCount.set(
+        operations.filter(item => item.estado === 'local' || item.estado === 'enviado').length
+      );
+      this.syncConflicts.set(
+        operations.filter(item => item.estado === 'rechazado_conflicto')
+      );
     } catch {
+      this.queueOperations.set([]);
       this.pendingCount.set(0);
       this.syncConflicts.set([]);
     }
@@ -324,11 +351,21 @@ export class SyncService {
     this.isPushing.set(true);
     this.syncError.set(null);
     let results: SyncPushResult[] = [];
+    let pushedOperations: OfflineOperation[] = [];
     try {
       const db = this.offlineDbService.getActiveDb();
-      const operations = (await db.operacionesPendientes.where('estado').equals('pending').sortBy('creadoEn'))
+      const operations = (await db.operacionesPendientes.where('estado').anyOf(['local', 'enviado']).sortBy('creadoEn'))
         .slice(0, 100);
       if (!operations.length) return [];
+      pushedOperations = operations;
+
+      // Mark operations as 'enviado' during push
+      const ids = operations.map(item => item.idLocal);
+      await db.operacionesPendientes.where('idLocal').anyOf(ids).modify((op: OfflineOperation) => {
+        op.estado = 'enviado';
+      });
+      await this.refreshPendingState();
+
       const response = await firstValueFrom(this.http.post<{ results: SyncPushResult[] }>(
         `${API_URL}/api/sync/push`, { operations: operations.map(item => ({
           idLocal: item.idLocal, tipo: item.tipo, payload: item.payload,
@@ -337,18 +374,31 @@ export class SyncService {
       results = response.results ?? [];
 
       await db.transaction('rw', [db.operacionesPendientes, db.inventario, db.ventas, db.reservas], async () => {
+        const processedIds = new Set<string>();
         for (const result of results) {
+          processedIds.add(result.idLocal);
           const operation = await db.operacionesPendientes.get(result.idLocal);
           if (!operation) continue;
           if (result.inventario?.length) await db.inventario.bulkPut(result.inventario);
           if (result.status === 'synced') {
             if (result.venta) await db.ventas.put(result.venta as any);
             if (result.reserva) await db.reservas.put(result.reserva as any);
-            await db.operacionesPendientes.delete(result.idLocal);
+            operation.estado = 'confirmado';
+            delete operation.conflicto;
+            await db.operacionesPendientes.put(operation);
           } else {
-            operation.estado = 'conflict';
+            operation.estado = 'rechazado_conflicto';
             operation.conflicto = result.conflict ?? result.error ?? { code: 'sync_rejected' };
             await db.operacionesPendientes.put(operation);
+          }
+        }
+        for (const op of operations) {
+          if (!processedIds.has(op.idLocal)) {
+            const fresh = await db.operacionesPendientes.get(op.idLocal);
+            if (fresh && fresh.estado === 'enviado') {
+              fresh.estado = 'local';
+              await db.operacionesPendientes.put(fresh);
+            }
           }
         }
       });
@@ -365,17 +415,29 @@ export class SyncService {
       if (refreshPull && results.some(result => result.status === 'synced')) await this.pull();
       return results;
     } catch (error: any) {
+      if (pushedOperations.length > 0) {
+        try {
+          const db = this.offlineDbService.getActiveDb();
+          const ids = pushedOperations.map(item => item.idLocal);
+          await db.operacionesPendientes.where('idLocal').anyOf(ids).modify((op: OfflineOperation) => {
+            if (op.estado === 'enviado') {
+              op.estado = 'local';
+            }
+          });
+        } catch {}
+      }
       this.syncError.set(error?.message || 'No se pudieron sincronizar las operaciones pendientes.');
       return [];
     } finally {
       this.isPushing.set(false);
+      await this.refreshPendingState();
     }
   }
 
   async retryConflict(idLocal: string): Promise<SyncPushResult[]> {
     const db = this.offlineDbService.getActiveDb();
     const operation = await db.operacionesPendientes.get(idLocal);
-    if (!operation || operation.estado !== 'conflict') return [];
+    if (!operation || operation.estado !== 'rechazado_conflicto') return [];
     await db.transaction('rw', [db.inventario, db.operacionesPendientes], async () => {
       const items = operation.tipo === 'venta' ? operation.payload['items'] as { idProducto: number; cantidad: number }[]
         : [{ idProducto: operation.payload['idProducto'] as number, cantidad: 1 }];
@@ -388,10 +450,11 @@ export class SyncService {
           await db.inventario.put(row);
         }
       }
-      operation.estado = 'pending';
+      operation.estado = 'local';
       delete operation.conflicto;
       await db.operacionesPendientes.put(operation);
     });
+    this.offlineInventoryChanged.next();
     await this.refreshPendingState();
     return this.pushPending();
   }
@@ -399,6 +462,18 @@ export class SyncService {
   async discardConflict(idLocal: string): Promise<void> {
     await this.offlineDbService.getActiveDb().operacionesPendientes.delete(idLocal);
     await this.refreshPendingState();
+  }
+
+  async clearConfirmed(): Promise<number> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const count = await db.operacionesPendientes.where('estado').equals('confirmado').delete();
+      await this.refreshPendingState();
+      return count;
+    } catch (err) {
+      console.warn('Error al limpiar operaciones confirmadas:', err);
+      return 0;
+    }
   }
 
   /**

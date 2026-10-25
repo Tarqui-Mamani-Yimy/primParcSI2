@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { OutboxService } from '../../core/services/outbox.service';
+import { SyncService } from '../../core/services/sync.service';
 
 export type AppView =
   | 'dashboard'
@@ -18,7 +19,8 @@ export type AppView =
   | 'reports'
   | 'indicadores'
   | 'subscription'
-  | 'platform';
+  | 'platform'
+  | 'sync-queue';
 
 @Component({
   selector: 'app-sidebar',
@@ -300,6 +302,36 @@ export type AppView =
               <span class="font-medium tracking-tight">Caja</span>
             </button>
 
+            <!-- Cola de Sincronización (Gating: Cajero o Encargado de Sucursal) -->
+            <button
+              *ngIf="canViewSyncQueue"
+              (click)="selectView('sync-queue')"
+              [class.bg-ys-primary-soft]="currentView === 'sync-queue'"
+              [class.text-ys-primary]="currentView === 'sync-queue'"
+              [class.font-semibold]="currentView === 'sync-queue'"
+              [class.text-ys-muted]="currentView !== 'sync-queue'"
+              class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
+            >
+              <div class="flex items-center space-x-3 min-w-0">
+                <div
+                  [class.bg-ys-primary]="currentView === 'sync-queue'"
+                  [class.text-white]="currentView === 'sync-queue'"
+                  [class.bg-ys-surface]="currentView !== 'sync-queue'"
+                  [class.text-ys-muted]="currentView !== 'sync-queue'"
+                  class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+                >
+                  <span class="material-symbols-outlined text-[18px]">sync_alt</span>
+                </div>
+                <span class="font-medium tracking-tight truncate">Cola de Sincronización</span>
+              </div>
+              <span
+                *ngIf="syncService.pendingCount() > 0"
+                class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 shrink-0"
+              >
+                {{ syncService.pendingCount() }}
+              </span>
+            </button>
+
             <div class="pt-4 text-[10px] uppercase tracking-widest text-[#9B94A3] font-bold mb-2 px-2">
               Administración
             </div>
@@ -476,6 +508,7 @@ export class SidebarComponent {
   constructor(
     private authService: AuthService,
     private outboxService: OutboxService,
+    public syncService: SyncService,
   ) {}
 
   get isSuperAdmin(): boolean {
@@ -517,6 +550,11 @@ export class SidebarComponent {
   get canOpenPos(): boolean {
     const hasPerm = this.authService.currentUser()?.permisos.includes('venta.crear') ?? false;
     return hasPerm && this.authService.hasFeature('pos');
+  }
+
+  get canViewSyncQueue(): boolean {
+    const rol = this.authService.currentUser()?.rol;
+    return rol === 'Cajero' || rol === 'Encargado de Sucursal' || rol === 'Administrador';
   }
 
   get canViewReports(): boolean {

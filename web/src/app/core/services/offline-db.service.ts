@@ -49,13 +49,26 @@ export class YouShopDexie extends Dexie {
       operacionesPendientes: 'idLocal, tipo, estado, creadoEn',
       pending_ops: 'id, type, status, createdAt',
     });
+    this.version(4).stores({
+      operacionesPendientes: 'idLocal, tipo, estado, creadoEn',
+    }).upgrade(tx => {
+      return tx.table('operacionesPendientes').toCollection().modify((op: any) => {
+        if (op.estado === 'pending' || op.estado === 'enviado') {
+          op.estado = 'local';
+        } else if (op.estado === 'conflict') {
+          op.estado = 'rechazado_conflicto';
+        }
+      });
+    });
   }
 }
+
+export type OfflineOperationEstado = 'local' | 'enviado' | 'confirmado' | 'rechazado_conflicto';
 
 export interface OfflineOperation {
   idLocal: string;
   tipo: 'venta' | 'reserva';
-  estado: 'pending' | 'conflict';
+  estado: OfflineOperationEstado;
   creadoEn: string;
   payload: Record<string, any>;
   conflicto?: Record<string, any>;
@@ -186,8 +199,11 @@ export class OfflineDbService {
           .where('status')
           .anyOf(['pending', 'sending', 'failed'])
           .count();
-        const hasPendingOperations =
-          (await this.db.operacionesPendientes.count()) > 0 || unsyncedOutboxOps > 0;
+        const preservedCount = await this.db.operacionesPendientes
+          .where('estado')
+          .anyOf(['local', 'enviado', 'rechazado_conflicto'])
+          .count();
+        const hasPendingOperations = preservedCount > 0 || unsyncedOutboxOps > 0;
         await Promise.all([
           this.db.productos.clear(),
           this.db.sucursales.clear(),
