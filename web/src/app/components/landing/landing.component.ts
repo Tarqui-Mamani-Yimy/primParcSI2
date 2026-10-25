@@ -83,9 +83,9 @@ export class LandingComponent implements OnInit, OnDestroy {
 
   // Public plans from backend with decided fallbacks
   publicPlans = signal<PublicPlan[]>([
-    { codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: [], limites: { sucursales: 1, usuarios: 3, productos: 200 } },
+    { codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: [], limites: { sucursales: 2, usuarios: 3, productos: 200 } },
     { codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: [], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
-    { codigo: 'avanzado', nombre: 'Avanzado', precioMensual: 1490, precioAnual: 14304, features: [], limites: { sucursales: null, usuarios: null, productos: null } },
+    { codigo: 'avanzado', nombre: 'Profesional', precioMensual: 1490, precioAnual: 14304, features: [], limites: { sucursales: 10, usuarios: null, productos: null } },
   ]);
 
   getPlan(codigo: string): { monthly: number; annual: number; annualPerMonth: number } {
@@ -102,7 +102,7 @@ export class LandingComponent implements OnInit, OnDestroy {
     return { monthly: 290, annual: 2784, annualPerMonth: 232 };
   }
 
-  // Pricing calculations for 3 paid plans: Básico, Intermedio, Avanzado
+  // Pricing calculations for 3 paid plans: Básico, Intermedio, Profesional
   basicPrice = computed(() => {
     const p = this.getPlan('basico');
     return this.billingCycle() === 'monthly' ? `$${p.monthly}` : `$${p.annualPerMonth}`;
@@ -283,7 +283,7 @@ export class LandingComponent implements OnInit, OnDestroy {
   getSelectedPlanSummary() {
     const codigo = this.selectedPlanCode();
     const p = this.getPlan(codigo);
-    const nombre = codigo === 'basico' ? 'Plan Básico' : (codigo === 'intermedio' ? 'Plan Intermedio' : 'Plan Avanzado');
+    const nombre = codigo === 'basico' ? 'Plan Básico' : (codigo === 'intermedio' ? 'Plan Intermedio' : 'Plan Profesional');
     return {
       codigo,
       nombre,

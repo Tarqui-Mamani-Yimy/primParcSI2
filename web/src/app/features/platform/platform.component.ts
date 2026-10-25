@@ -87,7 +87,7 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
             </div>
           </div>
           <p class="text-3xl font-black text-[#38133E]">{{ plans().length }}</p>
-          <span class="text-xs text-[#5A5561] mt-1 block">Básico, Intermedio, Avanzado</span>
+          <span class="text-xs text-[#5A5561] mt-1 block">Básico, Intermedio, Profesional</span>
         </div>
       </div>
 
@@ -436,9 +436,9 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                 required
                 class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white text-[#17141A] cursor-pointer"
               >
-                <option value="basico">Plan Básico (1 sucursal, 3 usuarios, 200 productos)</option>
+                <option value="basico">Plan Básico (2 sucursales, 3 usuarios, 200 productos)</option>
                 <option value="intermedio">Plan Intermedio (5 sucursales, 15 usuarios, 2000 productos)</option>
-                <option value="avanzado">Plan Avanzado (Ilimitado + IA + Probador)</option>
+                <option value="avanzado">Plan Profesional (10 sucursales + IA + Probador)</option>
               </select>
             </div>
           </div>
@@ -527,10 +527,23 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
               [(ngModel)]="selectedPlanCode"
               class="w-full mt-1.5 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white text-[#17141A] cursor-pointer"
             >
-              <option value="basico">Plan Básico (1 sucursal, 3 usuarios, 200 productos)</option>
+              <option value="basico">Plan Básico (2 sucursales, 3 usuarios, 200 productos)</option>
               <option value="intermedio">Plan Intermedio (5 sucursales, 15 usuarios, 2000 productos)</option>
-              <option value="avanzado">Plan Avanzado (Ilimitado + IA + Probador)</option>
+              <option value="avanzado">Plan Profesional (10 sucursales + IA + Probador)</option>
             </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#17141A] uppercase tracking-wider">Vigencia hasta (opcional)</label>
+            <input
+              type="date"
+              [(ngModel)]="selectedFechaFin"
+              [disabled]="selectedEmpresa?.facturacion?.modo === 'stripe'"
+              class="w-full mt-1.5 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-xs focus:ring-2 focus:ring-[#38133E] focus:outline-none bg-white text-[#17141A] disabled:bg-[#F3EFEA] disabled:cursor-not-allowed"
+            />
+            <p class="text-[11px] text-[#5A5561] mt-1">
+              {{ selectedEmpresa?.facturacion?.modo === 'stripe' ? 'La vigencia de esta suscripción la gestiona Stripe.' : 'Déjalo vacío para mantener la vigencia actual.' }}
+            </p>
           </div>
 
           <div class="p-3 bg-[#FAF8F5] rounded-xl border border-[#E8E2DA] text-xs text-[#5A5561] space-y-1">
@@ -625,6 +638,7 @@ export class PlatformComponent implements OnInit {
 
   selectedEmpresa: PlatformEmpresa | null = null;
   selectedPlanCode = 'basico';
+  selectedFechaFin = '';
 
   // Form Crear
   newNombre = '';
@@ -655,9 +669,9 @@ export class PlatformComponent implements OnInit {
       error: () => {
         // Fallback para planes estándar de acuerdo al contrato
         this.plans.set([
-          { idPlan: 1, codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: ['pos', 'inventario', 'ventas', 'reportes'], limites: { sucursales: 1, usuarios: 3, productos: 200 } },
+          { idPlan: 1, codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: ['pos', 'inventario', 'ventas', 'reportes'], limites: { sucursales: 2, usuarios: 3, productos: 200 } },
           { idPlan: 2, codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados'], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
-          { idPlan: 3, codigo: 'avanzado', nombre: 'Avanzado', precioMensual: 1490, precioAnual: 14304, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador'], limites: { sucursales: null, usuarios: null, productos: null } }
+          { idPlan: 3, codigo: 'avanzado', nombre: 'Profesional', precioMensual: 1490, precioAnual: 14304, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador'], limites: { sucursales: 10, usuarios: null, productos: null } }
         ]);
       }
     });
@@ -763,6 +777,7 @@ export class PlatformComponent implements OnInit {
   openChangePlanModal(emp: PlatformEmpresa) {
     this.selectedEmpresa = emp;
     this.selectedPlanCode = emp.plan?.codigo || 'basico';
+    this.selectedFechaFin = emp.suscripcion?.fechaFin ?? '';
     this.showPlanModal.set(true);
   }
 
@@ -772,7 +787,10 @@ export class PlatformComponent implements OnInit {
     this.isSubmitting.set(true);
     const id = this.selectedEmpresa.idEmpresa;
 
-    this.platformService.changePlan(id, this.selectedPlanCode).subscribe({
+    const fechaFin = this.selectedFechaFin && this.selectedFechaFin !== this.selectedEmpresa.suscripcion?.fechaFin
+      ? this.selectedFechaFin
+      : undefined;
+    this.platformService.changePlan(id, this.selectedPlanCode, fechaFin).subscribe({
       next: () => {
         this.notificationService.success('Plan actualizado', `El plan de ${this.selectedEmpresa?.nombre} fue cambiado a ${this.selectedPlanCode}.`);
         this.isSubmitting.set(false);

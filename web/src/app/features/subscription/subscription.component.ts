@@ -672,7 +672,7 @@ export class SubscriptionComponent implements OnInit {
       precioMensual: 290,
       precioAnual: 2784,
       descripcion: 'Ideal para boutiques que inician su digitalización y operaciones.',
-      limites: { sucursales: 1, usuarios: 3, productos: 200 },
+      limites: { sucursales: 2, usuarios: 3, productos: 200 },
       features: ['Punto de Venta (POS)', 'Inventario Global', 'Ventas y Facturación', 'Reportes Básicos'],
     },
     {
@@ -687,11 +687,11 @@ export class SubscriptionComponent implements OnInit {
     },
     {
       codigo: 'avanzado',
-      nombre: 'Avanzado',
+      nombre: 'Profesional',
       precioMensual: 1490,
       precioAnual: 14304,
       descripcion: 'Potencia empresarial sin límites con inteligencia artificial y probador virtual.',
-      limites: { sucursales: null, usuarios: null, productos: null },
+      limites: { sucursales: 10, usuarios: null, productos: null },
       features: ['Todo lo de Intermedio', 'Sucursales y productos ilimitados', 'Exportación de Datos', 'Asistente de IA', 'Probador Virtual'],
     },
   ];

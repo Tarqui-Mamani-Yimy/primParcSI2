@@ -686,6 +686,8 @@ export interface UpdateEmpresaIn {
 
 export interface ChangePlanIn {
   codigoPlan: string;
+  /** CU26: optional validity end date (YYYY-MM-DD); rejected for Stripe-managed subscriptions. */
+  fechaFin?: string;
 }
 
 export interface ChangeEstadoIn {

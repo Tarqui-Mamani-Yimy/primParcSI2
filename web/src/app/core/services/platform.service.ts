@@ -35,8 +35,8 @@ export class PlatformService {
     return this.http.patch<PlatformEmpresa>(`${API_URL}/api/platform/empresas/${id}`, payload);
   }
 
-  changePlan(id: number, codigoPlan: string): Observable<unknown> {
-    const payload: ChangePlanIn = { codigoPlan };
+  changePlan(id: number, codigoPlan: string, fechaFin?: string): Observable<unknown> {
+    const payload: ChangePlanIn = fechaFin ? { codigoPlan, fechaFin } : { codigoPlan };
     return this.http.patch(`${API_URL}/api/platform/empresas/${id}/plan`, payload);
   }
 

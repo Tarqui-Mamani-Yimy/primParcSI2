@@ -42,6 +42,8 @@ class UpdateEmpresa(BaseModel):
 
 class ChangePlan(BaseModel):
     codigoPlan: str
+    # CU26: optional validity end date; Stripe-managed subscriptions take it from Stripe.
+    fechaFin: date | None = None
 
 
 class ChangeEstado(BaseModel):
@@ -173,9 +175,10 @@ async def change_plan(empresa_id: int, payload: ChangePlan, session: AsyncSessio
     plan = (await session.execute(select(Plan).where(Plan.codigo == payload.codigoPlan))).scalar_one_or_none()
     if plan is None:
         raise HTTPException(status_code=404, detail="Plan no encontrado")
+    if payload.fechaFin is not None and subscription.stripeSubscriptionId:
+        raise HTTPException(status_code=409, detail={"code": "vigencia_gestionada_por_stripe"})
     if subscription.stripeSubscriptionId:
         from app.config import get_settings
-        from fastapi import HTTPException
         import anyio
         from app import stripe_provider
 
@@ -194,8 +197,10 @@ async def change_plan(empresa_id: int, payload: ChangePlan, session: AsyncSessio
         except stripe_provider.StripeError as exc:
             raise HTTPException(status_code=502, detail={"code": "stripe_request_failed"}) from exc
     subscription.idPlan = plan.idPlan
+    if payload.fechaFin is not None:
+        subscription.fechaFin = payload.fechaFin
     await session.commit()
-    return {"codigoPlan": plan.codigo}
+    return {"codigoPlan": plan.codigo, "fechaFin": subscription.fechaFin}
 
 
 @platform.patch("/empresas/{empresa_id}/estado")
