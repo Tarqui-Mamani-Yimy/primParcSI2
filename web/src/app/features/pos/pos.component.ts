@@ -51,6 +51,21 @@ type Modalidad = 'efectivo' | 'tarjeta';
         </p>
       </div>
 
+      <div *ngIf="syncService.pendingCount() > 0" class="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        <span>{{ syncService.pendingCount() }} operación(es) offline pendientes de sincronizar.</span>
+        <button (click)="syncService.pushPending()" [disabled]="!syncService.isOnline() || syncService.isPushing()"
+          class="rounded-md border border-amber-300 px-3 py-1.5 font-semibold disabled:opacity-50">
+          {{ syncService.isPushing() ? 'Sincronizando...' : 'Sincronizar ahora' }}
+        </button>
+      </div>
+      <div *ngFor="let conflict of syncService.syncConflicts()" class="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900">
+        <span>Conflicto en {{ conflict.tipo }} {{ conflict.conflicto?.code || 'operación rechazada' }} ({{ conflict.idLocal }}).</span>
+        <div class="flex gap-2">
+          <button *ngIf="conflict.conflicto?.code === 'stock_insufficient'" (click)="syncService.retryConflict(conflict.idLocal)" [disabled]="!syncService.isOnline()" class="font-semibold underline disabled:opacity-50">Reintentar</button>
+          <button (click)="syncService.discardConflict(conflict.idLocal)" class="font-semibold underline">Descartar</button>
+        </div>
+      </div>
+
       <!-- Selección de sucursal y cliente -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-1">
@@ -207,11 +222,10 @@ type Modalidad = 'efectivo' | 'tarjeta';
         <button
           *ngIf="modalidad() === 'efectivo'"
           (click)="onConfirmarEfectivo()"
-          [disabled]="enviando() || !syncService.isOnline()"
-          [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+          [disabled]="enviando()"
           class="w-full px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
         >
-          {{ enviando() ? 'Procesando…' : 'Cobrar y registrar venta' }}
+          {{ enviando() ? 'Guardando...' : (syncService.isOnline() ? 'Cobrar y registrar venta' : 'Guardar venta offline') }}
         </button>
 
         <button
@@ -398,7 +412,7 @@ export class PosComponent implements OnInit {
     }
   }
 
-  async onBranchChange(codigoSucursal: number): Promise<void> {
+  async onBranchChange(codigoSucursal: number, refreshServer = true): Promise<void> {
     this.selectedBranch.set(codigoSucursal);
     this.branchPromptVisible.set(false);
     this.searchQuery.set('');
@@ -428,7 +442,7 @@ export class PosComponent implements OnInit {
       }
     } catch {}
 
-    if (this.syncService.isOnline()) {
+    if (refreshServer && this.syncService.isOnline()) {
       firstValueFrom(
         this.http.get<InventoryStockEntry[]>(`${API_URL}/api/inventory/stock`, {
           params: { codigoSucursal: String(codigoSucursal) },
@@ -546,16 +560,43 @@ export class PosComponent implements OnInit {
       return;
     }
     this.enviando.set(true);
-    this.estado.set('cobrando');
-    const metodo = await this.salesService.crearMetodoEfectivo(this.subtotalIndicativo());
-    if (!metodo) {
+    const codigoSucursal = this.selectedBranch();
+    const idCliente = this.selectedCliente();
+    if (codigoSucursal === null || idCliente === null) {
       this.enviando.set(false);
-      this.estado.set('ticket');
       return;
     }
-    this.idMetPagoActual.set(metodo.idMetPago);
-    this.montoCobrado.set(metodo.monto);
-    await this.intentarVenta();
+    const idLocal = await this.syncService.enqueueOfflineSale({
+      comprobanteLocal: `LOCAL-${crypto.randomUUID()}`,
+      fechaLocal: new Date().toISOString(),
+      codigoSucursal,
+      idCliente,
+      pago: { tipo: 'Efectivo', monto: this.subtotalIndicativo() },
+      items: this.ticketLines().map(line => ({ idProducto: line.idProducto, cantidad: line.cantidad })),
+    });
+    if (!idLocal) {
+      this.enviando.set(false);
+      this.notificationService.error('No se pudo guardar la venta', this.syncService.syncError() || 'Revisá el stock local e intentá de nuevo.');
+      return;
+    }
+
+    await this.onBranchChange(codigoSucursal, false);
+    const results = this.syncService.isOnline() ? await this.syncService.pushPending() : [];
+    this.enviando.set(false);
+    const result = results.find(item => item.idLocal === idLocal);
+    if (result?.status === 'synced' && result.venta) {
+      this.ventaCreada.set(result.venta as unknown as Venta);
+      this.estado.set('vendido');
+    } else {
+      if (result?.status === 'conflict' || result?.status === 'rejected') {
+        this.notificationService.error('La venta requiere revisión', `Quedó guardada para resolver: ${result.conflict?.['code'] ?? result.error?.['code'] ?? 'conflicto'}.`);
+      } else {
+        this.notificationService.warning('Venta pendiente', 'La venta quedó guardada en este dispositivo y se sincronizará al recuperar la conexión.');
+      }
+      this.ticketLines.set([]);
+      this.modalidad.set(null);
+      if (this.selectedBranch() !== null) await this.onBranchChange(this.selectedBranch()!, false);
+    }
   }
 
   // Re-valida el stock de cada línea contra branchStock() (ya filtrado por

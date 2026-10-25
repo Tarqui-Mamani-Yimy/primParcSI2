@@ -22,6 +22,7 @@ def test_sync_routes_are_registered():
     paths = {(route.path, method) for route in app.routes for method in (getattr(route, "methods", None) or set())}
     assert ("/api/sync/pull", "GET") in paths
     assert ("/api/sync/sales", "POST") in paths
+    assert ("/api/sync/push", "POST") in paths
 
 
 class _Result:

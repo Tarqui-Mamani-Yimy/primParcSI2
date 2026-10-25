@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../../core/services/inventory.service';
 import { ReservationsService } from '../../../core/services/reservations.service';
 import { PaymentsService } from '../../../core/services/payments.service';
+import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { SyncService } from '../../../core/services/sync.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
@@ -103,11 +104,10 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
             </button>
             <button
               type="submit"
-              [disabled]="isSubmitting() || !canSubmit() || !syncService.isOnline()"
-              [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+              [disabled]="isSubmitting() || !canSubmit()"
               class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             >
-              {{ isSubmitting() ? 'Calculando depósito...' : 'Continuar al pago' }}
+              {{ isSubmitting() ? 'Guardando...' : (!syncService.isOnline() ? 'Guardar reserva offline' : 'Continuar al pago') }}
             </button>
           </div>
         </form>
@@ -184,6 +184,7 @@ export class ReservationFormComponent implements OnInit {
     private reservationsService: ReservationsService,
     private paymentsService: PaymentsService,
     private notificationService: NotificationService,
+    private offlineDbService: OfflineDbService,
     public syncService: SyncService,
   ) {}
 
@@ -223,6 +224,51 @@ export class ReservationFormComponent implements OnInit {
   // Validation" / "Minimum Deposit Floor") — si falla, nunca se cobra nada.
   async onSubmit(): Promise<void> {
     if (!this.canSubmit()) return;
+
+    if (!this.syncService.isOnline()) {
+      this.submitError.set(null);
+      this.isSubmitting.set(true);
+      try {
+        const cachedClients = await this.offlineDbService.getActiveDb().cliente.toArray();
+        const client = cachedClients[0];
+        if (!client) {
+          this.submitError.set('No hay datos de cliente en caché. Conectate una vez antes de crear una reserva offline.');
+          return;
+        }
+        const idLocal = await this.syncService.enqueueOfflineReservation({
+          idCliente: client.idCliente,
+          fecha: this.fecha,
+          horario: this.horario,
+          codigoSucursal: this.codigoSucursal!,
+          idProducto: this.producto.idProducto,
+        });
+        if (!idLocal) {
+          this.submitError.set(this.syncService.syncError() || 'No se pudo guardar la reserva offline.');
+          return;
+        }
+        const reservation: Reserva = {
+          codigoReserva: -Date.now(),
+          fecha: this.fecha,
+          horario: this.horario,
+          estado: 'Pendiente de sincronización',
+          idCliente: client.idCliente,
+          codigoSucursal: this.codigoSucursal!,
+          idProducto: this.producto.idProducto,
+          producto_nombre: this.producto.nombre,
+          sucursal_nombre: null,
+          idMetPago: null,
+          montoDeposito: null,
+        };
+        this.estado.set('reservado');
+        this.notificationService.warning('Reserva guardada offline', 'Quedó pendiente de sincronización y se validará al recuperar la conexión.');
+        this.creada.emit(reservation);
+      } catch (error) {
+        this.submitError.set(error instanceof Error ? error.message : 'No se pudo guardar la reserva offline.');
+      } finally {
+        this.isSubmitting.set(false);
+      }
+      return;
+    }
 
     this.submitError.set(null);
     this.isSubmitting.set(true);

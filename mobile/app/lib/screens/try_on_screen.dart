@@ -72,7 +72,7 @@ class TryOnScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
+                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
                       border: Border.all(color: isSelected ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
                       borderRadius: BorderRadius.circular(2),
                     ),
@@ -119,7 +119,7 @@ class TryOnScreen extends StatelessWidget {
                     width: 85,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
+                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
                       border: Border.all(color: isSelected ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC), width: isSelected ? 1.5 : 1),
                       borderRadius: BorderRadius.circular(2),
                     ),
@@ -161,7 +161,7 @@ class TryOnScreen extends StatelessWidget {
                       height: 38,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withOpacity(0.6),
+                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
                         border: Border.all(color: isSel ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
                         borderRadius: BorderRadius.circular(2),
                       ),
@@ -197,7 +197,7 @@ class TryOnScreen extends StatelessWidget {
                       height: 38,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withOpacity(0.6),
+                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
                         border: Border.all(color: isSel ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
                         borderRadius: BorderRadius.circular(2),
                       ),
@@ -351,7 +351,7 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
               ),
               if (widget.isSimulatingTryOn)
                 Container(
-                  color: Colors.black.withOpacity(0.55),
+                  color: Colors.black.withValues(alpha: 0.55),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -391,9 +391,9 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -420,7 +420,7 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
               top: 8,
               right: 8,
               child: Material(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 shape: const CircleBorder(),
                 child: InkWell(
                   customBorder: const CircleBorder(),

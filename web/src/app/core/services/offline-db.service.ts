@@ -18,6 +18,7 @@ export class YouShopDexie extends Dexie {
   ventas!: Table<CachedVenta, number>;
   cliente!: Table<CachedCliente, number>;
   meta!: Table<CachedMeta, string>;
+  operacionesPendientes!: Table<OfflineOperation, string>;
 
   constructor(dbName: string) {
     super(dbName);
@@ -30,7 +31,26 @@ export class YouShopDexie extends Dexie {
       cliente: 'idCliente, idUser, idEmpresa',
       meta: 'key',
     });
+    this.version(2).stores({
+      productos: 'idProducto, nombre, tipo, talla, color, idColeccion, idProveedor, fechaActualizacion',
+      sucursales: 'codigoSucursal, nombre, idCiudad, idEmpresa',
+      inventario: 'idInv, idProducto, codigoSucursal, [codigoSucursal+idProducto], idEmpresa',
+      reservas: 'codigoReserva, idCliente, codigoSucursal, idProducto, estado, fecha',
+      ventas: 'idVenta, idCliente, fecha, origen, discrepanciaStock',
+      cliente: 'idCliente, idUser, idEmpresa',
+      meta: 'key',
+      operacionesPendientes: 'idLocal, tipo, estado, creadoEn',
+    });
   }
+}
+
+export interface OfflineOperation {
+  idLocal: string;
+  tipo: 'venta' | 'reserva';
+  estado: 'pending' | 'conflict';
+  creadoEn: string;
+  payload: Record<string, any>;
+  conflicto?: Record<string, any>;
 }
 
 /**
@@ -149,11 +169,12 @@ export class OfflineDbService {
   }
 
   /**
-   * Wipes all cached tables and deletes the IndexedDB instance on logout.
+   * Wipes user cache on logout but keeps queued operations until they sync.
    */
   async wipeOnLogout(): Promise<void> {
     if (this.db) {
       try {
+        const hasPendingOperations = (await this.db.operacionesPendientes.count()) > 0;
         await Promise.all([
           this.db.productos.clear(),
           this.db.sucursales.clear(),
@@ -163,8 +184,9 @@ export class OfflineDbService {
           this.db.cliente.clear(),
           this.db.meta.clear(),
         ]);
+        if (!hasPendingOperations) await this.db.operacionesPendientes.clear();
         this.db.close();
-        await this.db.delete();
+        if (!hasPendingOperations) await this.db.delete();
       } catch (err) {
         console.warn('Error wiping offline DB on logout:', err);
       } finally {

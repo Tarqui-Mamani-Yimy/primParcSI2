@@ -120,8 +120,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                         return Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.7),
-                            border: Border.all(color: const Color(0xFFCCC6BC).withOpacity(0.6)),
+                            color: Colors.white.withValues(alpha: 0.7),
+                            border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.6)),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Column(

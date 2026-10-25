@@ -16,6 +16,7 @@ export default defineConfig(() => {
         devOptions: {
           enabled: true,
           type: 'module',
+          suppressWarnings: true,
         },
         includeAssets: ['icons/icon.svg', 'favicon.ico'],
         manifest: {
