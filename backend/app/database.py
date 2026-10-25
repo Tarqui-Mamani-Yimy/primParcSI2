@@ -2,6 +2,8 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Session, with_loader_criteria
+from sqlalchemy.pool import NullPool
+from uuid import uuid4
 
 from app.config import get_settings
 from app.security import get_tenant, require_platform_admin, subscription_inactive_state
@@ -19,7 +21,18 @@ engine = create_async_engine(
     # statements nombrados por encima de esa (de ahi los nombres
     # "__asyncpg_stmt_N__" en el error); hay que apagar tambien esta con
     # "prepared_statement_cache_size" o el error persiste bajo concurrencia.
-    connect_args={"statement_cache_size": 0, "prepared_statement_cache_size": 0},
+    # Aun sin cache, asyncpg numera los statements por conexion
+    # ("__asyncpg_stmt_N__") y, detras del pooler, dos conexiones logicas
+    # comparten la misma conexion fisica, asi que los numeros chocan
+    # (DuplicatePreparedStatementError). Un nombre UUID por statement lo evita,
+    # y NullPool deja el pooling en manos de Supavisor (receta oficial de
+    # SQLAlchemy para PgBouncer).
+    poolclass=NullPool,
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid4()}__",
+    },
 )
 
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
