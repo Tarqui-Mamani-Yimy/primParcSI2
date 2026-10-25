@@ -34,6 +34,7 @@ class AppState extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool get isAuthenticated => _isAuthenticated;
   bool get isOnline => _offlineSyncService.isOnline;
+  bool get isSyncing => _offlineSyncService.isSyncing;
 
   AuthUser? _currentUser;
   AuthUser? get currentUser => _currentUser;
@@ -136,7 +137,8 @@ class AppState extends ChangeNotifier {
       _offlineSyncService.addListener(_handleOfflineSyncChange);
       _offlineListenerAttached = true;
     }
-    await _offlineSyncService.startForIdentity(idEmpresa: idEmpresa, idUser: user.idUser);
+    await _offlineSyncService.startForIdentity(
+        idEmpresa: idEmpresa, idUser: user.idUser);
   }
 
   void _handleOfflineSyncChange() {
@@ -146,12 +148,14 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> loadProducts({String? tipo, String? talla, String? color, String? q}) async {
+  Future<void> loadProducts(
+      {String? tipo, String? talla, String? color, String? q}) async {
     _productsLoading = true;
     _productsError = null;
     notifyListeners();
     try {
-      final real = await _productsService.getProducts(tipo: tipo, talla: talla, color: color, q: q);
+      final real = await _productsService.getProducts(
+          tipo: tipo, talla: talla, color: color, q: q);
       _products
         ..clear()
         ..addAll(real);
@@ -205,7 +209,8 @@ class AppState extends ChangeNotifier {
 
   int get totalCartCount => _cart.fold(0, (sum, item) => sum + item.quantity);
 
-  double get cartSubtotal => _cart.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity));
+  double get cartSubtotal => _cart.fold(
+      0.0, (sum, item) => sum + (item.product.price * item.quantity));
 
   void addToCart(Product product, String size) {
     final existingIndex = _cart.indexWhere(

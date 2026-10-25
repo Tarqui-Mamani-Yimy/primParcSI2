@@ -216,7 +216,19 @@ class OfflineDatabase extends _$OfflineDatabase {
       case 'inventario':
         await (delete(inventarioCache)..where((row) => row.id.isIn(keys))).go();
       case 'reservas':
-        await (delete(reservasCache)..where((row) => row.id.isIn(keys))).go();
+        final rows = await select(reservasCache).get();
+        final keysToDelete = <String>{...keys};
+        for (final row in rows) {
+          final payload =
+              Map<String, dynamic>.from(jsonDecode(row.payload) as Map);
+          final codigoReserva = payload['codigoReserva'];
+          if (codigoReserva != null &&
+              keys.contains(codigoReserva.toString())) {
+            keysToDelete.add(row.id);
+          }
+        }
+        await (delete(reservasCache)..where((row) => row.id.isIn(keysToDelete)))
+            .go();
       case 'ventas':
         await (delete(ventasCache)..where((row) => row.id.isIn(keys))).go();
       case 'cliente':
@@ -275,7 +287,7 @@ class OfflineDatabase extends _$OfflineDatabase {
       'productos' => row['idProducto'],
       'sucursales' => row['codigoSucursal'],
       'inventario' => row['idInv'],
-      'reservas' => row['codigoReserva'],
+      'reservas' => row['idLocal'] ?? row['codigoReserva'],
       'ventas' => row['idVenta'],
       'cliente' => row['idCliente'] ?? 'profile',
       'compras' =>

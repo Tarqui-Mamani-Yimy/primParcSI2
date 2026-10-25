@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -85,6 +86,12 @@ class OfflineSyncService extends ChangeNotifier {
     _isSyncing = true;
     notifyListeners();
     try {
+      await _pushPendingReservations(api, database);
+      if (generation != _sessionGeneration ||
+          !identical(
+              database, _database ?? OfflineDatabaseRegistry.activeDatabase)) {
+        return;
+      }
       final since = await database.readLastServerTime();
       final payload = await api.get('/api/sync/pull', query: {
         if (since != null) 'since': since
@@ -142,15 +149,93 @@ class OfflineSyncService extends ChangeNotifier {
     }
   }
 
+  Future<void> _pushPendingReservations(
+      ApiClient api, OfflineDatabase database) async {
+    final reservations = await database.readRows('reservas');
+    final pending = reservations
+        .where(
+            (row) => row['syncStatus'] == 'pending' && row['idLocal'] is String)
+        .toList();
+    if (pending.isEmpty) return;
+
+    try {
+      final response = await api.post('/api/sync/push', body: {
+        'operations': pending
+            .map((row) => {
+                  'idLocal': row['idLocal'],
+                  'tipo': 'reserva',
+                  'payload': {
+                    'idLocal': row['idLocal'],
+                    'idCliente': row['idCliente'],
+                    'fecha': row['fecha'],
+                    'horario': row['horario'],
+                    'codigoSucursal': row['codigoSucursal'],
+                    'idProducto': row['idProducto'],
+                  },
+                })
+            .toList(),
+      }).timeout(const Duration(seconds: 15)) as Map<String, dynamic>;
+      final results = response['results'];
+      if (results is! List) return;
+      for (final item in results) {
+        if (item is! Map) continue;
+        final result = Map<String, dynamic>.from(item);
+        final idLocal = result['idLocal'];
+        if (idLocal is! String) continue;
+        Map<String, dynamic>? local;
+        for (final row in pending) {
+          if (row['idLocal'] == idLocal) {
+            local = row;
+            break;
+          }
+        }
+        if (local == null) continue;
+
+        final status = result['status'];
+        if (status == 'synced') {
+          final serverReservation = result['reserva'] is Map
+              ? Map<String, dynamic>.from(result['reserva'] as Map)
+              : <String, dynamic>{};
+          await database.putRow('reservas', {
+            ...local,
+            ...serverReservation,
+            'idLocal': idLocal,
+            'estado': 'confirmada',
+            'syncStatus': 'synced',
+            'syncReason': null,
+          });
+        } else if (status == 'conflict' || status == 'rejected') {
+          final reason = status == 'rejected'
+              ? result['error'] ?? {'code': 'unknown'}
+              : result['conflict'] ?? {'code': 'unknown'};
+          await database.putRow('reservas', {
+            ...local,
+            'estado': status == 'conflict' ? 'conflicto' : 'rechazada',
+            'syncStatus': status,
+            'syncReason': reason is String ? reason : jsonEncode(reason),
+          });
+        }
+      }
+    } catch (_) {
+      // Conserva la operación pendiente; el próximo ciclo reusa el mismo UUID.
+    }
+  }
+
   Future<void> applyPull(Map<String, dynamic> payload,
       {OfflineDatabase? database}) async {
     final target =
         database ?? _database ?? OfflineDatabaseRegistry.activeDatabase;
     if (target == null) throw StateError('Offline database is not active');
+    final localReservations = (await target.readRows('reservas'))
+        .where((row) => row['idLocal'] != null)
+        .toList();
 
     await target.transaction(() async {
       if (payload['full'] == true) {
         await target.clearCachedTables();
+        for (final reservation in localReservations) {
+          await target.putRow('reservas', reservation);
+        }
       }
 
       for (final collection in _collections) {
@@ -164,6 +249,27 @@ class OfflineSyncService extends ChangeNotifier {
         if (rows is List) {
           for (final row in rows) {
             if (row is Map<String, dynamic>) {
+              if (collection == 'reservas') {
+                final serverId = row['codigoReserva'];
+                Map<String, dynamic>? matchingLocal;
+                for (final local in localReservations) {
+                  if (local['codigoReserva'] == serverId) {
+                    matchingLocal = local;
+                    break;
+                  }
+                }
+                if (matchingLocal != null) {
+                  await target.putRow('reservas', {
+                    ...matchingLocal,
+                    ...row,
+                    'idLocal': matchingLocal['idLocal'],
+                    'estado': matchingLocal['estado'] ?? row['estado'],
+                    'syncStatus': matchingLocal['syncStatus'] ?? 'synced',
+                    'syncReason': matchingLocal['syncReason'],
+                  });
+                  continue;
+                }
+              }
               await target.putRow(collection, row);
             }
           }

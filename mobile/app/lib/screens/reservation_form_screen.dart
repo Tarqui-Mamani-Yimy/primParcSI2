@@ -23,7 +23,13 @@ import '../theme/aether_theme.dart';
 /// verificado, se retiene `idMetPago` para reintentar SIN volver a cobrar
 /// (mismo criterio que `web/.../reservation-form.component.ts`, ya probado
 /// esta sesion).
-enum _ReservaStatus { idle, cargandoSucursales, cobrando, cobradoSinReserva, error }
+enum _ReservaStatus {
+  idle,
+  cargandoSucursales,
+  cobrando,
+  cobradoSinReserva,
+  error
+}
 
 /// `HH:MM` — compatible con `time.fromisoformat` del backend. En un metodo
 /// dedicado, no repetido inline (mismo criterio que la web).
@@ -42,7 +48,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   final ApiClient _api = ApiClient();
   late final LocationsService _locationsService = LocationsService(_api);
   late final PaymentsService _paymentsService = PaymentsService(_api);
-  late final ReservationsService _reservationsService = ReservationsService(_api);
+  late final ReservationsService _reservationsService =
+      ReservationsService(_api);
 
   _ReservaStatus _status = _ReservaStatus.cargandoSucursales;
   String? _errorMessage;
@@ -130,11 +137,19 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   Future<void> _iniciarReserva() async {
-    if (!context.read<AppState>().isOnline) return;
+    if (!context.read<AppState>().isOnline) {
+      await _registrarReservaOffline();
+      return;
+    }
     final sucursal = _sucursalSeleccionada;
     final fecha = _fechaSeleccionada;
     final horario = _horarioTexto;
-    if (sucursal == null || fecha == null || horario == null || !_formularioValido) return;
+    if (sucursal == null ||
+        fecha == null ||
+        horario == null ||
+        !_formularioValido) {
+      return;
+    }
 
     setState(() {
       _status = _ReservaStatus.cobrando;
@@ -166,7 +181,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       await Stripe.instance.presentPaymentSheet();
 
       final paymentIntentId = intent['paymentIntentId'] as String;
-      final verificado = await _paymentsService.verificarIntent(paymentIntentId);
+      final verificado =
+          await _paymentsService.verificarIntent(paymentIntentId);
 
       final pagado = verificado['pagado'] == true;
       final idMetPago = verificado['idMetPago'] as int?;
@@ -181,13 +197,15 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
         return;
       }
 
-      await _crearReserva(idMetPago, fechaTexto, horario, sucursal.codigoSucursal, idProducto);
+      await _crearReserva(
+          idMetPago, fechaTexto, horario, sucursal.codigoSucursal, idProducto);
     } on StripeException catch (e) {
       // Misma nota que cart_modal.dart: `e.error.localizedMessage` no
       // verificado contra pub.dev en esta sesion (sin toolchain).
       setState(() {
         _status = _ReservaStatus.error;
-        _errorMessage = e.error.localizedMessage ?? 'El pago fue cancelado o rechazado (${e.error.code}).';
+        _errorMessage = e.error.localizedMessage ??
+            'El pago fue cancelado o rechazado (${e.error.code}).';
       });
     } on ApiException catch (e) {
       setState(() {
@@ -198,6 +216,58 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       setState(() {
         _status = _ReservaStatus.error;
         _errorMessage = 'No se pudo completar la reserva. Intenta de nuevo.';
+      });
+    }
+  }
+
+  Future<void> _registrarReservaOffline() async {
+    final sucursal = _sucursalSeleccionada;
+    final fecha = _fechaSeleccionada;
+    final horario = _horarioTexto;
+    if (sucursal == null ||
+        fecha == null ||
+        horario == null ||
+        !_formularioValido) {
+      return;
+    }
+    setState(() {
+      _status = _ReservaStatus.cobrando;
+      _errorMessage = null;
+    });
+    try {
+      final reserva = await _reservationsService.crearReservaOffline(
+        fecha: DateFormat('yyyy-MM-dd').format(fecha),
+        horario: horario,
+        codigoSucursal: sucursal.codigoSucursal,
+        idProducto: int.parse(widget.product.id),
+      );
+      if (!mounted) return;
+      setState(() => _status = _ReservaStatus.idle);
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Reserva guardada sin conexión'),
+          content: Text(
+            'La reserva de ${reserva['fecha']} quedó pendiente de confirmación. Se enviará cuando vuelva la conexión.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _status = _ReservaStatus.error;
+        _errorMessage = error is StateError
+            ? error.message.toString()
+            : 'No se pudo guardar la reserva en este dispositivo.';
       });
     }
   }
@@ -234,19 +304,27 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     } catch (_) {
       setState(() {
         _status = _ReservaStatus.cobradoSinReserva;
-        _errorMessage = 'Deposito confirmado, pero no pudimos registrar la reserva.';
+        _errorMessage =
+            'Deposito confirmado, pero no pudimos registrar la reserva.';
         _idMetPagoRetenido = idMetPago;
       });
     }
   }
 
   Future<void> _reintentarReserva() async {
-    if (!context.read<AppState>().isOnline) return;
+    if (!context.read<AppState>().isOnline) {
+      return;
+    }
     final idMetPago = _idMetPagoRetenido;
     final fecha = _fechaSeleccionada;
     final horario = _horarioTexto;
     final sucursal = _sucursalSeleccionada;
-    if (idMetPago == null || fecha == null || horario == null || sucursal == null) return;
+    if (idMetPago == null ||
+        fecha == null ||
+        horario == null ||
+        sucursal == null) {
+      return;
+    }
     setState(() => _status = _ReservaStatus.cobrando);
     await _crearReserva(
       idMetPago,
@@ -263,20 +341,27 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       builder: (_) => AlertDialog(
         backgroundColor: AetherTheme.sandLight,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('Reserva confirmada', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+        title: Text('Reserva confirmada',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Reserva #${reserva['codigoReserva']}', style: GoogleFonts.sourceSerif4(fontSize: 14)),
-            Text('${reserva['fecha']} • ${reserva['horario']}', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF7B776E))),
+            Text('Reserva #${reserva['codigoReserva']}',
+                style: GoogleFonts.sourceSerif4(fontSize: 14)),
+            Text('${reserva['fecha']} • ${reserva['horario']}',
+                style: GoogleFonts.outfit(
+                    fontSize: 12, color: const Color(0xFF7B776E))),
             if (reserva['sucursal_nombre'] != null)
-              Text('${reserva['sucursal_nombre']}', style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF7B776E))),
+              Text('${reserva['sucursal_nombre']}',
+                  style: GoogleFonts.outfit(
+                      fontSize: 12, color: const Color(0xFF7B776E))),
             if (reserva['montoDeposito'] != null) ...[
               const SizedBox(height: 8),
               Text(
                 'Deposito: \$${(reserva['montoDeposito'] as num).toStringAsFixed(2)}',
-                style: GoogleFonts.sourceSerif4(fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.sourceSerif4(
+                    fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ],
@@ -307,70 +392,106 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AetherTheme.charcoalDark),
-        title: Text('Reservar', style: GoogleFonts.outfit(color: AetherTheme.charcoalDark, fontWeight: FontWeight.w600)),
+        title: Text('Reservar',
+            style: GoogleFonts.outfit(
+                color: AetherTheme.charcoalDark, fontWeight: FontWeight.w600)),
       ),
       body: cargandoSucursales
-          ? const Center(child: CircularProgressIndicator(color: AetherTheme.charcoalDark))
+          ? const Center(
+              child: CircularProgressIndicator(color: AetherTheme.charcoalDark))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.product.name, style: GoogleFonts.sourceSerif4(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text(widget.product.name,
+                      style: GoogleFonts.sourceSerif4(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
                   Text(
                     'Deposito del 10% para reservar esta prenda en tienda.',
-                    style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF7B776E)),
+                    style: GoogleFonts.outfit(
+                        fontSize: 12, color: const Color(0xFF7B776E)),
                   ),
                   const SizedBox(height: 24),
-
-                  Text('SUCURSAL', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+                  Text('SUCURSAL',
+                      style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: const Color(0xFF7B776E))),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<Sucursal>(
                     initialValue: _sucursalSeleccionada,
                     isExpanded: true,
-                    decoration: const InputDecoration(border: UnderlineInputBorder(borderSide: BorderSide(color: AetherTheme.outline))),
+                    decoration: const InputDecoration(
+                        border: UnderlineInputBorder(
+                            borderSide:
+                                BorderSide(color: AetherTheme.outline))),
                     items: _sucursales
-                        .map((s) => DropdownMenuItem(value: s, child: Text('${s.nombre} — ${s.ciudad}', overflow: TextOverflow.ellipsis)))
+                        .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text('${s.nombre} — ${s.ciudad}',
+                                overflow: TextOverflow.ellipsis)))
                         .toList(),
-                    onChanged: cobrando ? null : (s) => setState(() => _sucursalSeleccionada = s),
+                    onChanged: cobrando
+                        ? null
+                        : (s) => setState(() => _sucursalSeleccionada = s),
                   ),
                   const SizedBox(height: 20),
-
-                  Text('FECHA', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+                  Text('FECHA',
+                      style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: const Color(0xFF7B776E))),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: cobrando ? null : _seleccionarFecha,
                     child: InputDecorator(
-                      decoration: const InputDecoration(border: UnderlineInputBorder(borderSide: BorderSide(color: AetherTheme.outline))),
+                      decoration: const InputDecoration(
+                          border: UnderlineInputBorder(
+                              borderSide:
+                                  BorderSide(color: AetherTheme.outline))),
                       child: Text(
-                        _fechaSeleccionada != null ? DateFormat('dd/MM/yyyy').format(_fechaSeleccionada!) : 'Seleccionar fecha',
+                        _fechaSeleccionada != null
+                            ? DateFormat('dd/MM/yyyy')
+                                .format(_fechaSeleccionada!)
+                            : 'Seleccionar fecha',
                         style: GoogleFonts.sourceSerif4(fontSize: 14),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  Text('HORARIO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+                  Text('HORARIO',
+                      style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          color: const Color(0xFF7B776E))),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: cobrando ? null : _seleccionarHorario,
                     child: InputDecorator(
-                      decoration: const InputDecoration(border: UnderlineInputBorder(borderSide: BorderSide(color: AetherTheme.outline))),
+                      decoration: const InputDecoration(
+                          border: UnderlineInputBorder(
+                              borderSide:
+                                  BorderSide(color: AetherTheme.outline))),
                       child: Text(
                         _horarioTexto ?? 'Seleccionar horario',
                         style: GoogleFonts.sourceSerif4(fontSize: 14),
                       ),
                     ),
                   ),
-
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    Text(_errorMessage!, style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700)),
+                    Text(_errorMessage!,
+                        style: GoogleFonts.outfit(
+                            fontSize: 11, color: Colors.red.shade700)),
                   ],
-
                   const SizedBox(height: 28),
                   if (!isOnline) ...[
-                    const Text('Las reservas y los pagos no están disponibles sin conexión.'),
+                    const Text(
+                        'La reserva quedará pendiente de confirmación; no se cobrará el depósito sin conexión.'),
                     const SizedBox(height: 12),
                   ],
                   SizedBox(
@@ -380,22 +501,35 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AetherTheme.charcoalDark,
                         foregroundColor: AetherTheme.sandLight,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
                       ),
-                      onPressed: !isOnline || cobrando
+                      onPressed: cobrando
                           ? null
-                          : cobradoSinReserva
+                          : isOnline && cobradoSinReserva
                               ? _reintentarReserva
-                              : (_formularioValido ? _iniciarReserva : null),
+                              : (_formularioValido
+                                  ? (isOnline
+                                      ? _iniciarReserva
+                                      : _registrarReservaOffline)
+                                  : null),
                       child: cobrando
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AetherTheme.sandLight),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AetherTheme.sandLight),
                             )
                           : Text(
-                              cobradoSinReserva ? 'REINTENTAR REGISTRO' : 'RESERVAR (PAGAR DEPOSITO)',
-                              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                              cobradoSinReserva
+                                  ? 'REINTENTAR REGISTRO'
+                                  : isOnline
+                                      ? 'RESERVAR (PAGAR DEPÓSITO)'
+                                      : 'RESERVAR SIN CONEXIÓN',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5),
                             ),
                     ),
                   ),
