@@ -259,11 +259,14 @@ class OfflineSyncService extends ChangeNotifier {
                   }
                 }
                 if (matchingLocal != null) {
+                  final isSynced = matchingLocal['syncStatus'] == 'synced';
                   await target.putRow('reservas', {
                     ...matchingLocal,
                     ...row,
                     'idLocal': matchingLocal['idLocal'],
-                    'estado': matchingLocal['estado'] ?? row['estado'],
+                    'estado': isSynced
+                        ? row['estado']
+                        : matchingLocal['estado'] ?? row['estado'],
                     'syncStatus': matchingLocal['syncStatus'] ?? 'synced',
                     'syncReason': matchingLocal['syncReason'],
                   });

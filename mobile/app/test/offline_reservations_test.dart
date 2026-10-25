@@ -51,6 +51,20 @@ class _FakeApi implements ApiClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+Future<void> _waitForSync(OfflineSyncService sync) async {
+  while (sync.isSyncing) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+}
+
+Future<void> _waitForPush(_FakeApi api) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 3));
+  while (api.pushes.isEmpty && DateTime.now().isBefore(deadline)) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  expect(api.pushes, isNotEmpty);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -114,7 +128,7 @@ void main() {
     await sync.startForIdentity(idEmpresa: 1, idUser: 10);
     connectivity.current = [ConnectivityResult.wifi];
     connectivity.changes.add(connectivity.current);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForPush(api);
 
     expect(api.pushes, hasLength(1));
     final operation = (api.pushes.single['operations'] as List).single as Map;
@@ -137,7 +151,7 @@ void main() {
         }
       ]
     });
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForSync(sync);
 
     final saved =
         (await OfflineDatabaseRegistry.activeDatabase!.readRows('reservas'))
@@ -157,7 +171,7 @@ void main() {
     await sync.startForIdentity(idEmpresa: 1, idUser: 10);
     connectivity.current = [ConnectivityResult.wifi];
     connectivity.changes.add(connectivity.current);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForPush(api);
     final first = api.pushes.single;
     api.responses.single.complete({'results': []});
     while (sync.isSyncing) {
@@ -176,7 +190,7 @@ void main() {
     expect((api.pushes[1]['operations'] as List).single['idLocal'],
         (first['operations'] as List).single['idLocal']);
     api.responses[1].complete({'results': []});
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForSync(sync);
   });
 
   test('records conflicts without deleting the reservation payload', () async {
@@ -189,7 +203,7 @@ void main() {
     await sync.startForIdentity(idEmpresa: 1, idUser: 10);
     connectivity.current = [ConnectivityResult.wifi];
     connectivity.changes.add(connectivity.current);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForPush(api);
     api.responses.single.complete({
       'results': [
         {
@@ -199,7 +213,7 @@ void main() {
         }
       ]
     });
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForSync(sync);
 
     final saved =
         (await OfflineDatabaseRegistry.activeDatabase!.readRows('reservas'))
@@ -221,7 +235,7 @@ void main() {
     await sync.startForIdentity(idEmpresa: 1, idUser: 10);
     connectivity.current = [ConnectivityResult.wifi];
     connectivity.changes.add(connectivity.current);
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForPush(api);
     api.responses.single.complete({
       'results': [
         {
@@ -231,7 +245,7 @@ void main() {
         }
       ]
     });
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await _waitForSync(sync);
 
     final saved =
         (await OfflineDatabaseRegistry.activeDatabase!.readRows('reservas'))
@@ -268,7 +282,33 @@ void main() {
     expect(rows, hasLength(1));
     expect(rows.single['idLocal'], 'aaaa-aaaa-aaaa-aaaa');
     expect(rows.single['syncStatus'], 'synced');
-    expect(rows.single['estado'], 'confirmada');
+    expect(rows.single['estado'], 'Pendiente');
+  });
+
+  test('incremental pull refreshes synced reservation state from the server',
+      () async {
+    final database = OfflineDatabaseRegistry.activeDatabase!;
+    await database.putRow('reservas', {
+      'idLocal': 'aaaa-aaaa-aaaa-aaaa',
+      'codigoReserva': 55,
+      'estado': 'confirmada',
+      'syncStatus': 'synced',
+      'syncReason': null,
+      'fecha': '2026-11-01',
+    });
+
+    await sync.applyPull({
+      'full': false,
+      'reservas': [
+        {'codigoReserva': 55, 'estado': 'Cancelada'},
+      ],
+      'deleted': <String, dynamic>{},
+    });
+
+    final rows = await database.readRows('reservas');
+    expect(rows, hasLength(1));
+    expect(rows.single['idLocal'], 'aaaa-aaaa-aaaa-aaaa');
+    expect(rows.single['estado'], 'Cancelada');
   });
 
   test('incremental reservation tombstone removes the local UUID-keyed row',
