@@ -221,6 +221,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   Future<void> _registrarReservaOffline() async {
+    // Never orphan a charged deposit: it must be retried online with its idMetPago.
+    if (_idMetPagoRetenido != null) return;
     final sucursal = _sucursalSeleccionada;
     final fecha = _fechaSeleccionada;
     final horario = _horarioTexto;
@@ -506,8 +508,9 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                       ),
                       onPressed: cobrando
                           ? null
-                          : isOnline && cobradoSinReserva
-                              ? _reintentarReserva
+                          : cobradoSinReserva
+                              // A charged deposit can only be retried online with the retained payment.
+                              ? (isOnline ? _reintentarReserva : null)
                               : (_formularioValido
                                   ? (isOnline
                                       ? _iniciarReserva
