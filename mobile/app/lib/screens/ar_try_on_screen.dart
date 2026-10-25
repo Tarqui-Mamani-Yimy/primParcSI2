@@ -235,7 +235,7 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             right: 56,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(2)),
               child: Text(
                 resultado.mensaje,
                 style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 10.5, fontWeight: FontWeight.w600),
@@ -257,7 +257,7 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(2)),
                 child: Text('Buscando tu silueta...', style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 11)),
               ),
             ),

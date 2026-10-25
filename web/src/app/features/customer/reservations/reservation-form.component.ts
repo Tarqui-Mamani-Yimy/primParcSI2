@@ -4,11 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { InventoryService } from '../../../core/services/inventory.service';
 import { ReservationsService } from '../../../core/services/reservations.service';
 import { PaymentsService } from '../../../core/services/payments.service';
+import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { SyncService } from '../../../core/services/sync.service';
-import { OutboxService } from '../../../core/services/outbox.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
-import type { ProductOut, Reserva, ReservaIn } from '../../../core/models';
+import type { ProductOut, Reserva } from '../../../core/models';
 
 // Formato HH:MM (compatible con `time.fromisoformat` del backend).
 // El regex vive únicamente en este método de la clase — nunca como literal
@@ -107,7 +107,7 @@ type EstadoReserva = 'iniciando' | 'cobrando' | 'cobrado_sin_reserva' | 'reserva
               [disabled]="isSubmitting() || !canSubmit()"
               class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50"
             >
-              {{ isSubmitting() ? 'Procesando…' : (syncService.isOnline() ? 'Continuar al pago' : 'Solicitar reserva') }}
+              {{ isSubmitting() ? 'Guardando...' : (!syncService.isOnline() ? 'Guardar reserva offline' : 'Continuar al pago') }}
             </button>
           </div>
         </form>
@@ -184,8 +184,8 @@ export class ReservationFormComponent implements OnInit {
     private reservationsService: ReservationsService,
     private paymentsService: PaymentsService,
     private notificationService: NotificationService,
+    private offlineDbService: OfflineDbService,
     public syncService: SyncService,
-    private outboxService: OutboxService,
   ) {}
 
   ngOnInit() {
@@ -219,40 +219,58 @@ export class ReservationFormComponent implements OnInit {
   }
 
   // Paso 1 -> 2: crea el Payment Intent del anticipo (proposito=reserva_deposito).
-  // Si está sin conexión, encola la solicitud como pendiente en el Outbox (OX3).
+  // El backend valida stock EN LA SUCURSAL ELEGIDA y aplica el piso minimo
+  // ANTES de llamar a Stripe (Requirement "Branch-Scoped Pre-Charge Stock
+  // Validation" / "Minimum Deposit Floor") — si falla, nunca se cobra nada.
   async onSubmit(): Promise<void> {
     if (!this.canSubmit()) return;
 
-    this.submitError.set(null);
-
     if (!this.syncService.isOnline()) {
-      // Offline reservation: queued as pending request without Stripe (OX3)
+      this.submitError.set(null);
       this.isSubmitting.set(true);
       try {
-        const idLocal = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `res-${Date.now()}`;
-        const payload: ReservaIn = {
+        const cachedClients = await this.offlineDbService.getActiveDb().cliente.toArray();
+        const client = cachedClients[0];
+        if (!client) {
+          this.submitError.set('No hay datos de cliente en caché. Conectate una vez antes de crear una reserva offline.');
+          return;
+        }
+        const idLocal = await this.syncService.enqueueOfflineReservation({
+          idCliente: client.idCliente,
           fecha: this.fecha,
           horario: this.horario,
           codigoSucursal: this.codigoSucursal!,
           idProducto: this.producto.idProducto,
-          idMetPago: this.idMetPagoActual() ?? 0,
+        });
+        if (!idLocal) {
+          this.submitError.set(this.syncService.syncError() || 'No se pudo guardar la reserva offline.');
+          return;
+        }
+        const reservation: Reserva = {
+          codigoReserva: -Date.now(),
+          fecha: this.fecha,
+          horario: this.horario,
+          estado: 'Pendiente de sincronización',
+          idCliente: client.idCliente,
+          codigoSucursal: this.codigoSucursal!,
+          idProducto: this.producto.idProducto,
+          producto_nombre: this.producto.nombre,
+          sucursal_nombre: null,
+          idMetPago: null,
+          montoDeposito: null,
         };
-
-        await this.outboxService.queueOp('reservation', payload, idLocal);
-
-        this.notificationService.success(
-          'Solicitud de reserva enviada',
-          'Tu solicitud quedó guardada fuera de línea como "Solicitud pendiente". Se confirmará al recuperar la conexión.'
-        );
-        this.cerrar.emit();
-      } catch (err: any) {
-        this.submitError.set(err?.message || 'Error al guardar la solicitud de reserva localmente.');
+        this.estado.set('reservado');
+        this.notificationService.warning('Reserva guardada offline', 'Quedó pendiente de sincronización y se validará al recuperar la conexión.');
+        this.creada.emit(reservation);
+      } catch (error) {
+        this.submitError.set(error instanceof Error ? error.message : 'No se pudo guardar la reserva offline.');
       } finally {
         this.isSubmitting.set(false);
       }
       return;
     }
 
+    this.submitError.set(null);
     this.isSubmitting.set(true);
 
     const intent = await this.paymentsService.crearIntent({

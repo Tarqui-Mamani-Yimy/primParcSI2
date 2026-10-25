@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
-import '../models/product_model.dart';
 
 class CollectionScreen extends StatefulWidget {
   const CollectionScreen({super.key});
@@ -43,7 +42,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 label: Text(f, style: GoogleFonts.outfit(fontSize: 11, fontWeight: isSel ? FontWeight.bold : FontWeight.w500)),
                 selected: isSel,
                 selectedColor: AetherTheme.charcoalDark,
-                backgroundColor: Colors.white.withOpacity(0.6),
+                backgroundColor: Colors.white.withValues(alpha: 0.6),
                 side: const BorderSide(color: Color(0xFFCCC6BC), width: 0.6),
                 labelStyle: TextStyle(color: isSel ? AetherTheme.sandLight : AetherTheme.charcoalDark),
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -106,8 +105,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
               final product = filteredProducts[index];
               return Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.5),
-                  border: Border.all(color: const Color(0xFFCCC6BC).withOpacity(0.5)),
+                  color: Colors.white.withValues(alpha: 0.5),
+                  border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.5)),
                   borderRadius: BorderRadius.circular(2),
                 ),
                 padding: const EdgeInsets.all(8),
@@ -132,7 +131,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                             left: 4,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              color: AetherTheme.sandLight.withOpacity(0.9),
+                              color: AetherTheme.sandLight.withValues(alpha: 0.9),
                               child: Text(
                                 product.category.toUpperCase(),
                                 style: GoogleFonts.outfit(fontSize: 7.5, fontWeight: FontWeight.bold),

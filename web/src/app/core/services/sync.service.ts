@@ -2,13 +2,23 @@ import { Injectable, effect, signal, untracked } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Subject, firstValueFrom, timeout } from 'rxjs';
 import { AuthService } from './auth.service';
-import { OfflineDbService } from './offline-db.service';
-import { OutboxService } from './outbox.service';
+import { OfflineDbService, type OfflineOperation } from './offline-db.service';
+import { NotificationService } from './notification.service';
 import { environment } from '../../../environments/environment';
 import type { SyncPullResponse } from '../models';
 
 const API_URL = environment.apiUrl;
-const SYNC_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
+const SYNC_INTERVAL_MS = 30 * 1000; // 30 seconds
+
+export interface SyncPushResult {
+  idLocal: string;
+  status: 'synced' | 'conflict' | 'rejected';
+  venta?: Record<string, any>;
+  reserva?: Record<string, any>;
+  inventario?: any[];
+  conflict?: Record<string, any>;
+  error?: Record<string, any>;
+}
 
 /**
  * Service orchestrating local-first sync pull, connectivity tracking,
@@ -22,29 +32,28 @@ export class SyncService {
   readonly isSyncing = signal<boolean>(false);
   readonly lastSyncTime = signal<Date | null>(null);
   readonly syncError = signal<string | null>(null);
+  readonly isPushing = signal<boolean>(false);
+  readonly pendingCount = signal<number>(0);
+  readonly syncConflicts = signal<OfflineOperation[]>([]);
   readonly syncCompleted = new Subject<SyncPullResponse>();
+  readonly offlineInventoryChanged = new Subject<void>();
 
   private now = signal<number>(Date.now());
   private periodicTimer?: ReturnType<typeof setInterval>;
   private tickTimer?: ReturnType<typeof setInterval>;
-  private lastSyncedUserKey = '';
 
   constructor(
     private http: HttpClient,
     private authService: AuthService,
     private offlineDbService: OfflineDbService,
-    private outboxService: OutboxService,
+    private notificationService: NotificationService,
   ) {
     this.initLastSyncTime();
     this.initNetworkListeners();
     this.initAuthEffect();
     this.startPeriodicSync();
     this.startTicker();
-
-    // Trigger immediate pull on startup if session was already restored from localStorage
-    if (this.authService.isAuthenticated() && this.isOnline()) {
-      this.pull();
-    }
+    void this.refreshPendingState();
   }
 
   private async initLastSyncTime(): Promise<void> {
@@ -72,7 +81,7 @@ export class SyncService {
     window.addEventListener('online', () => {
       this.isOnline.set(true);
       if (this.authService.isAuthenticated()) {
-        this.pull();
+        void this.syncAll();
       }
     });
 
@@ -87,38 +96,31 @@ export class SyncService {
         if (this.isOnline() !== actual) {
           this.isOnline.set(actual);
           if (actual && this.authService.isAuthenticated()) {
-            this.pull();
+            void this.syncAll();
           }
         }
       }
-    }, 1000);
+    }, 10000);
   }
 
   private initAuthEffect(): void {
+    let lastSyncedUserId: string | number | null = null;
+
     effect(() => {
+      const isAuth = this.authService.isAuthenticated();
       const user = this.authService.currentUser();
-      const empresaId = user?.empresa?.idEmpresa || this.authService.empresa()?.idEmpresa || '';
-      const userKey = user ? `${empresaId}-${user.id}` : '';
+      const online = this.isOnline();
+      const userId = isAuth && user ? user.id : null;
 
-      if (!userKey) {
-        this.lastSyncedUserKey = '';
-        return;
+      // Only trigger pull when a user newly logs in or switches, without tracking pull()'s internal signals
+      if (userId && online && userId !== lastSyncedUserId) {
+        lastSyncedUserId = userId;
+        untracked(() => {
+          this.syncAll();
+        });
+      } else if (!userId) {
+        lastSyncedUserId = null;
       }
-
-      // Only trigger when the identity actually changed
-      if (userKey === this.lastSyncedUserKey) {
-        return;
-      }
-
-      this.lastSyncedUserKey = userKey;
-
-      // Untrack pull() execution so its signal reads (isOnline, isSyncing, isFlushing)
-      // do not register as reactive dependencies and create hot loops
-      untracked(() => {
-        if (this.isOnline()) {
-          this.pull();
-        }
-      });
     });
   }
 
@@ -126,7 +128,7 @@ export class SyncService {
     if (typeof window === 'undefined') return;
     this.periodicTimer = setInterval(() => {
       if (this.isOnline() && this.authService.isAuthenticated()) {
-        this.pull();
+        void this.syncAll();
       }
     }, SYNC_INTERVAL_MS);
   }
@@ -141,13 +143,6 @@ export class SyncService {
 
     this.isSyncing.set(true);
     this.syncError.set(null);
-
-    // Flush outbox operations in FIFO order before pulling delta (OX1)
-    try {
-      await this.outboxService.flush();
-    } catch (err) {
-      console.warn('Outbox flush before pull failed:', err);
-    }
 
     try {
       const db = this.offlineDbService.getActiveDb();
@@ -165,8 +160,30 @@ export class SyncService {
       if (response) {
         await db.transaction(
           'rw',
-          [db.productos, db.sucursales, db.inventario, db.reservas, db.ventas, db.cliente, db.meta],
+          [db.productos, db.sucursales, db.inventario, db.reservas, db.ventas, db.cliente, db.meta, db.operacionesPendientes],
           async () => {
+            const pending = await db.operacionesPendientes.where('estado').equals('pending').toArray();
+            const putInventory = async (rows: SyncPullResponse['inventario']) => {
+              if (!rows.length) return;
+              const projected = rows.map(row => {
+                const copy = { ...row };
+                for (const operation of pending) {
+                  const payload = operation.payload;
+                  if (operation.tipo === 'venta' && payload.codigoSucursal === copy.codigoSucursal) {
+                    for (const item of payload.items ?? []) {
+                      if (item.idProducto === copy.idProducto) {
+                        copy.cantidad_actual = Math.max(0, copy.cantidad_actual - item.cantidad);
+                      }
+                    }
+                  } else if (operation.tipo === 'reserva' &&
+                      payload.codigoSucursal === copy.codigoSucursal && payload.idProducto === copy.idProducto) {
+                    copy.cantidad_reservada += 1;
+                  }
+                }
+                return copy;
+              });
+              await db.inventario.bulkPut(projected);
+            };
             if (response.full) {
               await Promise.all([
                 db.productos.clear(),
@@ -178,7 +195,7 @@ export class SyncService {
               ]);
               if (response.productos?.length) await db.productos.bulkPut(response.productos);
               if (response.sucursales?.length) await db.sucursales.bulkPut(response.sucursales);
-              if (response.inventario?.length) await db.inventario.bulkPut(response.inventario);
+              if (response.inventario?.length) await putInventory(response.inventario);
               if (response.reservas?.length) await db.reservas.bulkPut(response.reservas);
               if (response.ventas?.length) await db.ventas.bulkPut(response.ventas);
               if (response.cliente) await db.cliente.put(response.cliente);
@@ -186,21 +203,9 @@ export class SyncService {
               // Delta updates
               if (response.productos?.length) await db.productos.bulkPut(response.productos);
               if (response.sucursales?.length) await db.sucursales.bulkPut(response.sucursales);
-              if (response.inventario?.length) await db.inventario.bulkPut(response.inventario);
+              if (response.inventario?.length) await putInventory(response.inventario);
               if (response.reservas?.length) await db.reservas.bulkPut(response.reservas);
-              if (response.ventas?.length) {
-                for (const sv of response.ventas) {
-                  if (sv.comprobanteLocal) {
-                    const provisional = await db.ventas
-                      .filter((v: any) => v.idVenta < 0 && v.comprobanteLocal === sv.comprobanteLocal)
-                      .toArray();
-                    for (const p of provisional) {
-                      await db.ventas.delete(p.idVenta);
-                    }
-                  }
-                }
-                await db.ventas.bulkPut(response.ventas);
-              }
+              if (response.ventas?.length) await db.ventas.bulkPut(response.ventas);
               if (response.cliente) await db.cliente.put(response.cliente);
 
               // Delta tombstones
@@ -226,6 +231,7 @@ export class SyncService {
 
         this.lastSyncTime.set(new Date());
         this.syncCompleted.next(response);
+        await this.refreshPendingState();
       }
 
       return response;
@@ -237,6 +243,162 @@ export class SyncService {
     } finally {
       this.isSyncing.set(false);
     }
+  }
+
+  private async syncAll(): Promise<void> {
+    await this.pushPending(false);
+    await this.pull();
+  }
+
+  async enqueueOfflineSale(payload: {
+    comprobanteLocal: string;
+    fechaLocal: string;
+    codigoSucursal: number;
+    idCliente: number;
+    pago: { tipo: 'Efectivo'; monto: number };
+    items: { idProducto: number; cantidad: number }[];
+  }): Promise<string | null> {
+    return this.enqueueOperation('venta', { ...payload, idLocal: crypto.randomUUID() });
+  }
+
+  async enqueueOfflineReservation(payload: {
+    idCliente: number;
+    fecha: string;
+    horario: string;
+    codigoSucursal: number;
+    idProducto: number;
+  }): Promise<string | null> {
+    return this.enqueueOperation('reserva', { ...payload, idLocal: crypto.randomUUID() });
+  }
+
+  private async enqueueOperation(tipo: 'venta' | 'reserva', payload: Record<string, any>): Promise<string | null> {
+    const idLocal = String(payload['idLocal']);
+    const db = this.offlineDbService.getActiveDb();
+    try {
+      await db.transaction('rw', [db.inventario, db.operacionesPendientes], async () => {
+        const items = tipo === 'venta' ? payload['items'] as { idProducto: number; cantidad: number }[]
+          : [{ idProducto: payload['idProducto'] as number, cantidad: 1 }];
+        const grouped = new Map<number, number>();
+        for (const item of items) grouped.set(item.idProducto, (grouped.get(item.idProducto) ?? 0) + item.cantidad);
+        const rows = [];
+        for (const [idProducto, quantity] of grouped) {
+          const row = await db.inventario.where('[codigoSucursal+idProducto]')
+            .equals([payload['codigoSucursal'], idProducto]).first();
+          if (!row || row.cantidad_actual - row.cantidad_reservada < quantity) {
+            throw new Error(`Stock local insuficiente para el producto ${idProducto}`);
+          }
+          rows.push({ row, quantity });
+        }
+        for (const { row, quantity } of rows) {
+          if (tipo === 'venta') row.cantidad_actual -= quantity;
+          else row.cantidad_reservada += quantity;
+          await db.inventario.put(row);
+        }
+        const operation: OfflineOperation = {
+          idLocal, tipo, estado: 'pending', creadoEn: new Date().toISOString(), payload,
+        };
+        await db.operacionesPendientes.add(operation);
+      });
+      this.offlineInventoryChanged.next();
+      await this.refreshPendingState();
+      return idLocal;
+    } catch (error) {
+      this.syncError.set(error instanceof Error ? error.message : 'No se pudo guardar la operación offline.');
+      return null;
+    }
+  }
+
+  private async refreshPendingState(): Promise<void> {
+    try {
+      const operations = await this.offlineDbService.getActiveDb().operacionesPendientes.toArray();
+      this.pendingCount.set(operations.filter(item => item.estado === 'pending').length);
+      this.syncConflicts.set(operations.filter(item => item.estado === 'conflict'));
+    } catch {
+      this.pendingCount.set(0);
+      this.syncConflicts.set([]);
+    }
+  }
+
+  async pushPending(refreshPull = true): Promise<SyncPushResult[]> {
+    if (!this.isOnline() || !this.authService.isAuthenticated() || this.isPushing()) return [];
+    this.isPushing.set(true);
+    this.syncError.set(null);
+    let results: SyncPushResult[] = [];
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const operations = (await db.operacionesPendientes.where('estado').equals('pending').sortBy('creadoEn'))
+        .slice(0, 100);
+      if (!operations.length) return [];
+      const response = await firstValueFrom(this.http.post<{ results: SyncPushResult[] }>(
+        `${API_URL}/api/sync/push`, { operations: operations.map(item => ({
+          idLocal: item.idLocal, tipo: item.tipo, payload: item.payload,
+        })) },
+      ).pipe(timeout(30000)));
+      results = response.results ?? [];
+
+      await db.transaction('rw', [db.operacionesPendientes, db.inventario, db.ventas, db.reservas], async () => {
+        for (const result of results) {
+          const operation = await db.operacionesPendientes.get(result.idLocal);
+          if (!operation) continue;
+          if (result.inventario?.length) await db.inventario.bulkPut(result.inventario);
+          if (result.status === 'synced') {
+            if (result.venta) await db.ventas.put(result.venta as any);
+            if (result.reserva) await db.reservas.put(result.reserva as any);
+            await db.operacionesPendientes.delete(result.idLocal);
+          } else {
+            operation.estado = 'conflict';
+            operation.conflicto = result.conflict ?? result.error ?? { code: 'sync_rejected' };
+            await db.operacionesPendientes.put(operation);
+          }
+        }
+      });
+      this.offlineInventoryChanged.next();
+      for (const result of results) {
+        if (result.status === 'conflict' || result.status === 'rejected') {
+          this.notificationService.warning(
+            'Operación offline requiere atención',
+            `${result.idLocal}: ${result.conflict?.['code'] ?? result.error?.['code'] ?? 'conflicto al sincronizar'}`,
+          );
+        }
+      }
+      await this.refreshPendingState();
+      if (refreshPull && results.some(result => result.status === 'synced')) await this.pull();
+      return results;
+    } catch (error: any) {
+      this.syncError.set(error?.message || 'No se pudieron sincronizar las operaciones pendientes.');
+      return [];
+    } finally {
+      this.isPushing.set(false);
+    }
+  }
+
+  async retryConflict(idLocal: string): Promise<SyncPushResult[]> {
+    const db = this.offlineDbService.getActiveDb();
+    const operation = await db.operacionesPendientes.get(idLocal);
+    if (!operation || operation.estado !== 'conflict') return [];
+    await db.transaction('rw', [db.inventario, db.operacionesPendientes], async () => {
+      const items = operation.tipo === 'venta' ? operation.payload['items'] as { idProducto: number; cantidad: number }[]
+        : [{ idProducto: operation.payload['idProducto'] as number, cantidad: 1 }];
+      for (const item of items) {
+        const row = await db.inventario.where('[codigoSucursal+idProducto]')
+          .equals([operation.payload['codigoSucursal'], item.idProducto]).first();
+        if (row) {
+          if (operation.tipo === 'venta') row.cantidad_actual = Math.max(0, row.cantidad_actual - item.cantidad);
+          else row.cantidad_reservada += item.cantidad;
+          await db.inventario.put(row);
+        }
+      }
+      operation.estado = 'pending';
+      delete operation.conflicto;
+      await db.operacionesPendientes.put(operation);
+    });
+    await this.refreshPendingState();
+    return this.pushPending();
+  }
+
+  async discardConflict(idLocal: string): Promise<void> {
+    await this.offlineDbService.getActiveDb().operacionesPendientes.delete(idLocal);
+    await this.refreshPendingState();
   }
 
   /**

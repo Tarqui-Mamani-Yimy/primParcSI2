@@ -19,6 +19,7 @@ export class YouShopDexie extends Dexie {
   ventas!: Table<CachedVenta, number>;
   cliente!: Table<CachedCliente, number>;
   meta!: Table<CachedMeta, string>;
+  operacionesPendientes!: Table<OfflineOperation, string>;
   pending_ops!: Table<PendingOp, string>;
 
   constructor(dbName: string) {
@@ -33,9 +34,31 @@ export class YouShopDexie extends Dexie {
       meta: 'key',
     });
     this.version(2).stores({
+      productos: 'idProducto, nombre, tipo, talla, color, idColeccion, idProveedor, fechaActualizacion',
+      sucursales: 'codigoSucursal, nombre, idCiudad, idEmpresa',
+      inventario: 'idInv, idProducto, codigoSucursal, [codigoSucursal+idProducto], idEmpresa',
+      reservas: 'codigoReserva, idCliente, codigoSucursal, idProducto, estado, fecha',
+      ventas: 'idVenta, idCliente, fecha, origen, discrepanciaStock',
+      cliente: 'idCliente, idUser, idEmpresa',
+      meta: 'key',
+      operacionesPendientes: 'idLocal, tipo, estado, creadoEn',
+    });
+    // Two branches shipped different version-2 schemas (pending_ops vs operacionesPendientes).
+    // Version 3 declares both so a browser already on either version-2 schema still upgrades.
+    this.version(3).stores({
+      operacionesPendientes: 'idLocal, tipo, estado, creadoEn',
       pending_ops: 'id, type, status, createdAt',
     });
   }
+}
+
+export interface OfflineOperation {
+  idLocal: string;
+  tipo: 'venta' | 'reserva';
+  estado: 'pending' | 'conflict';
+  creadoEn: string;
+  payload: Record<string, any>;
+  conflicto?: Record<string, any>;
 }
 
 /**
@@ -154,40 +177,31 @@ export class OfflineDbService {
   }
 
   /**
-   * Cleans cached tables on logout, while preserving any unsynced pending_ops
-   * in the per-user database so flushing can resume when the same user logs back in.
+   * Wipes user cache on logout but keeps queued operations until they sync.
    */
   async wipeOnLogout(): Promise<void> {
     if (this.db) {
       try {
-        let hasUnsyncedOps = false;
-        try {
-          const unsynced = await this.db.pending_ops
-            .where('status')
-            .anyOf(['pending', 'sending', 'failed'])
-            .count();
-          hasUnsyncedOps = unsynced > 0;
-        } catch {
-          // If pending_ops doesn't exist, proceed with full wipe
+        const unsyncedOutboxOps = await this.db.pending_ops
+          .where('status')
+          .anyOf(['pending', 'sending', 'failed'])
+          .count();
+        const hasPendingOperations =
+          (await this.db.operacionesPendientes.count()) > 0 || unsyncedOutboxOps > 0;
+        await Promise.all([
+          this.db.productos.clear(),
+          this.db.sucursales.clear(),
+          this.db.inventario.clear(),
+          this.db.reservas.clear(),
+          this.db.ventas.clear(),
+          this.db.cliente.clear(),
+          this.db.meta.clear(),
+        ]);
+        if (!hasPendingOperations) {
+          await Promise.all([this.db.operacionesPendientes.clear(), this.db.pending_ops.clear()]);
         }
-
-        if (hasUnsyncedOps) {
-          // Unsynced operations present: preserve the per-user database
-          this.db.close();
-        } else {
-          await Promise.all([
-            this.db.productos.clear(),
-            this.db.sucursales.clear(),
-            this.db.inventario.clear(),
-            this.db.reservas.clear(),
-            this.db.ventas.clear(),
-            this.db.cliente.clear(),
-            this.db.meta.clear(),
-            this.db.pending_ops.clear(),
-          ]);
-          this.db.close();
-          await this.db.delete();
-        }
+        this.db.close();
+        if (!hasPendingOperations) await this.db.delete();
       } catch (err) {
         console.warn('Error wiping offline DB on logout:', err);
       } finally {

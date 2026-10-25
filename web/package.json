@@ -37,6 +37,7 @@
     "zone.js": "^0.16.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
     "@angular/build": "^22.1.6",
     "@angular/cli": "22.1.4",
     "@angular/compiler-cli": "^22.1.4",

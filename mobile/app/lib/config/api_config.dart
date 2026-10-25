@@ -18,7 +18,10 @@ class ApiConfig {
   //   - Dispositivo fisico en la misma WiFi que la maquina del backend:
   //     la IP LAN de esa maquina (ej. 'http://192.168.1.50:8000',
   //     verificar con `ip -4 addr show` si cambia de red).
-  static const String baseUrl = 'https://primparcsi2.onrender.com';
+  static const String baseUrl = String.fromEnvironment(
+    'API_URL',
+    defaultValue: 'http://192.168.0.12:8000',
+  );
 
   // Claves de flutter_secure_storage. Compartidas entre ApiClient (lee el
   // token para el header Authorization) y AuthService (lo escribe/borra) —

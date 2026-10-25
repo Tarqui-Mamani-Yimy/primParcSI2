@@ -1,9 +1,12 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ArchiveService } from '../../../core/services/archive.service';
 import { CartService } from '../../../core/services/cart.service';
+import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { RecommendationsService } from '../../../core/services/recommendations.service';
+import { SyncService } from '../../../core/services/sync.service';
 import { CartLine, ProductOut, RecomendacionOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
@@ -130,10 +133,19 @@ const PAGE_SIZE = 12;
         </select>
       </div>
 
+      <div
+        class="inline-flex items-center gap-2 rounded-full border border-[#E8E2DA] bg-white px-3 py-1.5 text-[11px] text-[#5A5561]"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="h-2 w-2 rounded-full" [ngClass]="catalogDataState() === 'synced' ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+        <span>{{ catalogStatusLabel() }}</span>
+      </div>
+
       <!-- Galería de productos -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
-          *ngFor="let item of archiveService.products()"
+          *ngFor="let item of catalogProducts()"
           (click)="openDetail(item)"
           class="bg-white rounded-xl overflow-hidden border border-[#E8E2DA] shadow-xs hover:shadow-sm hover:border-[#38133E] transition-all flex flex-col cursor-pointer group"
         >
@@ -156,11 +168,14 @@ const PAGE_SIZE = 12;
               <h3 class="text-sm font-bold text-[#17141A] leading-snug mt-0.5">{{ item.nombre }}</h3>
             </div>
             <p class="text-xs text-[#5A5561]">{{ item.color || '' }}</p>
+            <p class="text-xs font-medium text-[#5A5561]">
+              Existencias disponibles (todas las sucursales): {{ stockDisponible(item.idProducto) }} unidades
+            </p>
           </div>
         </div>
       </div>
 
-      <div *ngIf="archiveService.products().length === 0" class="text-center py-12 text-[#9B94A3] text-sm">
+      <div *ngIf="catalogProducts().length === 0" class="text-center py-12 text-[#9B94A3] text-sm">
         No se encontraron productos con los filtros seleccionados.
       </div>
 
@@ -210,7 +225,7 @@ const PAGE_SIZE = 12;
     ></app-purchase-modal>
   `
 })
-export class CatalogComponent implements OnInit {
+export class CatalogComponent implements OnInit, OnDestroy {
   q = '';
   tipo = '';
   talla = '';
@@ -222,6 +237,11 @@ export class CatalogComponent implements OnInit {
   selectedProductId = signal<number | null>(null);
   reservandoProducto = signal<ProductOut | null>(null);
   recomendaciones = signal<RecomendacionOut[]>([]);
+  catalogProducts = signal<ProductOut[]>([]);
+  catalogDataState = signal<'cache' | 'synced'>('cache');
+  private filteredProductCount = signal(0);
+  private stockByProduct = signal<Map<number, number>>(new Map());
+  private syncSubscription?: Subscription;
 
   // Foto congelada de las lineas a pagar (CU16 D3): buy-now guarda un
   // arreglo de una sola linea, "Finalizar compra" del carrito guarda
@@ -234,7 +254,7 @@ export class CatalogComponent implements OnInit {
   private checkoutDesdeCarrito = signal<boolean>(false);
 
   totalPages = computed(() => {
-    const total = this.archiveService.total();
+    const total = this.filteredProductCount();
     return total > 0 ? Math.ceil(total / PAGE_SIZE) : 0;
   });
 
@@ -242,13 +262,36 @@ export class CatalogComponent implements OnInit {
     public archiveService: ArchiveService,
     private cartService: CartService,
     private recommendationsService: RecommendationsService,
+    private offlineDbService: OfflineDbService,
+    private syncService: SyncService,
   ) {}
 
   ngOnInit() {
+    this.syncSubscription = new Subscription();
+    this.syncSubscription.add(this.syncService.syncCompleted.subscribe(() => {
+      void this.loadLocalProducts('synced');
+    }));
+    this.syncSubscription.add(this.syncService.offlineInventoryChanged.subscribe(() => {
+      void this.loadLocalProducts();
+    }));
     this.archiveService.loadColecciones();
     this.archiveService.loadProveedores();
-    this.fetchProducts();
+    this.fetchProducts(true);
     this.recommendationsService.getMisRecomendaciones().then(list => this.recomendaciones.set(list));
+  }
+
+  ngOnDestroy() {
+    this.syncSubscription?.unsubscribe();
+  }
+
+  catalogStatusLabel(): string {
+    if (this.catalogDataState() === 'synced') return 'Datos sincronizados';
+    if (!this.syncService.isOnline()) return 'Caché local (Offline)';
+    return this.syncService.isSyncing() ? 'Caché local · actualizando' : 'Caché local';
+  }
+
+  stockDisponible(idProducto: number): number {
+    return this.stockByProduct().get(idProducto) ?? 0;
   }
 
   openRecomendacion(r: RecomendacionOut) {
@@ -318,16 +361,52 @@ export class CatalogComponent implements OnInit {
     // el usuario lo cierra explicitamente, recien ahi se limpia el estado.
   }
 
-  private fetchProducts() {
-    this.archiveService.loadProducts({
-      q: this.q || undefined,
-      tipo: this.tipo || undefined,
-      talla: this.talla || undefined,
-      color: this.color || undefined,
-      idColeccion: this.idColeccion ?? undefined,
-      idProveedor: this.idProveedor ?? undefined,
-      page: this.page(),
-      size: PAGE_SIZE,
-    });
+  private fetchProducts(syncOnline = false) {
+    void this.loadLocalProducts();
+    if (syncOnline && this.syncService.isOnline()) {
+      void this.syncService.pull().then(response => {
+        if (response) return this.loadLocalProducts('synced');
+      });
+    }
+  }
+
+  private async loadLocalProducts(state: 'cache' | 'synced' = 'cache') {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const [products, inventory] = await Promise.all([
+        db.productos.toArray(),
+        db.inventario.toArray(),
+      ]);
+
+      const stock = new Map<number, number>();
+      for (const row of inventory) {
+        const available = Math.max(0, row.cantidad_actual - row.cantidad_reservada);
+        stock.set(row.idProducto, (stock.get(row.idProducto) ?? 0) + available);
+      }
+      this.stockByProduct.set(stock);
+
+      const query = this.q.trim().toLocaleLowerCase();
+      const filtered = products
+        .filter(product =>
+          (!query || product.nombre.toLocaleLowerCase().includes(query)) &&
+          (!this.tipo || product.tipo === this.tipo) &&
+          (!this.talla || product.talla?.toLocaleLowerCase().includes(this.talla.toLocaleLowerCase())) &&
+          (!this.color || product.color?.toLocaleLowerCase().includes(this.color.toLocaleLowerCase())) &&
+          (this.idColeccion === null || product.idColeccion === this.idColeccion) &&
+          (this.idProveedor === null || product.idProveedor === this.idProveedor),
+        )
+        .sort((a, b) => b.idProducto - a.idProducto);
+
+      this.filteredProductCount.set(filtered.length);
+      const start = (this.page() - 1) * PAGE_SIZE;
+      this.catalogProducts.set(filtered.slice(start, start + PAGE_SIZE));
+      this.catalogDataState.set(state);
+    } catch (error) {
+      console.warn('No se pudo leer el catálogo local:', error);
+      this.catalogProducts.set([]);
+      this.stockByProduct.set(new Map());
+      this.filteredProductCount.set(0);
+      this.catalogDataState.set('cache');
+    }
   }
 }

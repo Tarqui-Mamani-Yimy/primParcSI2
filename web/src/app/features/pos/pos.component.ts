@@ -10,16 +10,12 @@ import {
   ProductOut,
   TicketLine,
   Venta,
-  OfflineSaleIn,
-  CachedVenta,
 } from '../../core/models';
 import { SalesService } from '../../core/services/sales.service';
 import { PaymentsService } from '../../core/services/payments.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OfflineDbService } from '../../core/services/offline-db.service';
 import { SyncService } from '../../core/services/sync.service';
-import { OutboxService } from '../../core/services/outbox.service';
-import { AuthService } from '../../core/services/auth.service';
 import { CardPaymentComponent } from '../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../shared/components/receipt-modal.component';
 import { environment } from '../../../environments/environment';
@@ -53,6 +49,21 @@ type Modalidad = 'efectivo' | 'tarjeta';
           El stock se filtra por la sucursal seleccionada: una venta se rechaza si esa sucursal
           concreta no tiene existencias, aunque otra sí las tenga.
         </p>
+      </div>
+
+      <div *ngIf="syncService.pendingCount() > 0" class="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        <span>{{ syncService.pendingCount() }} operación(es) offline pendientes de sincronizar.</span>
+        <button (click)="syncService.pushPending()" [disabled]="!syncService.isOnline() || syncService.isPushing()"
+          class="rounded-md border border-amber-300 px-3 py-1.5 font-semibold disabled:opacity-50">
+          {{ syncService.isPushing() ? 'Sincronizando...' : 'Sincronizar ahora' }}
+        </button>
+      </div>
+      <div *ngFor="let conflict of syncService.syncConflicts()" class="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900">
+        <span>Conflicto en {{ conflict.tipo }} {{ conflict.conflicto?.code || 'operación rechazada' }} ({{ conflict.idLocal }}).</span>
+        <div class="flex gap-2">
+          <button *ngIf="conflict.conflicto?.code === 'stock_insufficient'" (click)="syncService.retryConflict(conflict.idLocal)" [disabled]="!syncService.isOnline()" class="font-semibold underline disabled:opacity-50">Reintentar</button>
+          <button (click)="syncService.discardConflict(conflict.idLocal)" class="font-semibold underline">Descartar</button>
+        </div>
       </div>
 
       <!-- Selección de sucursal y cliente -->
@@ -108,13 +119,10 @@ type Modalidad = 'efectivo' | 'tarjeta';
                 {{ e.producto_talla ? ' · Talla ' + e.producto_talla : '' }}
                 {{ e.producto_color ? ' · ' + e.producto_color : '' }}
               </p>
-              <p *ngIf="e.cantidad_actual - e.cantidad_reservada <= 0" class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block mt-0.5">
-                Aviso: Sin stock en sucursal (se registrará discrepancia)
-              </p>
             </div>
             <button
               (click)="agregarLinea(e)"
-              [disabled]="syncService.isOnline() && (e.cantidad_actual - e.cantidad_reservada <= 0)"
+              [disabled]="e.cantidad_actual - e.cantidad_reservada <= 0"
               class="px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-[#38133E] border border-[#E8E2DA] hover:bg-[#F5EBF7] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Agregar
@@ -140,12 +148,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
           </thead>
           <tbody>
             <tr *ngFor="let line of ticketLines()" class="border-b border-gray-50 last:border-0">
-              <td class="px-4 py-3 font-medium text-gray-900">
-                {{ line.nombre }}
-                <span *ngIf="line.cantidad > line.disponible || line.disponible <= 0" class="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-block">
-                  Discrepancia
-                </span>
-              </td>
+              <td class="px-4 py-3 font-medium text-gray-900">{{ line.nombre }}</td>
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-2">
                   <button
@@ -156,7 +159,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
                   <span class="w-6 text-center">{{ line.cantidad }}</span>
                   <button
                     (click)="ajustarCantidad(line.idProducto, 1)"
-                    [disabled]="lineasBloqueadas() || (syncService.isOnline() && line.cantidad >= line.disponible)"
+                    [disabled]="lineasBloqueadas() || line.cantidad >= line.disponible"
                     class="w-6 h-6 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >+</button>
                 </div>
@@ -203,8 +206,8 @@ type Modalidad = 'efectivo' | 'tarjeta';
           </button>
           <button
             (click)="onElegirModalidad('tarjeta')"
-            [disabled]="enviando() || !tarjetaDisponible() || !syncService.isOnline()"
-            [title]="!syncService.isOnline() ? 'El cobro con tarjeta no está disponible sin conexión a internet' : (!tarjetaDisponible() ? 'El cobro con tarjeta no está disponible en este servidor' : '')"
+            [disabled]="enviando() || !tarjetaDisponible()"
+            [title]="!tarjetaDisponible() ? 'El cobro con tarjeta no está disponible en este servidor' : ''"
             class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             [class.bg-ys-primary]="modalidad() === 'tarjeta'"
             [class.text-white]="modalidad() === 'tarjeta'"
@@ -222,7 +225,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
           [disabled]="enviando()"
           class="w-full px-4 py-2.5 rounded-lg text-sm font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer disabled:opacity-50"
         >
-          {{ enviando() ? 'Procesando…' : (syncService.isOnline() ? 'Cobrar y registrar venta' : 'Finalizar venta (fuera de línea)') }}
+          {{ enviando() ? 'Guardando...' : (syncService.isOnline() ? 'Cobrar y registrar venta' : 'Guardar venta offline') }}
         </button>
 
         <button
@@ -332,7 +335,7 @@ export class PosComponent implements OnInit {
   // líneas no.
   lineasBloqueadas = computed(() => this.estado() === 'cobrado_sin_venta' || this.enviando());
 
-  tarjetaDisponible = computed(() => !!environment.stripePublishableKey && !this.cardLatchedOff() && this.syncService.isOnline());
+  tarjetaDisponible = computed(() => !!environment.stripePublishableKey && !this.cardLatchedOff());
 
   clienteSeleccionadoNombre = computed(() => {
     const id = this.selectedCliente();
@@ -346,8 +349,6 @@ export class PosComponent implements OnInit {
     private notificationService: NotificationService,
     private offlineDbService: OfflineDbService,
     public syncService: SyncService,
-    private outboxService: OutboxService,
-    private authService: AuthService,
   ) {
     this.syncService.syncCompleted.subscribe(() => {
       this.cargarSucursales();
@@ -411,7 +412,7 @@ export class PosComponent implements OnInit {
     }
   }
 
-  async onBranchChange(codigoSucursal: number): Promise<void> {
+  async onBranchChange(codigoSucursal: number, refreshServer = true): Promise<void> {
     this.selectedBranch.set(codigoSucursal);
     this.branchPromptVisible.set(false);
     this.searchQuery.set('');
@@ -441,7 +442,7 @@ export class PosComponent implements OnInit {
       }
     } catch {}
 
-    if (this.syncService.isOnline()) {
+    if (refreshServer && this.syncService.isOnline()) {
       firstValueFrom(
         this.http.get<InventoryStockEntry[]>(`${API_URL}/api/inventory/stock`, {
           params: { codigoSucursal: String(codigoSucursal) },
@@ -456,8 +457,7 @@ export class PosComponent implements OnInit {
 
   async agregarLinea(entry: InventoryStockEntry): Promise<void> {
     const disponible = entry.cantidad_actual - entry.cantidad_reservada;
-    // When online, insufficient stock blocks adding. When offline, it allows it with a warning (OX2).
-    if (this.syncService.isOnline() && disponible <= 0) {
+    if (disponible <= 0) {
       return;
     }
 
@@ -491,7 +491,7 @@ export class PosComponent implements OnInit {
     this.ticketLines.update(lines => {
       const existing = lines.find(l => l.idProducto === entry.idProducto);
       if (existing) {
-        if (this.syncService.isOnline() && existing.cantidad >= disponible) {
+        if (existing.cantidad >= disponible) {
           return lines;
         }
         return lines.map(l =>
@@ -519,8 +519,7 @@ export class PosComponent implements OnInit {
           if (l.idProducto !== idProducto) {
             return l;
           }
-          const maxCant = this.syncService.isOnline() ? l.disponible : 999;
-          const nuevaCantidad = Math.min(Math.max(l.cantidad + delta, 0), maxCant);
+          const nuevaCantidad = Math.min(Math.max(l.cantidad + delta, 0), l.disponible);
           return { ...l, cantidad: nuevaCantidad };
         })
         .filter(l => l.cantidad > 0)
@@ -560,128 +559,43 @@ export class PosComponent implements OnInit {
     if (this.enviando() || !this.validarAntesDeCobrar()) {
       return;
     }
-
-    if (this.syncService.isOnline()) {
-      this.enviando.set(true);
-      this.estado.set('cobrando');
-      const metodo = await this.salesService.crearMetodoEfectivo(this.subtotalIndicativo());
-      if (!metodo) {
-        this.enviando.set(false);
-        this.estado.set('ticket');
-        return;
-      }
-      this.idMetPagoActual.set(metodo.idMetPago);
-      this.montoCobrado.set(metodo.monto);
-      await this.intentarVenta();
+    this.enviando.set(true);
+    const codigoSucursal = this.selectedBranch();
+    const idCliente = this.selectedCliente();
+    if (codigoSucursal === null || idCliente === null) {
+      this.enviando.set(false);
+      return;
+    }
+    const idLocal = await this.syncService.enqueueOfflineSale({
+      comprobanteLocal: `LOCAL-${crypto.randomUUID()}`,
+      fechaLocal: new Date().toISOString(),
+      codigoSucursal,
+      idCliente,
+      pago: { tipo: 'Efectivo', monto: this.subtotalIndicativo() },
+      items: this.ticketLines().map(line => ({ idProducto: line.idProducto, cantidad: line.cantidad })),
+    });
+    if (!idLocal) {
+      this.enviando.set(false);
+      this.notificationService.error('No se pudo guardar la venta', this.syncService.syncError() || 'Revisá el stock local e intentá de nuevo.');
       return;
     }
 
-    // Offline POS cash sale flow (OX2)
-    this.enviando.set(true);
-    try {
-      const codigoSucursal = this.selectedBranch()!;
-      const idCliente = this.selectedCliente()!;
-      const total = Number(this.subtotalIndicativo().toFixed(2));
-
-      // Calculate stock discrepancy against current stock
-      const stock = this.branchStock();
-      const hasDiscrepancy = this.ticketLines().some(l => {
-        const entry = stock.find(s => s.idProducto === l.idProducto);
-        const disp = entry ? entry.cantidad_actual - entry.cantidad_reservada : 0;
-        return disp < l.cantidad;
-      });
-
-      // Generate sequential comprobanteLocal OFF-####
-      let seq = 1;
-      try {
-        const stored = localStorage.getItem('youshop_receipt_seq');
-        seq = stored ? parseInt(stored, 10) + 1 : (Date.now() % 9000) + 1000;
-        localStorage.setItem('youshop_receipt_seq', String(seq));
-      } catch {}
-      const comprobanteLocal = `OFF-${String(seq).padStart(4, '0')}`;
-      const idLocal = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `off-${Date.now()}`;
-      const fechaLocal = new Date().toISOString();
-
-      const offlinePayload: OfflineSaleIn = {
-        idLocal,
-        comprobanteLocal,
-        fechaLocal,
-        codigoSucursal,
-        idCliente,
-        pago: {
-          tipo: 'Efectivo',
-          monto: total,
-        },
-        items: this.ticketLines().map(l => ({
-          idProducto: l.idProducto,
-          cantidad: l.cantidad,
-        })),
-      };
-
-      // 1. Queue in persistent Dexie outbox
-      await this.outboxService.queueOp('pos_sale', offlinePayload, idLocal);
-
-      // 2. Decrement cached stock in Dexie and in-memory branchStock
-      const db = this.offlineDbService.getActiveDb();
-      for (const item of offlinePayload.items) {
-        const inv = await db.inventario
-          .where({ codigoSucursal, idProducto: item.idProducto })
-          .first();
-        if (inv) {
-          await db.inventario.update(inv.idInv, {
-            cantidad_actual: inv.cantidad_actual - item.cantidad,
-          });
-        }
-      }
-
-      this.branchStock.update(stocks =>
-        stocks.map(s => {
-          const it = offlinePayload.items.find(i => i.idProducto === s.idProducto);
-          return it ? { ...s, cantidad_actual: s.cantidad_actual - it.cantidad } : s;
-        })
-      );
-
-      // 3. Save provisional sale in Dexie ventas table
-      const idEmpresa = Number(this.authService.empresa()?.idEmpresa || 1);
-      const localSale: CachedVenta = {
-        idVenta: -Date.now(),
-        idEmpresa,
-        fecha: fechaLocal,
-        total,
-        idCliente,
-        idMetPago: 0,
-        origen: 'offline',
-        comprobanteLocal,
-        discrepanciaStock: hasDiscrepancy,
-        detalles: this.ticketLines().map((l, idx) => ({
-          codigoVenta: -(idx + 1),
-          cantidad: l.cantidad,
-          precio_unitario: l.precioUnitario,
-          idProducto: l.idProducto,
-          producto_nombre: l.nombre,
-          idVenta: -Date.now(),
-        })),
-      };
-      await db.ventas.put(localSale);
-
-      // 4. Render provisional receipt modal
-      this.ventaCreada.set(localSale as any);
+    await this.onBranchChange(codigoSucursal, false);
+    const results = this.syncService.isOnline() ? await this.syncService.pushPending() : [];
+    this.enviando.set(false);
+    const result = results.find(item => item.idLocal === idLocal);
+    if (result?.status === 'synced' && result.venta) {
+      this.ventaCreada.set(result.venta as unknown as Venta);
       this.estado.set('vendido');
-
-      this.notificationService.success(
-        'Venta guardada fuera de línea',
-        `Comprobante provisional: ${comprobanteLocal}. Se sincronizará automáticamente al conectar.`
-      );
-      if (hasDiscrepancy) {
-        this.notificationService.warning(
-          'Aviso de stock',
-          'La venta se registró con discrepancia de stock para posterior revisión.'
-        );
+    } else {
+      if (result?.status === 'conflict' || result?.status === 'rejected') {
+        this.notificationService.error('La venta requiere revisión', `Quedó guardada para resolver: ${result.conflict?.['code'] ?? result.error?.['code'] ?? 'conflicto'}.`);
+      } else {
+        this.notificationService.warning('Venta pendiente', 'La venta quedó guardada en este dispositivo y se sincronizará al recuperar la conexión.');
       }
-    } catch (err: any) {
-      this.notificationService.error('Error al registrar venta local', err?.message || 'Error inesperado.');
-    } finally {
-      this.enviando.set(false);
+      this.ticketLines.set([]);
+      this.modalidad.set(null);
+      if (this.selectedBranch() !== null) await this.onBranchChange(this.selectedBranch()!, false);
     }
   }
 
