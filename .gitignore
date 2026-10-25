@@ -47,3 +47,7 @@ docs/
 propuesta.md
 test_multitenant_integration.py
 uso.md
+revision.md
+scripts.txt
+scripts_casos_uso.txt
+/backend/database/seeds/
