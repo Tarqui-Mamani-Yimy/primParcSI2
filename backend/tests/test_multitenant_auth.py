@@ -36,7 +36,7 @@ def test_build_user_claims_incluye_empresa_plan_y_suscripcion():
     session = FakeSession([
         ["inventario.ver"],
         "Administrador",
-        (1, "YouShop", "youshop", None, "avanzado", "Avanzado",
+        (1, "Voguely", "youshop", None, "avanzado", "Avanzado",
          ["pos", "ventas"], {"sucursales": None}, "activa", None),
     ])
 
@@ -48,7 +48,7 @@ def test_build_user_claims_incluye_empresa_plan_y_suscripcion():
         "permisos": ["inventario.ver"],
         "empresa": 1,
         "plan": "avanzado",
-        "empresa_info": {"idEmpresa": 1, "nombre": "YouShop", "slug": "youshop", "logoUrl": None},
+        "empresa_info": {"idEmpresa": 1, "nombre": "Voguely", "slug": "youshop", "logoUrl": None},
         "plan_info": {"codigo": "avanzado", "nombre": "Avanzado", "features": ["pos", "ventas"], "limites": {"sucursales": None}},
         "suscripcion": {"estado": "activa", "fechaFin": None},
     }
@@ -75,7 +75,7 @@ def test_get_tenant_toma_solo_claim_empresa():
 
 def test_auth_response_schemas_requieren_contexto_multitenant():
     tenant_data = {
-        "empresa": {"idEmpresa": 1, "nombre": "YouShop", "slug": "youshop", "logoUrl": None},
+        "empresa": {"idEmpresa": 1, "nombre": "Voguely", "slug": "youshop", "logoUrl": None},
         "plan": {"codigo": "avanzado", "nombre": "Avanzado", "features": [], "limites": {}},
         "suscripcion": {"estado": "activa", "fechaFin": None},
     }
@@ -85,4 +85,6 @@ def test_auth_response_schemas_requieren_contexto_multitenant():
     me = MeResponse.model_validate({"idUser": 1, "nombre": "Admin", "correo": "a@b.test", "rol": "Administrador", "permisos": [], **tenant_data})
 
     assert token.empresa.idEmpresa == me.empresa.idEmpresa == 1
+    assert token.empresa.nombre == me.empresa.nombre == "Voguely"
+    assert token.empresa.slug == me.empresa.slug == "youshop"
     assert token.plan.codigo == me.plan.codigo == "avanzado"

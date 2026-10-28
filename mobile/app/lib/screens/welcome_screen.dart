@@ -41,7 +41,7 @@ class WelcomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'A E T H E R',
+                    'V O G U E L Y',
                     style: GoogleFonts.outfit(
                       fontSize: 36,
                       fontWeight: FontWeight.w300,

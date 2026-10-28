@@ -1,24 +1,58 @@
-import { Component, EventEmitter, Output, computed, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, computed, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ArchiveService } from '../../core/services/archive.service';
 import { InventoryService } from '../../core/services/inventory.service';
 import { DispatchService } from '../../core/services/dispatch.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AppView } from '../../shared/components/sidebar.component';
+import { MlProjectionsComponent } from '../ml-projections/ml-projections.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MlProjectionsComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-200">
+
+      <!-- Selector de Pestañas (Solo Administrador) -->
+      <div *ngIf="isAdmin()" class="flex items-center space-x-2 border-b border-gray-200">
+        <button
+          type="button"
+          (click)="activeTab.set('operaciones')"
+          [class.text-ys-primary]="activeTab() === 'operaciones'"
+          [class.border-ys-primary]="activeTab() === 'operaciones'"
+          [class.text-gray-500]="activeTab() !== 'operaciones'"
+          [class.border-transparent]="activeTab() !== 'operaciones'"
+          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer flex items-center space-x-2"
+        >
+          <span class="material-symbols-outlined text-[16px]">dashboard</span>
+          <span>Centro de Operaciones</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="activeTab.set('ml')"
+          [class.text-ys-primary]="activeTab() === 'ml'"
+          [class.border-ys-primary]="activeTab() === 'ml'"
+          [class.text-gray-500]="activeTab() !== 'ml'"
+          [class.border-transparent]="activeTab() !== 'ml'"
+          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer flex items-center space-x-2"
+        >
+          <span class="material-symbols-outlined text-[16px]">auto_graph</span>
+          <span>Proyecciones (ML)</span>
+          <span class="text-[9px] px-1.5 py-0.5 bg-[#F5EBF7] text-[#38133E] rounded font-extrabold uppercase border border-[#E8E2DA]">scikit-learn</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Operaciones Regulares -->
+      <ng-container *ngIf="activeTab() === 'operaciones' || !isAdmin()">
 
       <!-- Banner de bienvenida -->
       <div class="bg-gradient-to-r from-[#17141A] to-[#260B2B] text-white rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-xs">
         <div class="absolute right-0 top-0 bottom-0 w-1/2 opacity-20 pointer-events-none hidden md:block">
           <img
             src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1000&auto=format&fit=crop&q=80"
-            alt="Operaciones YouShop"
+            alt="Operaciones Voguely"
             class="w-full h-full object-cover mix-blend-luminosity"
           />
           <div class="absolute inset-0 bg-gradient-to-r from-[#17141A] to-transparent"></div>
@@ -33,7 +67,7 @@ import { AppView } from '../../shared/components/sidebar.component';
           </div>
 
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight">
-            Resumen Global de Operaciones YouShop
+            Resumen Global de Operaciones Voguely
           </h1>
           <p class="text-sm text-[#FAF8F5]/80 mt-2 leading-relaxed max-w-xl">
             Telemetría en tiempo real de inventarios de boutiques, reservas de bóveda, despachos seguros y archivo permanente de prendas.
@@ -270,11 +304,20 @@ import { AppView } from '../../shared/components/sidebar.component';
         </div>
       </div>
 
+      </ng-container>
+
+      <!-- Tab 2: Proyecciones ML (Solo Administrador) -->
+      <div *ngIf="activeTab() === 'ml' && isAdmin()">
+        <app-ml-projections></app-ml-projections>
+      </div>
+
     </div>
   `
 })
 export class DashboardComponent implements OnInit {
   @Output() navigate = new EventEmitter<AppView>();
+
+  activeTab = signal<'operaciones' | 'ml'>('operaciones');
 
   constructor(
     public archiveService: ArchiveService,
@@ -282,6 +325,11 @@ export class DashboardComponent implements OnInit {
     public dispatchService: DispatchService,
     public authService: AuthService
   ) {}
+
+  isAdmin(): boolean {
+    const rol = this.authService.currentUser()?.rol;
+    return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
 
   ngOnInit() {
     this.inventoryService.loadLocations();

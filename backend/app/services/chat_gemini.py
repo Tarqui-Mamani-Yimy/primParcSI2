@@ -31,16 +31,15 @@ except ImportError:  # pragma: no cover - google-genai siempre deberia estar ins
 
 settings = get_settings()
 
-# "gemini-flash-latest" (el alias rotante) devolvio 503 "alta demanda" en
-# pruebas en vivo con esta misma key; "gemini-2.5-flash" (version fija) si
-# respondio. Mas confiable para esta demo, a costa de no seguir siempre al
-# ultimo modelo automaticamente.
-MODEL = "gemini-2.5-flash"
+# Version fija (no el alias rotante "gemini-flash-latest", que devolvio 503
+# "alta demanda" en pruebas en vivo). Se configura con GEMINI_MODEL porque
+# Google retira versiones fijas (gemini-2.5-flash dejo de existir).
+MODEL = settings.GEMINI_MODEL
 MAX_TURNOS_HERRAMIENTAS = 5
 LIMITE_RESULTADOS = 10
 
 SYSTEM_INSTRUCTION = (
-    "Sos el asistente virtual de YouShop, una tienda de ropa unisex. "
+    "Sos el asistente virtual de Voguely, una tienda de ropa unisex. "
     "Respondes SIEMPRE en espanol, de forma breve y concreta. "
     "Podes responder preguntas sobre el catalogo (productos, precios, "
     "tallas, colores disponibles) usando la herramienta buscar_productos, "
@@ -154,7 +153,7 @@ def _declaraciones_herramientas() -> list["types.FunctionDeclaration"]:
         types.FunctionDeclaration(
             name="buscar_productos",
             description=(
-                "Busca prendas en el catalogo de YouShop por nombre, tipo, "
+                "Busca prendas en el catalogo de Voguely por nombre, tipo, "
                 "color y/o talla. Devuelve hasta 10 resultados con precio."
             ),
             parameters_json_schema={

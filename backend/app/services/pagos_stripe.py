@@ -11,7 +11,7 @@ instalado), `stripe_configurado()` devuelve False y el router debe responder
 degradacion que `email_utils.py` usa con SMTP.
 """
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 import anyio
 
@@ -107,3 +107,50 @@ async def obtener_payment_intent(payment_intent_id: str) -> dict:
         "currency": intent["currency"],
         "metadata": dict(getattr(intent["metadata"], "to_dict", lambda: intent["metadata"] or {})()),
     }
+
+
+async def crear_refund(
+    *,
+    payment_intent_id: str,
+    amount: Decimal,
+    idempotency_key: str,
+) -> dict:
+    """Create an idempotent partial or full refund for a verified payment intent."""
+    if amount <= 0:
+        raise ValueError("Refund amount must be positive")
+    api_key = _api_key()
+    amount_cents = int((amount * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+    def _crear():
+        return stripe_provider.create_refund(
+            payment_intent=payment_intent_id,
+            amount=amount_cents,
+            idempotency_key=idempotency_key,
+            api_key=api_key,
+        )
+
+    try:
+        refund = await anyio.to_thread.run_sync(_crear)
+    except StripeError as exc:
+        raise StripePagoError(str(exc)) from exc
+
+    return {
+        "id": refund["id"],
+        "amount": refund["amount"],
+        "status": refund["status"],
+    }
+
+
+async def obtener_refund(refund_id: str) -> dict:
+    """Retrieve the latest status of an already-created Stripe refund."""
+    api_key = _api_key()
+
+    def _consultar():
+        return stripe_provider.retrieve_refund(api_key=api_key, refund_id=refund_id)
+
+    try:
+        refund = await anyio.to_thread.run_sync(_consultar)
+    except StripeError as exc:
+        raise StripePagoError(str(exc)) from exc
+
+    return {"id": refund["id"], "amount": refund["amount"], "status": refund["status"]}

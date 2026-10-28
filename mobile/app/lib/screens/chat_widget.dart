@@ -108,7 +108,7 @@ class _ChatWidgetState extends State<ChatWidget> {
                   children: [
                     const Icon(Icons.smart_toy_outlined, size: 18, color: AetherTheme.bronze),
                     const SizedBox(width: 8),
-                    Text('Asistente YouShop', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text('Asistente Voguely', style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 IconButton(
@@ -156,7 +156,7 @@ class _ChatWidgetState extends State<ChatWidget> {
           if (_cargando)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('Escribiendo…', style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF7B776E))),
+              child: Text('Escribiendo…', style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted)),
             ),
           if (_error != null)
             Padding(

@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Accede a tu perfil biométrico y colecciones exclusivas.',
                   style: GoogleFonts.sourceSerif4(
                     fontSize: 14,
-                    color: const Color(0xFF4A463F),
+                    color: AetherTheme.textMain,
                   ),
                 ),
                 const SizedBox(height: 36),
@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 10,
                     letterSpacing: 1.8,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF7B776E),
+                    color: AetherTheme.muted,
                   ),
                 ),
                 TextFormField(
@@ -125,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontSize: 10,
                     letterSpacing: 1.8,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF7B776E),
+                    color: AetherTheme.muted,
                   ),
                 ),
                 TextFormField(
@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   Text(
                     appState.authError!,
-                    style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFFB3261E)),
+                    style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.error),
                   ),
                 ],
                 const SizedBox(height: 32),
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Continuar como Invitado',
                       style: GoogleFonts.outfit(
                         fontSize: 12,
-                        color: const Color(0xFF7B776E),
+                        color: AetherTheme.muted,
                         decoration: TextDecoration.underline,
                       ),
                     ),

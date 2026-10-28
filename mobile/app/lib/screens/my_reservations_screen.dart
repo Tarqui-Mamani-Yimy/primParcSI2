@@ -124,7 +124,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                   ? Center(
                       child: Text('Todavia no tenes reservas.',
                           style: GoogleFonts.sourceSerif4(
-                              fontSize: 14, color: const Color(0xFF7B776E))),
+                              fontSize: 14, color: AetherTheme.muted)),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
@@ -144,7 +144,7 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.7),
                             border: Border.all(
-                                color: const Color(0xFFCCC6BC)
+                                color: AetherTheme.border
                                     .withValues(alpha: 0.6)),
                             borderRadius: BorderRadius.circular(2),
                           ),
@@ -166,14 +166,14 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
-                                        color: const Color(0xFFF7F4EF),
+                                        color: AetherTheme.surface,
                                         borderRadius: BorderRadius.circular(2)),
                                     child: Text(
                                       estado,
                                       style: GoogleFonts.outfit(
                                           fontSize: 9,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF7B776E)),
+                                          color: AetherTheme.muted),
                                     ),
                                   ),
                                 ],
@@ -183,14 +183,14 @@ class _MyReservationsScreenState extends State<MyReservationsScreen> {
                                 '${r['fecha']} • ${r['horario']}',
                                 style: GoogleFonts.outfit(
                                     fontSize: 11,
-                                    color: const Color(0xFF7B776E)),
+                                    color: AetherTheme.muted),
                               ),
                               if (r['sucursal_nombre'] != null)
                                 Text(
                                   r['sucursal_nombre'] as String,
                                   style: GoogleFonts.outfit(
                                       fontSize: 11,
-                                      color: const Color(0xFF7B776E)),
+                                      color: AetherTheme.muted),
                                 ),
                               if (syncStatus == 'conflict' ||
                                   syncStatus == 'rejected') ...[

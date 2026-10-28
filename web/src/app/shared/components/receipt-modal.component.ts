@@ -24,7 +24,7 @@ import type { Venta } from '../../core/models';
       >
         <div class="p-6 space-y-4">
           <div class="text-center border-b border-dashed border-[#E8E2DA] pb-4">
-            <p class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">YouShop</p>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Voguely</p>
             <h3 class="text-base font-bold text-[#17141A] mt-1">Comprobante de Venta</h3>
             <p class="text-xs text-[#5A5561] mt-1">N.º de comprobante: {{ venta.comprobanteLocal || venta.idVenta }}</p>
             <p *ngIf="venta.origen === 'offline'" class="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-0.5">

@@ -43,7 +43,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 selected: isSel,
                 selectedColor: AetherTheme.charcoalDark,
                 backgroundColor: Colors.white.withValues(alpha: 0.6),
-                side: const BorderSide(color: Color(0xFFCCC6BC), width: 0.6),
+                side: const BorderSide(color: AetherTheme.border, width: 0.6),
                 labelStyle: TextStyle(color: isSel ? AetherTheme.sandLight : AetherTheme.charcoalDark),
                 shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                 showCheckmark: false,
@@ -69,7 +69,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                     Text(
                       appState.productsError!,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                      style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
@@ -86,7 +86,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
             child: Center(
               child: Text(
                 'No hay productos en esta categoría.',
-                style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
               ),
             ),
           )
@@ -106,7 +106,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.5),
-                  border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.5)),
+                  border: Border.all(color: AetherTheme.border.withValues(alpha: 0.5)),
                   borderRadius: BorderRadius.circular(2),
                 ),
                 padding: const EdgeInsets.all(8),
@@ -151,7 +151,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                     const SizedBox(height: 2),
                     Text(
                       '\$${product.price.toInt()}',
-                      style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                      style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
                     ),
                     const SizedBox(height: 8),
                     // Probar IA Button
@@ -163,7 +163,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
                         label: Text('PROBAR IA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AetherTheme.charcoalDark,
-                          side: const BorderSide(color: Color(0xFFCCC6BC)),
+                          side: const BorderSide(color: AetherTheme.border),
                           padding: EdgeInsets.zero,
                           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         ),

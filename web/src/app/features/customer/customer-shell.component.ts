@@ -32,9 +32,9 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
         <div class="flex items-center space-x-6">
           <div class="flex items-center space-x-2">
             <div class="w-8 h-8 bg-[#38133E] rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-xs">
-              Y
+              V
             </div>
-            <span class="font-bold text-base tracking-tight text-[#17141A]">YouShop</span>
+            <span class="font-bold text-base tracking-tight text-[#17141A]">Voguely</span>
           </div>
 
           <nav class="hidden sm:flex items-center space-x-1">
@@ -154,7 +154,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
       >
         <div class="flex items-center space-x-2">
           <span class="material-symbols-outlined text-[18px]">system_update</span>
-          <span>Nueva versión disponible de YouShop.</span>
+          <span>Nueva versión disponible de Voguely.</span>
         </div>
         <div class="flex items-center space-x-2">
           <button

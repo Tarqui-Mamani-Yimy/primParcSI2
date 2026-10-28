@@ -16,7 +16,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
       <section class="hidden md:flex md:w-5/12 lg:w-1/2 bg-[#260B2B] relative flex-col justify-between p-10 lg:p-14 overflow-hidden">
         <div class="absolute inset-0 z-0 pointer-events-none">
           <img
-            alt="Arquitectura de operaciones YouShop"
+            alt="Arquitectura de operaciones Voguely"
             class="w-full h-full object-cover opacity-20 mix-blend-luminosity scale-105"
             src="https://images.unsplash.com/photo-1544441893-675973e31985?w=1600&auto=format&fit=crop&q=80"
           />
@@ -29,7 +29,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
               A
             </div>
             <div>
-              <span class="text-2xl font-bold text-white tracking-tight block">YouShop</span>
+              <span class="text-2xl font-bold text-white tracking-tight block">Voguely</span>
               <span class="text-xs uppercase tracking-widest text-[#F5EBF7] font-semibold">Nodo de Operaciones</span>
             </div>
           </div>
@@ -43,7 +43,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             Excelencia en Gestión de Vestimenta Esencial
           </h1>
           <p class="text-sm text-gray-200 leading-relaxed">
-            Acceso administrativo seguro al archivo YouShop, plataforma de operaciones y red global de inventario de boutiques.
+            Acceso administrativo seguro al archivo Voguely, plataforma de operaciones y red global de inventario de boutiques.
           </p>
 
           <div class="mt-8 pt-6 border-t border-white/15">
@@ -51,7 +51,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             <div class="flex flex-wrap gap-2">
               <button
                 type="button"
-                (click)="selectDemoPersona('manager@youshop.com', 'Administrador')"
+                (click)="selectDemoPersona('manager@voguely.com', 'Administrador')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-[#16A34A]"></span>
@@ -59,7 +59,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('curator@youshop.com', 'Cajero')"
+                (click)="selectDemoPersona('curator@voguely.com', 'Cajero')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -67,7 +67,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
               </button>
               <button
                 type="button"
-                (click)="selectDemoPersona('logistics@youshop.com', 'Administrador')"
+                (click)="selectDemoPersona('logistics@voguely.com', 'Administrador')"
                 class="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-lg text-xs font-medium text-white transition-colors flex items-center space-x-2 cursor-pointer"
               >
                 <span class="w-2 h-2 rounded-full bg-sky-400"></span>
@@ -84,7 +84,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
 
           <div class="md:hidden flex flex-col items-center justify-center mb-6">
             <div class="w-10 h-10 bg-[#38133E] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">A</div>
-            <span class="text-xl font-bold text-[#17141A] tracking-tight">YouShop</span>
+            <span class="text-xl font-bold text-[#17141A] tracking-tight">Voguely</span>
             <span class="text-xs tracking-wider text-[#5A5561] uppercase">Nodo de Operaciones y Archivo</span>
           </div>
 
@@ -102,7 +102,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
                 type="email"
                 [(ngModel)]="email"
                 required
-                placeholder="gerente@youshop.com"
+                placeholder="gerente@voguely.com"
                 class="w-full bg-white border border-[#E8E2DA] rounded-lg px-3.5 py-2.5 text-sm text-[#17141A] placeholder:text-[#9B94A3] focus:outline-none focus:ring-2 focus:ring-[#38133E] focus:border-[#38133E] transition-all"
               />
             </div>
@@ -160,7 +160,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             <div class="pt-2 text-center border-t border-[#E8E2DA]">
               <button type="button" (click)="onBackToLanding()" class="text-xs text-[#5A5561] hover:text-[#17141A] transition-colors inline-flex items-center gap-1 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-                <span>Volver a YouShop</span>
+                <span>Volver a Voguely</span>
               </button>
             </div>
           </form>
@@ -185,7 +185,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
           <div class="space-y-4">
             <div>
               <label class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Correo Electrónico</label>
-              <input type="email" [(ngModel)]="recoveryEmail" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm text-[#17141A] placeholder:text-[#9B94A3] focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="gerente@youshop.com" />
+              <input type="email" [(ngModel)]="recoveryEmail" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm text-[#17141A] placeholder:text-[#9B94A3] focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="gerente@voguely.com" />
             </div>
             <button (click)="sendPasswordRecovery()" class="w-full bg-[#38133E] hover:bg-[#260B2B] text-white py-2.5 rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer">
               Enviar Enlace Seguro
@@ -197,7 +197,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
         <div *ngIf="recoveryStep() === 2">
           <div class="mb-5">
             <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">
-              {{ isWelcomeFlow() ? 'Bienvenido a YouShop' : 'Nueva Contraseña' }}
+              {{ isWelcomeFlow() ? 'Bienvenido a Voguely' : 'Nueva Contraseña' }}
             </span>
             <h3 class="text-lg font-bold text-[#17141A] mt-1">
               {{ isWelcomeFlow() ? 'Crea tu Contraseña' : 'Establezca su Contraseña' }}
@@ -294,7 +294,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             </div>
             <div>
               <label class="text-xs font-bold text-[#17141A] uppercase tracking-wide">Correo Corporativo</label>
-              <input type="email" [(ngModel)]="reqEmail" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm text-[#17141A] placeholder:text-[#9B94A3] focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="marc.d@youshop.com" />
+              <input type="email" [(ngModel)]="reqEmail" class="w-full mt-1 px-3.5 py-2 border border-[#E8E2DA] rounded-lg text-sm text-[#17141A] placeholder:text-[#9B94A3] focus:ring-2 focus:ring-[#38133E] focus:outline-none" placeholder="marc.d@voguely.com" />
             </div>
           </div>
           <div>
@@ -444,7 +444,7 @@ export class LoginComponent implements OnInit {
   }
 
   submitAccessRequest() {
-    this.authService.requestAccess(this.reqEmail || 'staff@youshop.com', this.reqName, this.reqHub, this.reqReason);
+    this.authService.requestAccess(this.reqEmail || 'staff@voguely.com', this.reqName, this.reqHub, this.reqReason);
     this.showRequestModal.set(false);
   }
 }

@@ -50,6 +50,14 @@ def retrieve_payment_intent(*, api_key: str, payment_intent_id: str):
     return stripe.PaymentIntent.retrieve(payment_intent_id, api_key=api_key)
 
 
+def create_refund(*, api_key: str, **params):
+    return stripe.Refund.create(**params, api_key=api_key)
+
+
+def retrieve_refund(*, api_key: str, refund_id: str):
+    return stripe.Refund.retrieve(refund_id, api_key=api_key)
+
+
 def list_prices(*, api_key: str, lookup_key: str):
     return stripe.Price.list(lookup_keys=[lookup_key], active=True, limit=100, api_key=api_key)
 

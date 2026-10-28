@@ -118,6 +118,15 @@ def _inventory_rows_to_csv(filas: list[dict]) -> str:
     return buffer.getvalue()
 
 
+def _report_rows_to_csv(columns: list[str], rows: list[list]) -> str:
+    """Serialize a generated report table using the existing CSV boundary."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(columns)
+    writer.writerows(rows)
+    return buffer.getvalue()
+
+
 def _build_pdf_bytes(titulo: str, subtitulo: str, headers: list[str], filas: list[list[str]]) -> bytes:
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -152,7 +161,7 @@ def _sales_rows_to_pdf_bytes(filas: list[dict], filtros: dict) -> bytes:
     ]
     tabla_filas.append(["TOTAL", "", str(total_items), f"{total_monto:.2f}"])
     return _build_pdf_bytes(
-        "Reporte de Ventas",
+        "Voguely | Reporte de Ventas",
         _describe_filtros(filtros),
         ["Producto", "Sucursal", "Cantidad Vendida", "Monto"],
         tabla_filas,
@@ -165,7 +174,7 @@ def _inventory_rows_to_pdf_bytes(filas: list[dict], filtros: dict) -> bytes:
         for f in filas
     ]
     return _build_pdf_bytes(
-        "Reporte de Inventario",
+        "Voguely | Reporte de Inventario",
         _describe_filtros(filtros),
         ["Producto", "Sucursal", "Cantidad Actual", "Cantidad Reservada"],
         tabla_filas,
@@ -294,7 +303,7 @@ async def sales_report_csv(
     return StreamingResponse(
         iter([csv_text]),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="reporte_ventas.csv"'},
+        headers={"Content-Disposition": 'attachment; filename="voguely_reporte_ventas.csv"'},
     )
 
 
@@ -313,7 +322,7 @@ async def sales_report_pdf(
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="reporte_ventas.pdf"'},
+        headers={"Content-Disposition": 'attachment; filename="voguely_reporte_ventas.pdf"'},
     )
 
 
@@ -343,7 +352,7 @@ async def inventory_report_csv(
     return StreamingResponse(
         iter([csv_text]),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="reporte_inventario.csv"'},
+        headers={"Content-Disposition": 'attachment; filename="voguely_reporte_inventario.csv"'},
     )
 
 
@@ -360,5 +369,5 @@ async def inventory_report_pdf(
     return StreamingResponse(
         iter([pdf_bytes]),
         media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="reporte_inventario.pdf"'},
+        headers={"Content-Disposition": 'attachment; filename="voguely_reporte_inventario.pdf"'},
     )

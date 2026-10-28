@@ -43,7 +43,7 @@ class TryOnScreen extends StatelessWidget {
           ),
           Text(
             'Simulación biomecánica de caída y drapeado en tiempo real.',
-            style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF4A463F)),
+            style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.textMain),
           ),
           const SizedBox(height: 12),
 
@@ -58,7 +58,7 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 3. Catalog Horizontal Strip
-          Text('ELEGIR PRENDA DEL CATÁLOGO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('ELEGIR PRENDA DEL CATÁLOGO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
           const SizedBox(height: 8),
           SizedBox(
             height: 110,
@@ -76,7 +76,7 @@ class TryOnScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
-                      border: Border.all(color: isSelected ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC), width: isSelected ? 1.5 : 1),
+                      border: Border.all(color: isSelected ? AetherTheme.charcoalDark : AetherTheme.border, width: isSelected ? 1.5 : 1),
                       borderRadius: BorderRadius.circular(2),
                     ),
                     child: Column(
@@ -91,7 +91,7 @@ class TryOnScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 9)),
-                        Text('\$${p.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 9, color: const Color(0xFF7B776E))),
+                        Text('\$${p.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 9, color: AetherTheme.muted)),
                       ],
                     ),
                   ),
@@ -103,7 +103,7 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 4. Fit Mode
-          Text('SILUETA Y CAÍDA (FIT)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('SILUETA Y CAÍDA (FIT)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
           const SizedBox(height: 8),
           Row(
               children: ['Relajado', 'Talla Real', 'Oversized'].map((mode) {
@@ -118,7 +118,7 @@ class TryOnScreen extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
-                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
+                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : AetherTheme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(
@@ -139,7 +139,7 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 5. Size Selection
-          Text('TALLAS DISPONIBLES', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('TALLAS DISPONIBLES', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
           const SizedBox(height: 8),
           Row(
             children: product.sizes.map((sz) {
@@ -154,7 +154,7 @@ class TryOnScreen extends StatelessWidget {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
-                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : const Color(0xFFCCC6BC)),
+                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : AetherTheme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(

@@ -5,7 +5,9 @@ import { ReportsService } from '../../core/services/reports.service';
 import { InventoryService } from '../../core/services/inventory.service';
 import { ArchiveService } from '../../core/services/archive.service';
 import { SyncService } from '../../core/services/sync.service';
+import { AuthService } from '../../core/services/auth.service';
 import { InventarioReporteOut, VentaReporteOut } from '../../core/models';
+import { AiReportsComponent } from '../ai-reports/ai-reports.component';
 import {
   InventoryReportFormState,
   REPORT_FILTER_ALL,
@@ -15,12 +17,12 @@ import {
   validateDateRange,
 } from './reports-filters';
 
-type ReportsTab = 'ventas' | 'inventario';
+type ReportsTab = 'ventas' | 'inventario' | 'ia';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AiReportsComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
@@ -56,6 +58,20 @@ type ReportsTab = 'ventas' | 'inventario';
           class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer"
         >
           Inventario
+        </button>
+
+        <button
+          *ngIf="isAdmin"
+          (click)="activeTab.set('ia')"
+          [class.text-ys-primary]="activeTab() === 'ia'"
+          [class.border-ys-primary]="activeTab() === 'ia'"
+          [class.text-gray-500]="activeTab() !== 'ia'"
+          [class.border-transparent]="activeTab() !== 'ia'"
+          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer flex items-center space-x-1.5"
+        >
+          <span class="material-symbols-outlined text-[16px]">psychology</span>
+          <span>Reportes con IA</span>
+          <span class="text-[9px] px-1.5 py-0.5 bg-[#F5EBF7] text-[#38133E] rounded font-extrabold uppercase border border-[#E8E2DA]">Gemini</span>
         </button>
       </div>
 
@@ -230,6 +246,11 @@ type ReportsTab = 'ventas' | 'inventario';
         </div>
       </div>
 
+      <!-- Sección: Reportes con IA (Solo Administrador) -->
+      <div *ngIf="activeTab() === 'ia' && isAdmin">
+        <app-ai-reports></app-ai-reports>
+      </div>
+
     </div>
   `
 })
@@ -256,7 +277,13 @@ export class ReportsComponent implements OnInit {
     public inventoryService: InventoryService,
     public archiveService: ArchiveService,
     public syncService: SyncService,
+    public authService: AuthService,
   ) {}
+
+  get isAdmin(): boolean {
+    const rol = this.authService.currentUser()?.rol;
+    return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
 
   ngOnInit() {
     // Sucursales y productos alimentan los selects de filtro de ambos

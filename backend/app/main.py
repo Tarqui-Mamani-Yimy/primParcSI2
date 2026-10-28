@@ -15,6 +15,7 @@ from app.routers import (
     collections,
     customers,
     dashboard,
+    dashboard_ml,
     dispatches,
     inventory,
     logs,
@@ -24,6 +25,8 @@ from app.routers import (
     purchase_history,
     recommendations,
     reports,
+    reports_ai,
+    returns,
     reservations,
     sales,
     seasons,
@@ -37,8 +40,8 @@ settings = get_settings()
 logger = logging.getLogger("app.errors")
 
 app = FastAPI(
-    title="API Ropa Unisex",
-    description="Backend unico para web (Angular) y mobile (Flutter)",
+    title="Voguely API",
+    description="Backend de Voguely para las aplicaciones web y móvil.",
     version="0.1.0",
 )
 
@@ -97,10 +100,13 @@ for router in (
     customers.router,
     chat.router,
     dashboard.router,
+    dashboard_ml.router,
     payment_methods.router,
     payments.router,
     recommendations.router,
     reports.router,
+    reports_ai.router,
+    returns.router,
     sales.router,
     reservations.router,
     purchase_history.router,

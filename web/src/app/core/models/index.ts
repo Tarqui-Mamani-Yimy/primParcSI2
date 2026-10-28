@@ -861,3 +861,90 @@ export interface ResolveDiscrepancyOut {
   discrepanciaNota: string | null;
 }
 
+// ─────────────────────────────────────────────
+// DASHBOARD ML PROJECTIONS (CU33, S2-S5)
+// ─────────────────────────────────────────────
+
+export interface MLHistoryPoint {
+  date: string;
+  amount: number;
+  units: number;
+}
+
+export interface MLForecastPoint {
+  date: string;
+  amount: number;
+  lower: number;
+  upper: number;
+}
+
+export interface MLModelInfo {
+  name: string;
+  mae: number;
+}
+
+export interface MLSalesForecastOut {
+  insufficient_data: boolean;
+  history: MLHistoryPoint[];
+  forecast: MLForecastPoint[];
+  total_forecast_amount: number;
+  model?: MLModelInfo;
+}
+
+export interface MLStockoutItem {
+  product_id: number;
+  product_name: string;
+  talla?: string | null;
+  branch_id?: number;
+  branch_name?: string;
+  current_stock: number;
+  daily_demand: number;
+  days_to_stockout: number;
+  suggested_restock: number;
+}
+
+export interface MLStockoutRiskOut {
+  insufficient_data: boolean;
+  items: MLStockoutItem[];
+}
+
+export type MLProductTrend = 'creciendo' | 'estable' | 'cayendo';
+
+export interface MLProductTrendItem {
+  product_id: number;
+  product_name: string;
+  trend: MLProductTrend;
+  slope: number;
+  units_last_30: number;
+  units_prev_30: number;
+}
+
+export interface MLProductTrendsOut {
+  insufficient_data: boolean;
+  items: MLProductTrendItem[];
+}
+
+export interface MLCustomerSegmentSummary {
+  segment: string;
+  label: string;
+  customers: number;
+  avg_recency_days: number;
+  avg_frequency: number;
+  avg_amount: number;
+}
+
+export interface MLCustomerSegmentItem {
+  customer_id: number;
+  name: string;
+  segment: string;
+  recency_days: number;
+  frequency: number;
+  monetary: number;
+}
+
+export interface MLCustomerSegmentsOut {
+  insufficient_data: boolean;
+  segments: MLCustomerSegmentSummary[];
+  customers: MLCustomerSegmentItem[];
+}
+

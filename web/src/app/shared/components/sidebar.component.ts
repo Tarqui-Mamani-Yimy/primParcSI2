@@ -20,7 +20,9 @@ export type AppView =
   | 'indicadores'
   | 'subscription'
   | 'platform'
-  | 'sync-queue';
+  | 'sync-queue'
+  | 'returns'
+  | 'ai-reports';
 
 @Component({
   selector: 'app-sidebar',
@@ -302,6 +304,28 @@ export type AppView =
               <span class="font-medium tracking-tight">Caja</span>
             </button>
 
+            <!-- Cambios y Devoluciones (Gating: devolucion.ver) -->
+            <button
+              *ngIf="canViewReturns"
+              (click)="selectView('returns')"
+              [class.bg-ys-primary-soft]="currentView === 'returns'"
+              [class.text-ys-primary]="currentView === 'returns'"
+              [class.font-semibold]="currentView === 'returns'"
+              [class.text-ys-muted]="currentView !== 'returns'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
+            >
+              <div
+                [class.bg-ys-primary]="currentView === 'returns'"
+                [class.text-white]="currentView === 'returns'"
+                [class.bg-ys-surface]="currentView !== 'returns'"
+                [class.text-ys-muted]="currentView !== 'returns'"
+                class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]">assignment_return</span>
+              </div>
+              <span class="font-medium tracking-tight">Cambios y Devoluciones</span>
+            </button>
+
             <!-- Cola de Sincronización (Gating: Cajero o Encargado de Sucursal) -->
             <button
               *ngIf="canViewSyncQueue"
@@ -398,6 +422,28 @@ export type AppView =
                 <span class="material-symbols-outlined text-[18px]">summarize</span>
               </div>
               <span class="font-medium tracking-tight">Reportes</span>
+            </button>
+
+            <!-- Reportes con IA (Gating: Administrador + reporte.ver) -->
+            <button
+              *ngIf="canViewAiReports"
+              (click)="selectView('ai-reports')"
+              [class.bg-ys-primary-soft]="currentView === 'ai-reports'"
+              [class.text-ys-primary]="currentView === 'ai-reports'"
+              [class.font-semibold]="currentView === 'ai-reports'"
+              [class.text-ys-muted]="currentView !== 'ai-reports'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
+            >
+              <div
+                [class.bg-ys-primary]="currentView === 'ai-reports'"
+                [class.text-white]="currentView === 'ai-reports'"
+                [class.bg-ys-surface]="currentView !== 'ai-reports'"
+                [class.text-ys-muted]="currentView !== 'ai-reports'"
+                class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]">psychology</span>
+              </div>
+              <span class="font-medium tracking-tight">Reportes con IA</span>
             </button>
 
             <!-- Indicadores (Gating: reportes_avanzados + reporte.ver) -->
@@ -516,11 +562,11 @@ export class SidebarComponent {
   }
 
   get empresaNombre(): string {
-    return this.authService.empresa()?.nombre || 'YouShop';
+    return this.authService.empresa()?.nombre || 'Voguely';
   }
 
   get empresaSlug(): string {
-    return this.authService.empresa()?.slug || 'youshop';
+    return this.authService.empresa()?.slug || 'voguely';
   }
 
   get planNombre(): string {
@@ -552,6 +598,10 @@ export class SidebarComponent {
     return hasPerm && this.authService.hasFeature('pos');
   }
 
+  get canViewReturns(): boolean {
+    return this.authService.hasPermission('devolucion.ver');
+  }
+
   get canViewSyncQueue(): boolean {
     const rol = this.authService.currentUser()?.rol;
     return rol === 'Cajero' || rol === 'Encargado de Sucursal' || rol === 'Administrador';
@@ -560,6 +610,13 @@ export class SidebarComponent {
   get canViewReports(): boolean {
     const hasPerm = this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
     return hasPerm && this.authService.hasFeature('reportes');
+  }
+
+  get canViewAiReports(): boolean {
+    const rol = this.authService.currentUser()?.rol;
+    const isAdmin = rol === 'Administrador' || this.authService.isSuperAdmin();
+    const hasPerm = this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
+    return isAdmin && hasPerm && this.authService.hasFeature('reportes');
   }
 
   get canViewIndicadores(): boolean {

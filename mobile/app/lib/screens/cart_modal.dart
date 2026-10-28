@@ -52,13 +52,13 @@ class _CartModalState extends State<CartModal> {
     });
 
     try {
-      final intent = await _paymentsService.crearIntent(items, concepto: 'Compra YouShop');
+      final intent = await _paymentsService.crearIntent(items, concepto: 'Compra Voguely');
       final clientSecret = intent['clientSecret'] as String;
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'YouShop',
+          merchantDisplayName: 'Voguely',
         ),
       );
       // Si el usuario cancela o la tarjeta es rechazada, esto lanza
@@ -159,7 +159,7 @@ class _CartModalState extends State<CartModal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Venta #${venta['idVenta']}', style: GoogleFonts.sourceSerif4(fontSize: 14)),
-            if (fechaTexto.isNotEmpty) Text(fechaTexto, style: GoogleFonts.outfit(fontSize: 12, color: const Color(0xFF7B776E))),
+            if (fechaTexto.isNotEmpty) Text(fechaTexto, style: GoogleFonts.outfit(fontSize: 12, color: AetherTheme.muted)),
             const SizedBox(height: 8),
             Text(
               'Total: \$${(venta['total'] as num).toStringAsFixed(2)}',
@@ -205,7 +205,7 @@ class _CartModalState extends State<CartModal> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFCCC6BC)),
+          const Divider(height: 1, color: AetherTheme.border),
 
           // Items list
           Expanded(
@@ -214,9 +214,9 @@ class _CartModalState extends State<CartModal> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shopping_bag_outlined, size: 48, color: Color(0xFFCCC6BC)),
+                        const Icon(Icons.shopping_bag_outlined, size: 48, color: AetherTheme.border),
                         const SizedBox(height: 12),
-                        Text('Tu bolsa está vacía.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: const Color(0xFF7B776E))),
+                        Text('Tu bolsa está vacía.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: AetherTheme.muted)),
                       ],
                     ),
                   )
@@ -242,7 +242,7 @@ class _CartModalState extends State<CartModal> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(item.product.name, style: GoogleFonts.sourceSerif4(fontSize: 13, fontWeight: FontWeight.w600)),
-                                Text('Talla: ${item.size} • Color: ${item.product.colorName}', style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFF7B776E))),
+                                Text('Talla: ${item.size} • Color: ${item.product.colorName}', style: GoogleFonts.outfit(fontSize: 10, color: AetherTheme.muted)),
                                 const SizedBox(height: 4),
                                 Text('\$${item.product.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 12, fontWeight: FontWeight.bold)),
                               ],
@@ -272,7 +272,7 @@ class _CartModalState extends State<CartModal> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFCCC6BC), width: 0.5)),
+                border: Border(top: BorderSide(color: AetherTheme.border, width: 0.5)),
               ),
               child: Column(
                 children: [

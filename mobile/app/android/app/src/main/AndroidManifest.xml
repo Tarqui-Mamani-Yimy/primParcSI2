@@ -6,7 +6,7 @@
          puede garantizar acceso a red (debug lo auto-agrega, release no). -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="app"
+        android:label="Voguely"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

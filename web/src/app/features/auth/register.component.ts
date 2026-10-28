@@ -14,8 +14,8 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
         <div class="w-full max-w-md bg-white p-8 md:p-10 rounded-2xl border border-[#E8E2DA] shadow-sm relative z-10">
 
           <div class="flex flex-col items-center justify-center mb-6">
-            <div class="w-10 h-10 bg-[#38133E] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">Y</div>
-            <span class="text-xl font-bold text-[#17141A] tracking-tight">YouShop</span>
+            <div class="w-10 h-10 bg-[#38133E] rounded-xl flex items-center justify-center text-white font-bold text-base shadow-md mb-2">V</div>
+            <span class="text-xl font-bold text-[#17141A] tracking-tight">Voguely</span>
             <span class="text-xs tracking-wider text-[#5A5561] uppercase">Portal de Clientes</span>
           </div>
 
@@ -144,7 +144,7 @@ import { hasDigit, hasLower, hasSpecial, hasUpper, isStrong } from '../../shared
             <div class="pt-2 text-center border-t border-[#E8E2DA]">
               <button type="button" (click)="onBackToLanding()" class="text-xs text-[#5A5561] hover:text-[#17141A] transition-colors inline-flex items-center gap-1 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-                <span>Volver a YouShop</span>
+                <span>Volver a Voguely</span>
               </button>
             </div>
           </form>

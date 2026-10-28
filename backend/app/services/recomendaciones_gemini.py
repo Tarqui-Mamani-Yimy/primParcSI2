@@ -33,14 +33,13 @@ except ImportError:  # pragma: no cover - google-genai siempre deberia estar ins
 logger = logging.getLogger("app.errors")
 settings = get_settings()
 
-# Mismo pin que chat_gemini.py: "gemini-flash-latest" devolvio 503 "alta
-# demanda" en pruebas en vivo con esta key; "gemini-2.5-flash" si respondio.
-MODEL = "gemini-2.5-flash"
+# Mismo modelo que chat_gemini.py (setting GEMINI_MODEL).
+MODEL = settings.GEMINI_MODEL
 MAX_CANDIDATOS = 30
 MAX_RECOMENDACIONES = 3
 
 SYSTEM_INSTRUCTION = (
-    "Sos el motor de recomendaciones de YouShop, una tienda de ropa unisex. "
+    "Sos el motor de recomendaciones de Voguely, una tienda de ropa unisex. "
     "Se te da el historial de compras de un cliente y una lista de productos "
     "candidatos (los unicos que el cliente todavia NO compro). Elegi hasta "
     f"{MAX_RECOMENDACIONES} productos de esa lista de candidatos que le "

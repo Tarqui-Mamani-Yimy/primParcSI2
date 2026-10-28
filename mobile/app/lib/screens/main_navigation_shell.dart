@@ -35,7 +35,7 @@ class MainNavigationShell extends StatelessWidget {
       backgroundColor: AetherTheme.sandLight,
       appBar: AppBar(
         title: Text(
-          'A E T H E R',
+          'V O G U E L Y',
           style: GoogleFonts.outfit(
             fontSize: 17,
             letterSpacing: 4.5,
@@ -130,7 +130,7 @@ class MainNavigationShell extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AetherTheme.sandLight,
-          border: Border(top: BorderSide(color: Color(0xFFCCC6BC), width: 0.5)),
+          border: Border(top: BorderSide(color: AetherTheme.border, width: 0.5)),
         ),
         child: BottomNavigationBar(
           currentIndex: appState.currentTabIndex,
@@ -138,7 +138,7 @@ class MainNavigationShell extends StatelessWidget {
           type: BottomNavigationBarType.fixed,
           backgroundColor: AetherTheme.sandLight,
           selectedItemColor: AetherTheme.charcoalDark,
-          unselectedItemColor: const Color(0xFF7B776E),
+          unselectedItemColor: AetherTheme.muted,
           selectedLabelStyle: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
           unselectedLabelStyle: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w500),
           elevation: 0,

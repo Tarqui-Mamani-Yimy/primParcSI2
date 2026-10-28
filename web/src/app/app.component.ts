@@ -28,6 +28,8 @@ import { SubscriptionComponent } from './features/subscription/subscription.comp
 import { PlatformComponent } from './features/platform/platform.component';
 import { DiscrepanciesComponent } from './features/inventory/discrepancies.component';
 import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
+import { ReturnsComponent } from './features/returns/returns.component';
+import { AiReportsComponent } from './features/ai-reports/ai-reports.component';
 
 @Component({
   selector: 'app-root',
@@ -56,7 +58,9 @@ import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
     ReportsComponent,
     IndicadoresComponent,
     SubscriptionComponent,
-    PlatformComponent
+    PlatformComponent,
+    ReturnsComponent,
+    AiReportsComponent
   ],
   template: `
     <!-- Banner PWA Update (Pantallas Públicas) -->
@@ -66,7 +70,7 @@ import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
     >
       <div class="flex items-center space-x-2">
         <span class="material-symbols-outlined text-[18px]">system_update</span>
-        <span>Nueva versión disponible de YouShop.</span>
+        <span>Nueva versión disponible de Voguely.</span>
       </div>
       <div class="flex items-center space-x-2">
         <button
@@ -248,7 +252,7 @@ import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
           >
             <div class="flex items-center space-x-2">
               <span class="material-symbols-outlined text-[18px]">system_update</span>
-              <span>Nueva versión disponible de YouShop.</span>
+              <span>Nueva versión disponible de Voguely.</span>
             </div>
             <div class="flex items-center space-x-2">
               <button
@@ -359,6 +363,10 @@ import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
               (openSyncQueue)="onViewChange('sync-queue')"
             ></app-pos>
 
+            <app-returns
+              *ngIf="activeView() === 'returns'"
+            ></app-returns>
+
             <app-sync-queue
               *ngIf="activeView() === 'sync-queue'"
               (navigate)="onViewChange($event)"
@@ -371,6 +379,10 @@ import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
             <app-reports
               *ngIf="activeView() === 'reports'"
             ></app-reports>
+
+            <app-ai-reports
+              *ngIf="activeView() === 'ai-reports'"
+            ></app-ai-reports>
 
             <app-indicadores
               *ngIf="activeView() === 'indicadores'"
@@ -554,12 +566,16 @@ export class AppComponent implements OnInit {
         return 'Reservas y Atención en Sucursal';
       case 'pos':
         return 'Caja — Venta Presencial';
+      case 'returns':
+        return 'Gestión de Cambios y Devoluciones';
       case 'sync-queue':
         return 'Cola de Sincronización';
       case 'locations':
         return 'Ciudades y Sucursales';
       case 'reports':
         return 'Reportes de Ventas e Inventario';
+      case 'ai-reports':
+        return 'Reportes con Inteligencia Artificial';
       case 'indicadores':
         return 'Dashboard de Indicadores Empresariales';
       case 'subscription':

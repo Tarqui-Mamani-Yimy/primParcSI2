@@ -107,7 +107,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                 )
               : ventaIds.isEmpty
                   ? Center(
-                      child: Text('Todavia no tenes compras.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: const Color(0xFF7B776E))),
+                      child: Text('Todavia no tenes compras.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: AetherTheme.muted)),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
@@ -121,7 +121,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.7),
-                            border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.6)),
+                            border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Column(
@@ -140,8 +140,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(_formatearFecha(primera.fecha), style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF7B776E))),
-                              const Divider(height: 18, color: Color(0xFFCCC6BC)),
+                              Text(_formatearFecha(primera.fecha), style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted)),
+                              const Divider(height: 18, color: AetherTheme.border),
                               // Items de linea: cada uno con SU PROPIO subtotal,
                               // distinto del total de la venta de arriba.
                               ...lineas.map(
@@ -158,7 +158,7 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                                       ),
                                       Text(
                                         'Subtotal: \$${item.subtotalLinea.toStringAsFixed(2)}',
-                                        style: GoogleFonts.outfit(fontSize: 11, color: const Color(0xFF7B776E)),
+                                        style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted),
                                       ),
                                     ],
                                   ),

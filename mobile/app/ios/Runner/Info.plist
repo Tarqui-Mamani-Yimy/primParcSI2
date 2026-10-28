@@ -4,13 +4,13 @@
 <dict>
 	<!-- CU11 (Vestidor Virtual RA): camara para el probador virtual. -->
 	<key>NSCameraUsageDescription</key>
-	<string>YouShop usa la cámara para mostrarte el probador virtual de prendas.</string>
+	<string>Voguely usa la cámara para mostrarte el probador virtual de prendas.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>App</string>
+	<string>Voguely</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

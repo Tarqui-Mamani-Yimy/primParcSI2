@@ -265,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(_miPerfil!.nombre, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: AetherTheme.charcoalDark)),
-                              Text(_miPerfil!.correo ?? '', style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E))),
+                              Text(_miPerfil!.correo ?? '', style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted)),
                               if ((_miPerfil!.telefono ?? '').isNotEmpty || (_miPerfil!.direccion ?? '').isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
@@ -274,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       if ((_miPerfil!.telefono ?? '').isNotEmpty) _miPerfil!.telefono,
                                       if ((_miPerfil!.direccion ?? '').isNotEmpty) _miPerfil!.direccion,
                                     ].join(' · '),
-                                    style: GoogleFonts.sourceSerif4(fontSize: 11, color: const Color(0xFF7B776E)),
+                                    style: GoogleFonts.sourceSerif4(fontSize: 11, color: AetherTheme.muted),
                                   ),
                                 ),
                             ],
@@ -344,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.7),
-              border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.6)),
+              border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Column(
@@ -362,9 +362,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.lock, size: 12, color: Color(0xFF7B776E)),
+                        const Icon(Icons.lock, size: 12, color: AetherTheme.muted),
                         const SizedBox(width: 4),
-                        Text('PRIVADO', style: GoogleFonts.outfit(fontSize: 8.5, color: const Color(0xFF7B776E), fontWeight: FontWeight.bold)),
+                        Text('PRIVADO', style: GoogleFonts.outfit(fontSize: 8.5, color: AetherTheme.muted, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -406,7 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.7),
-              border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.6)),
+              border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Column(
@@ -422,10 +422,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 6),
                 Text(
                   profile.styleInsights,
-                  style: GoogleFonts.sourceSerif4(fontSize: 11.5, height: 1.5, color: const Color(0xFF4A463F)),
+                  style: GoogleFonts.sourceSerif4(fontSize: 11.5, height: 1.5, color: AetherTheme.textMain),
                 ),
                 const SizedBox(height: 12),
-                Text('PALETA RECOMENDADA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF7B776E))),
+                Text('PALETA RECOMENDADA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold, color: AetherTheme.muted)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -434,8 +434,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F4EF),
-                        border: Border.all(color: const Color(0xFFCCC6BC)),
+                        color: AetherTheme.surface,
+                        border: Border.all(color: AetherTheme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Row(
@@ -456,7 +456,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // 3. Saved Outfits
-          Text('LOOKS GUARDADOS (${profile.savedOutfits.length})', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: const Color(0xFF7B776E))),
+          Text('LOOKS GUARDADOS (${profile.savedOutfits.length})', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
           const SizedBox(height: 8),
           SizedBox(
             height: 180,
@@ -470,7 +470,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: 120,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    border: Border.all(color: const Color(0xFFCCC6BC)),
+                    border: Border.all(color: AetherTheme.border),
                     borderRadius: BorderRadius.circular(2),
                   ),
                   padding: const EdgeInsets.all(6),
@@ -485,7 +485,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(look.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold)),
-                      Text(look.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.sourceSerif4(fontSize: 8.5, color: const Color(0xFF7B776E))),
+                      Text(look.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.sourceSerif4(fontSize: 8.5, color: AetherTheme.muted)),
                     ],
                   ),
                 );
@@ -504,13 +504,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 2),
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFF7F4EF),
+          color: AetherTheme.surface,
           borderRadius: BorderRadius.circular(2),
-          border: Border.all(color: const Color(0xFFCCC6BC).withValues(alpha: 0.4)),
+          border: Border.all(color: AetherTheme.border.withValues(alpha: 0.4)),
         ),
         child: Column(
           children: [
-            Text(label, style: GoogleFonts.outfit(fontSize: 7.5, color: const Color(0xFF7B776E), fontWeight: FontWeight.bold)),
+            Text(label, style: GoogleFonts.outfit(fontSize: 7.5, color: AetherTheme.muted, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
             Text(val, style: GoogleFonts.sourceSerif4(fontSize: 11, fontWeight: FontWeight.bold)),
           ],

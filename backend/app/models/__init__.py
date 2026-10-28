@@ -402,3 +402,83 @@ class Historial(Base):
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)
     idVenta: Mapped[int] = mapped_column(ForeignKey("Venta.idVenta", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+
+
+class Devolucion(Base):
+    __tablename__ = "devolucion"
+    __table_args__ = (
+        CheckConstraint("tipo IN ('devolucion', 'cambio')", name="chk_devolucion_tipo"),
+        CheckConstraint("estado IN ('payment_pending', 'completed', 'payment_failed')", name="chk_devolucion_estado"),
+        CheckConstraint('"montoReembolso" >= 0 AND "montoCobrado" >= 0', name="chk_devolucion_montos"),
+    CheckConstraint('"stripeRefundAttempts" >= 0', name="chk_devolucion_refund_attempts"),
+        UniqueConstraint("idEmpresa", "idDevolucion", name="uq_devolucion_empresa_id"),
+        Index("idx_devolucion_empresa_fecha", "idEmpresa", "fecha"),
+        Index("idx_devolucion_venta", "idEmpresa", "idVenta"),
+    )
+
+    idDevolucion: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idVenta: Mapped[int] = mapped_column(ForeignKey("Venta.idVenta", onupdate="CASCADE"), nullable=False)
+    idUser: Mapped[int] = mapped_column(ForeignKey("Usuario.idUser", onupdate="CASCADE"), nullable=False)
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    estado: Mapped[str] = mapped_column(String(30), nullable=False)
+    montoReembolso: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    montoCobrado: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    metodoPago: Mapped[str | None] = mapped_column(String(30))
+    stripeRefundId: Mapped[str | None] = mapped_column(String(255))
+    stripeRefundAttempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    stripePaymentIntentId: Mapped[str | None] = mapped_column(String(255))
+    fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class DevolucionDetalle(Base):
+    __tablename__ = "devolucion_detalle"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="chk_devolucion_detalle_quantity"),
+        CheckConstraint("unit_price >= 0", name="chk_devolucion_detalle_unit_price"),
+        Index("idx_devolucion_detalle_sale_item", "idEmpresa", "sale_item_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    return_id: Mapped[int] = mapped_column(ForeignKey("devolucion.idDevolucion", ondelete="CASCADE"), nullable=False)
+    sale_item_id: Mapped[int] = mapped_column(ForeignKey("detalle_venta.codigoVenta", onupdate="CASCADE"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    inventory_id: Mapped[int] = mapped_column(ForeignKey("Inventario.idInv", onupdate="CASCADE"), nullable=False)
+
+
+class DevolucionReemplazo(Base):
+    __tablename__ = "devolucion_reemplazo"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="chk_devolucion_reemplazo_quantity"),
+        CheckConstraint("unit_price >= 0", name="chk_devolucion_reemplazo_unit_price"),
+        Index("idx_devolucion_reemplazo_return", "idEmpresa", "return_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    return_id: Mapped[int] = mapped_column(ForeignKey("devolucion.idDevolucion", ondelete="CASCADE"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    inventory_id: Mapped[int] = mapped_column(ForeignKey("Inventario.idInv", onupdate="CASCADE"), nullable=False)
+
+
+class MovimientoCaja(Base):
+    __tablename__ = "movimiento_caja"
+    __table_args__ = (
+        CheckConstraint("kind IN ('ingreso', 'egreso')", name="chk_movimiento_caja_kind"),
+        CheckConstraint("amount > 0", name="chk_movimiento_caja_amount"),
+        Index("idx_movimiento_caja_return", "idEmpresa", "return_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    return_id: Mapped[int] = mapped_column(ForeignKey("devolucion.idDevolucion", ondelete="RESTRICT"), nullable=False)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("Sucursal.codigoSucursal", onupdate="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("Usuario.idUser", onupdate="CASCADE"), nullable=False)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    concept: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)

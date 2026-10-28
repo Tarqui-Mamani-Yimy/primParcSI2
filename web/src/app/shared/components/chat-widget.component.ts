@@ -39,7 +39,7 @@ const SALUDO = '¡Hola! Preguntame sobre el catálogo o tus compras/reservas.';
       <div class="px-4 py-3 bg-[#38133E] text-white flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2">
           <span class="material-symbols-outlined text-[20px]">smart_toy</span>
-          <span class="text-sm font-bold">Asistente YouShop</span>
+          <span class="text-sm font-bold">Asistente Voguely</span>
         </div>
         <button (click)="cerrar()" class="hover:bg-[#260B2B] rounded-lg p-1 transition-colors cursor-pointer" aria-label="Cerrar">
           <span class="material-symbols-outlined text-[18px]">close</span>

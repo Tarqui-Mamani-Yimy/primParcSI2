@@ -2,33 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AetherTheme {
-  // Kinetic Silk Palette
-  static const Color sand = Color(0xFFF7F4EF);
-  static const Color sandLight = Color(0xFFFDF8F7);
-  static const Color sandDark = Color(0xFFDDD9D8);
-  static const Color charcoal = Color(0xFF2C2A26);
-  static const Color charcoalDark = Color(0xFF171612);
-  static const Color bronze = Color(0xFF8C7355);
-  static const Color mutedGold = Color(0xFFC9B99A);
-  static const Color olive = Color(0xFF695D43);
-  static const Color outline = Color(0xFFCCC6BC);
+  // Voguely palette. Keep this class name because it is an internal identifier.
+  static const Color primary = Color(0xFF38133E);
+  static const Color primarySoft = Color(0xFFF5EBF7);
+  static const Color canvas = Color(0xFFFAF8F5);
+  static const Color surface = Color(0xFFF3EFEA);
+  static const Color border = Color(0xFFE8E2DA);
+  static const Color textMain = Color(0xFF17141A);
+  static const Color muted = Color(0xFF5A5561);
+  static const Color subtle = Color(0xFF9B94A3);
+  static const Color success = Color(0xFF16A34A);
+  static const Color successSoft = Color(0xFFDCFCE7);
+  static const Color error = Color(0xFFB3261E);
+  static const Color white = Color(0xFFFFFFFF);
+
+  // Existing internal names retained for the mobile screens.
+  static const Color sand = surface;
+  static const Color sandLight = canvas;
+  static const Color sandDark = primarySoft;
+  static const Color charcoal = textMain;
+  static const Color charcoalDark = textMain;
+  static const Color bronze = primary;
+  static const Color mutedGold = primarySoft;
+  static const Color olive = muted;
+  static const Color outline = border;
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: sandLight,
-      primaryColor: charcoalDark,
+      scaffoldBackgroundColor: canvas,
+      primaryColor: primary,
       colorScheme: const ColorScheme.light(
-        primary: charcoalDark,
-        secondary: bronze,
-        surface: sandLight,
-        onSurface: charcoalDark,
+        primary: primary,
+        onPrimary: primarySoft,
+        secondary: primary,
+        onSecondary: primarySoft,
+        surface: canvas,
+        onSurface: textMain,
+        error: error,
+        onError: white,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: sandLight,
+        backgroundColor: canvas,
         elevation: 0,
         scrolledUnderElevation: 0,
-        iconTheme: IconThemeData(color: charcoalDark),
+        iconTheme: IconThemeData(color: textMain),
       ),
       textTheme: TextTheme(
         displayLarge: GoogleFonts.outfit(
@@ -65,7 +83,7 @@ class AetherTheme {
           fontSize: 13,
           fontWeight: FontWeight.w400,
           height: 1.5,
-          color: const Color(0xFF4A463F),
+          color: textMain,
         ),
         labelLarge: GoogleFonts.outfit(
           fontSize: 11,

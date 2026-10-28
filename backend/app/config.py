@@ -24,13 +24,19 @@ class Settings(BaseSettings):
     # — email_utils.py llama a api.brevo.com directamente con esta key).
     BREVO_API_KEY: str | None = None
     BREVO_SENDER_EMAIL: str | None = None
-    BREVO_SENDER_NAME: str = "YouShop"
+    BREVO_SENDER_NAME: str = "Voguely"
 
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_PUBLISHABLE_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
 
     GEMINI_API_KEY: str | None = None
+    # Google retires fixed Gemini versions; keep the model in one setting
+    # so a retirement is fixed with GEMINI_MODEL in .env, not a code change.
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+
+    GROQ_API_KEY: str | None = None
+    GROQ_TRANSCRIPTION_MODEL: str = "whisper-large-v3-turbo"
 
     # Storage de imagenes de producto via Supabase Storage (bucket publico
     # "primSI2") — storage_supabase.py usa la service role key para subir.

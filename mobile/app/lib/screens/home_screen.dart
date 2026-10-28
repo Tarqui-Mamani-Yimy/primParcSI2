@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'Alta':
         return Colors.red.shade700;
       case 'Baja':
-        return const Color(0xFF7B776E);
+        return AetherTheme.muted;
       default:
         return Colors.amber.shade800;
     }
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: CachedNetworkImage(
                       imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWVEjDuUQ_X1l6JvlGJvjXr68r55cZvMqHoC2dCPjlzv-t0nbhrhq4Qt_M_rHaKnhnkmFT9VkhJw7xmdGauzKUYocKh5oT8KKBmmKVpNPtmgqEAlTXR8sVFtg1gPM6FDbsWDApruzAx205g6Z7njnP5tC_1lM3Jy_74UDWgFyxNjMIdyZ6nN-Hvr22utV3vMdZESNVnP_ZSU4cLhu9Ca4obAm09F1M04b9BiLkQp8f03j57smqHSsmVg',
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: const Color(0xFFEAE5DC)),
+                      placeholder: (_, __) => Container(color: AetherTheme.surface),
                     ),
                   ),
                   Positioned.fill(
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         appState.productsError!,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
@@ -281,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Text(
                         '\$${product.price.toInt()}',
-                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFF7B776E)),
+                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
                       ),
                     ],
                   ),

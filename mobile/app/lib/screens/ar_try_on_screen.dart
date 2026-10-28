@@ -202,7 +202,7 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
     if (_permissionDenied) {
       return _MessageOverlay(
         icon: Icons.no_photography_outlined,
-        message: 'YouShop necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
+        message: 'Voguely necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
         actionLabel: 'Reintentar',
         onAction: _initCamera,
       );
@@ -270,7 +270,7 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             top: 50,
             right: 8,
             child: Material(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),

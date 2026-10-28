@@ -46,6 +46,14 @@ def _seed_value(column, tenant, table_name):
     name = column.name.lower()
     table_is_tenant_scoped = "idEmpresa" in column.table.c
     value = f"tenant-{tenant}-{table_name}-{column.name}" if table_is_tenant_scoped else f"Shared-{table_name}-{column.name}"
+    # New CU31 tables carry CHECK constraints in the ORM metadata; the generic
+    # tenant fixture must seed valid domain values rather than synthetic labels.
+    if table_name == "devolucion" and name == "tipo":
+        return "devolucion"
+    if table_name == "devolucion" and name == "estado":
+        return "completed"
+    if table_name == "movimiento_caja" and name == "kind":
+        return "egreso"
     if isinstance(column.type, DateTime):
         return datetime(2026, 1, tenant, 12, 0)
     if isinstance(column.type, Date):

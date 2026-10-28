@@ -2,6 +2,8 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IndicadoresService } from '../../core/services/indicadores.service';
+import { AuthService } from '../../core/services/auth.service';
+import { MlProjectionsComponent } from '../ml-projections/ml-projections.component';
 import {
   KpisOut,
   StockPorSucursalOut,
@@ -28,7 +30,7 @@ interface VentaPunto extends VentaDiariaFila {
 @Component({
   selector: 'app-indicadores',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MlProjectionsComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
@@ -42,6 +44,40 @@ interface VentaPunto extends VentaDiariaFila {
           </p>
         </div>
       </div>
+
+      <!-- Pestañas (Tabs) de Navegación -->
+      <div class="flex items-center space-x-2 border-b border-gray-200">
+        <button
+          type="button"
+          (click)="activeTab.set('indicadores')"
+          [class.text-ys-primary]="activeTab() === 'indicadores'"
+          [class.border-ys-primary]="activeTab() === 'indicadores'"
+          [class.text-gray-500]="activeTab() !== 'indicadores'"
+          [class.border-transparent]="activeTab() !== 'indicadores'"
+          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer flex items-center space-x-2"
+        >
+          <span class="material-symbols-outlined text-[16px]">monitoring</span>
+          <span>Indicadores Clave</span>
+        </button>
+
+        <button
+          *ngIf="isAdmin"
+          type="button"
+          (click)="activeTab.set('ml')"
+          [class.text-ys-primary]="activeTab() === 'ml'"
+          [class.border-ys-primary]="activeTab() === 'ml'"
+          [class.text-gray-500]="activeTab() !== 'ml'"
+          [class.border-transparent]="activeTab() !== 'ml'"
+          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wide border-b-2 transition-colors cursor-pointer flex items-center space-x-2"
+        >
+          <span class="material-symbols-outlined text-[16px]">auto_graph</span>
+          <span>Proyecciones (ML)</span>
+          <span class="text-[9px] px-1.5 py-0.5 bg-[#F5EBF7] text-[#38133E] rounded font-extrabold uppercase border border-[#E8E2DA]">scikit-learn</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Indicadores Clave Tradicionales -->
+      <ng-container *ngIf="activeTab() === 'indicadores'">
 
       <!-- Filtro: rango de fechas (una sola fila, arriba de todo — aplica a todos los gráficos) -->
       <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-xs flex flex-wrap items-end gap-4">
@@ -257,10 +293,19 @@ interface VentaPunto extends VentaDiariaFila {
         </div>
       </div>
 
+      </ng-container>
+
+      <!-- Tab 2: Proyecciones ML (Solo Administrador) -->
+      <div *ngIf="activeTab() === 'ml' && isAdmin">
+        <app-ml-projections></app-ml-projections>
+      </div>
+
     </div>
   `
 })
 export class IndicadoresComponent implements OnInit {
+  activeTab = signal<'indicadores' | 'ml'>('indicadores');
+
   readonly categorical = CATEGORICAL;
   readonly seqBlue = SEQ_BLUE;
   readonly inkSecondary = INK_SECONDARY;
@@ -287,7 +332,15 @@ export class IndicadoresComponent implements OnInit {
   hoveredTopIndex = signal<number | null>(null);
   hoveredSucursalIndex = signal<number | null>(null);
 
-  constructor(private indicadoresService: IndicadoresService) {}
+  constructor(
+    private indicadoresService: IndicadoresService,
+    private authService: AuthService
+  ) {}
+
+  get isAdmin(): boolean {
+    const rol = this.authService.currentUser()?.rol;
+    return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
 
   ngOnInit() {
     this.cargarTodo();

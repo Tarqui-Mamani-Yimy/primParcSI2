@@ -28,8 +28,9 @@ def send_reset_email(to_email: str, reset_link: str, welcome_name: str | None = 
         return False
 
     if welcome_name:
-        subject = "Bienvenida a YouShop: crea tu contraseña"
+        subject = "Bienvenida a Voguely: crea tu contraseña"
         cuerpo = (f"Hola {welcome_name}, tu pago fue recibido y tu cuenta ya está lista.\n\n"
+                  "Gracias por elegir Voguely.\n\n"
                   f"Crea tu contraseña en este enlace:\n{reset_link}\n\n"
                   "El enlace expira en 48 horas.")
     else:

@@ -11,6 +11,7 @@ from app.schemas.inventory import (
     StockOut,
 )
 from app.security import require_feature, require_permiso
+from app.services.inventory_stock import adjust_inventory_and_record_movement
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"], dependencies=[Depends(require_feature("inventario"))])
 
@@ -108,14 +109,14 @@ async def adjust_stock(
     if nuevo < 0:
         raise HTTPException(status_code=400, detail="La cantidad resultante no puede ser negativa")
 
-    inv.cantidad_actual = nuevo
-    movimiento = Movimiento(
-        tipo=payload.tipo,
-        cantidad=cantidad,
-        motivo=payload.motivo,
-        idInv=inv.idInv,
+    adjust_inventory_and_record_movement(
+        session,
+        inv,
+        new_quantity=nuevo,
+        movement_quantity=cantidad,
+        movement_type=payload.tipo,
+        reason=payload.motivo,
     )
-    session.add(movimiento)
     await session.commit()
     await session.refresh(inv)
 

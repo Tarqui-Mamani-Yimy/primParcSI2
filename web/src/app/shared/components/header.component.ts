@@ -24,7 +24,7 @@ import { PendingOpsModalComponent } from './pending-ops-modal.component';
 
         <div class="flex items-center space-x-2 text-sm">
           <span class="font-bold text-[#17141A] tracking-tight">
-            {{ authService.isSuperAdmin() ? 'Plataforma SaaS' : (authService.empresa()?.nombre || 'YouShop') }}
+            {{ authService.isSuperAdmin() ? 'Plataforma SaaS' : (authService.empresa()?.nombre || 'Voguely') }}
           </span>
           <span class="text-[#E8E2DA]">/</span>
           <span class="text-[#9B94A3] hidden sm:inline">

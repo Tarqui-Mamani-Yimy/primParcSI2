@@ -36,7 +36,7 @@ class AetherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'YouShop',
+      title: 'Voguely',
       debugShowCheckedModeBanner: false,
       theme: AetherTheme.lightTheme,
       home: const SplashScreen(),

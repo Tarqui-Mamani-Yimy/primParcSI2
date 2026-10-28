@@ -173,7 +173,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'YouShop',
+          merchantDisplayName: 'Voguely',
         ),
       );
       // Si el usuario cancela o la tarjeta es rechazada, esto lanza
@@ -353,11 +353,11 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 style: GoogleFonts.sourceSerif4(fontSize: 14)),
             Text('${reserva['fecha']} • ${reserva['horario']}',
                 style: GoogleFonts.outfit(
-                    fontSize: 12, color: const Color(0xFF7B776E))),
+                    fontSize: 12, color: AetherTheme.muted)),
             if (reserva['sucursal_nombre'] != null)
               Text('${reserva['sucursal_nombre']}',
                   style: GoogleFonts.outfit(
-                      fontSize: 12, color: const Color(0xFF7B776E))),
+                      fontSize: 12, color: AetherTheme.muted)),
             if (reserva['montoDeposito'] != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -412,7 +412,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                   Text(
                     'Deposito del 10% para reservar esta prenda en tienda.',
                     style: GoogleFonts.outfit(
-                        fontSize: 12, color: const Color(0xFF7B776E)),
+                        fontSize: 12, color: AetherTheme.muted),
                   ),
                   const SizedBox(height: 24),
                   Text('SUCURSAL',
@@ -420,7 +420,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: const Color(0xFF7B776E))),
+                          color: AetherTheme.muted)),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<Sucursal>(
                     initialValue: _sucursalSeleccionada,
@@ -445,7 +445,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: const Color(0xFF7B776E))),
+                          color: AetherTheme.muted)),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: cobrando ? null : _seleccionarFecha,
@@ -469,7 +469,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.5,
-                          color: const Color(0xFF7B776E))),
+                          color: AetherTheme.muted)),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: cobrando ? null : _seleccionarHorario,

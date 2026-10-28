@@ -65,7 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fontSize: 10,
           letterSpacing: 1.8,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF7B776E),
+          color: AetherTheme.muted,
         ),
       );
 
@@ -97,8 +97,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Unite a YouShop para guardar tus compras, reservas y recomendaciones.',
-                  style: GoogleFonts.sourceSerif4(fontSize: 14, color: const Color(0xFF4A463F)),
+                  'Unite a Voguely para guardar tus compras, reservas y recomendaciones.',
+                  style: GoogleFonts.sourceSerif4(fontSize: 14, color: AetherTheme.textMain),
                 ),
                 const SizedBox(height: 36),
                 _label('NOMBRE COMPLETO'),
@@ -146,7 +146,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 16),
                   Text(
                     appState.authError!,
-                    style: GoogleFonts.sourceSerif4(fontSize: 12, color: const Color(0xFFB3261E)),
+                    style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.error),
                   ),
                 ],
                 const SizedBox(height: 32),
