@@ -23,7 +23,8 @@ class ArTryOnScreen extends StatefulWidget {
   final Product product;
   final String fitMode;
 
-  const ArTryOnScreen({super.key, required this.product, required this.fitMode});
+  const ArTryOnScreen(
+      {super.key, required this.product, required this.fitMode});
 
   @override
   State<ArTryOnScreen> createState() => _ArTryOnScreenState();
@@ -67,10 +68,12 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         if (!mounted) return;
-        setState(() => _errorMessage = 'No se encontro ninguna camara disponible en este dispositivo.');
+        setState(() => _errorMessage =
+            'No se encontro ninguna camara disponible en este dispositivo.');
         return;
       }
-      _tieneCamaraTrasera = cameras.any((c) => c.lensDirection == CameraLensDirection.back);
+      _tieneCamaraTrasera =
+          cameras.any((c) => c.lensDirection == CameraLensDirection.back);
       final camera = cameras.firstWhere(
         (c) => c.lensDirection == _lenteDeseado,
         orElse: () => cameras.first,
@@ -83,7 +86,9 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
         // el mapeo simple de `_cameraImageToInputImage` de abajo entiende
         // (imagen de un solo plano). Sin este `imageFormatGroup`, Android
         // entrega YUV420 en 3 planos y ese camino de conversion no aplica.
-        imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888,
+        imageFormatGroup: Platform.isAndroid
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
       await controller.initialize();
       if (!mounted) {
@@ -102,7 +107,8 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
       if (codigosPermiso.contains(e.code)) {
         setState(() => _permissionDenied = true);
       } else {
-        setState(() => _errorMessage = 'No se pudo iniciar la camara (${e.code}).');
+        setState(
+            () => _errorMessage = 'No se pudo iniciar la camara (${e.code}).');
       }
     } catch (_) {
       if (!mounted) return;
@@ -162,8 +168,11 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
   /// paquetes en el pasado. Si `flutter analyze` marca algo en este metodo,
   /// es el primer lugar a revisar contra la app de ejemplo del paquete
   /// instalado.
-  InputImage? _cameraImageToInputImage(CameraImage image, CameraDescription description) {
-    final rotation = InputImageRotationValue.fromRawValue(description.sensorOrientation) ?? InputImageRotation.rotation0deg;
+  InputImage? _cameraImageToInputImage(
+      CameraImage image, CameraDescription description) {
+    final rotation =
+        InputImageRotationValue.fromRawValue(description.sensorOrientation) ??
+            InputImageRotation.rotation0deg;
 
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
     if (format == null) return null;
@@ -202,27 +211,40 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
     if (_permissionDenied) {
       return _MessageOverlay(
         icon: Icons.no_photography_outlined,
+<<<<<<< Updated upstream
         message: 'Voguely necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
+=======
+        message:
+            'YouShop necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
+>>>>>>> Stashed changes
         actionLabel: 'Reintentar',
         onAction: _initCamera,
       );
     }
     if (_errorMessage != null) {
-      return _MessageOverlay(icon: Icons.error_outline, message: _errorMessage!, actionLabel: 'Reintentar', onAction: _initCamera);
+      return _MessageOverlay(
+          icon: Icons.error_outline,
+          message: _errorMessage!,
+          actionLabel: 'Reintentar',
+          onAction: _initCamera);
     }
 
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) {
       return const ColoredBox(
         color: Colors.black87,
-        child: Center(child: CircularProgressIndicator(color: AetherTheme.sandLight, strokeWidth: 2)),
+        child: Center(
+            child: CircularProgressIndicator(
+                color: AetherTheme.sandLight, strokeWidth: 2)),
       );
     }
 
     final pose = _lastPose;
 
-    final talla = widget.product.sizes.isNotEmpty ? widget.product.sizes.first : null;
-    final resultado = determinarAjuste(talla: talla, pecho: _pecho, cintura: _cintura);
+    final talla =
+        widget.product.sizes.isNotEmpty ? widget.product.sizes.first : null;
+    final resultado =
+        determinarAjuste(talla: talla, pecho: _pecho, cintura: _cintura);
 
     return Stack(
       fit: StackFit.expand,
@@ -235,10 +257,15 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             right: 56,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(2)),
               child: Text(
                 resultado.mensaje,
-                style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 10.5, fontWeight: FontWeight.w600),
+                style: GoogleFonts.outfit(
+                    color: AetherTheme.sandLight,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -256,9 +283,14 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(2)),
-                child: Text('Buscando tu silueta...', style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 11)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(2)),
+                child: Text('Buscando tu silueta...',
+                    style: GoogleFonts.outfit(
+                        color: AetherTheme.sandLight, fontSize: 11)),
               ),
             ),
           ),
@@ -277,7 +309,8 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
                 onTap: _flipCamera,
                 child: const Padding(
                   padding: EdgeInsets.all(8.0),
-                  child: Icon(Icons.cameraswitch_outlined, color: AetherTheme.sandLight, size: 18),
+                  child: Icon(Icons.cameraswitch_outlined,
+                      color: AetherTheme.sandLight, size: 18),
                 ),
               ),
             ),
@@ -331,18 +364,23 @@ class _GarmentOverlay extends StatelessWidget {
 
         // Silueta y Caida (Relajado/Talla Real/Oversized) — factor visual
         // aplicado sobre el ancho base, nunca sobre el veredicto de ajuste.
-        final overlayWidth = shoulderWidthPx.clamp(20.0, constraints.maxWidth) * 2.2 * fitModeFactor(fitMode);
+        final overlayWidth = shoulderWidthPx.clamp(20.0, constraints.maxWidth) *
+            2.2 *
+            fitModeFactor(fitMode);
         final overlayHeight = overlayWidth * 1.3;
 
         return Positioned(
-          left: (midX - overlayWidth / 2).clamp(-overlayWidth, constraints.maxWidth),
-          top: (midY - overlayHeight * 0.15).clamp(-overlayHeight, constraints.maxHeight),
+          left: (midX - overlayWidth / 2)
+              .clamp(-overlayWidth, constraints.maxWidth),
+          top: (midY - overlayHeight * 0.15)
+              .clamp(-overlayHeight, constraints.maxHeight),
           width: overlayWidth,
           height: overlayHeight,
           child: IgnorePointer(
             child: Opacity(
               opacity: 0.75,
-              child: CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.contain),
+              child:
+                  CachedNetworkImage(imageUrl: imageUrl, fit: BoxFit.contain),
             ),
           ),
         );
@@ -357,7 +395,11 @@ class _MessageOverlay extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
-  const _MessageOverlay({required this.icon, required this.message, this.actionLabel, this.onAction});
+  const _MessageOverlay(
+      {required this.icon,
+      required this.message,
+      this.actionLabel,
+      this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +416,8 @@ class _MessageOverlay extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 12),
+                style: GoogleFonts.outfit(
+                    color: AetherTheme.sandLight, fontSize: 12),
               ),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 16),
