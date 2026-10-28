@@ -211,12 +211,7 @@ class _ArTryOnScreenState extends State<ArTryOnScreen> {
     if (_permissionDenied) {
       return _MessageOverlay(
         icon: Icons.no_photography_outlined,
-<<<<<<< Updated upstream
         message: 'Voguely necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
-=======
-        message:
-            'YouShop necesita permiso de camara para el probador virtual. Activalo en los ajustes del sistema.',
->>>>>>> Stashed changes
         actionLabel: 'Reintentar',
         onAction: _initCamera,
       );
