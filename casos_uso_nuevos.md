@@ -38,3 +38,66 @@ Hoy el sistema determina si una prenda le queda al cliente (CU11, Vestidor Virtu
 - **CU11 (Vestidor Virtual):** hoy usa la tabla genérica; con CU34 y CU35 pasa a usar las medidas propias de cada prenda.
 - **CU05 (Catálogo de Productos):** la tabla de medidas se gestiona como parte de la ficha del producto.
 - **CU31 (Cambios y Devoluciones):** los cambios por talla son una señal de que la tabla de medidas puede estar mal calibrada; CU36 permite registrar ese motivo de forma explícita.
+
+---
+
+# Propuestas de Casos de Uso Extra (por decidir)
+
+Propuestas que no están cubiertas por los casos de uso actuales. Ninguna está aprobada ni implementada todavía; se decidirá cuáles se desarrollan.
+
+## 1. Tabla Consolidada
+
+| Código | Caso de Uso | Actores Principales | Plataforma / Canal |
+| :--- | :--- | :--- | :--- |
+| **CU37** | Gestionar Promociones y Cupones de Descuento | Admin, Cliente | Web / Móvil |
+| **CU38** | Generar Órdenes de Compra a Proveedores desde la Predicción de Quiebre de Stock | Encargado de Sucursal | Web |
+| **CU39** | Sugerir Liquidación de Stock con Precio Dinámico | Admin | Web |
+| **CU40** | Buscar Prendas por Foto | Cliente | Web / Móvil |
+| **CU41** | Completar el Look con Inteligencia Artificial | Cliente | Web / Móvil |
+| **CU42** | Gestionar Lista de Deseos y Alertas de Reposición o Baja de Precio | Cliente | Web / Móvil |
+| **CU43** | Gestionar Programa de Fidelización por Puntos | Cliente, Cajero | Web / Móvil |
+
+## 2. Descripción de los Casos de Uso
+
+### CU37 — Gestionar Promociones y Cupones de Descuento
+- **Actores:** Admin, Cliente
+- **Plataforma:** Web / Móvil
+- **Descripción:** El administrador define reglas de descuento con vigencia (2x1, porcentaje por colección o temporada, monto fijo, cupón de un solo uso o por cliente). El sistema las aplica automáticamente en la venta de caja y en el checkout del cliente, mostrando el ahorro en el comprobante.
+
+### CU38 — Generar Órdenes de Compra a Proveedores desde la Predicción de Quiebre de Stock
+- **Actores:** Encargado de Sucursal
+- **Plataforma:** Web
+- **Descripción:** A partir del riesgo de quiebre de stock (CU33), el sistema propone una orden de compra por proveedor con las cantidades sugeridas de reposición. El encargado la revisa, la envía y luego registra la recepción, que incrementa el inventario (CU08/CU09).
+
+### CU39 — Sugerir Liquidación de Stock con Precio Dinámico
+- **Actores:** Admin
+- **Plataforma:** Web
+- **Descripción:** Detecta productos con tendencia de ventas "cayendo" (CU33) y alto stock al acercarse el fin de su temporada (CU06), y sugiere un porcentaje de descuento para liquidarlos. El administrador puede aceptar la sugerencia, que se publica como promoción (CU37).
+
+### CU40 — Buscar Prendas por Foto
+- **Actores:** Cliente
+- **Plataforma:** Web / Móvil
+- **Descripción:** El cliente sube o toma una foto de una prenda y el sistema, mediante un modelo de visión con IA, encuentra las prendas más parecidas del catálogo que tienen stock disponible, ordenadas por similitud.
+
+### CU41 — Completar el Look con Inteligencia Artificial
+- **Actores:** Cliente
+- **Plataforma:** Web / Móvil
+- **Descripción:** Desde la ficha de un producto, la IA arma un conjunto (outfit) combinándolo con otras prendas del catálogo disponibles en la talla recomendada para el cliente (CU35), con la opción de agregar todo el conjunto al carrito.
+
+### CU42 — Gestionar Lista de Deseos y Alertas de Reposición o Baja de Precio
+- **Actores:** Cliente
+- **Plataforma:** Web / Móvil
+- **Descripción:** El cliente guarda prendas en su lista de deseos y recibe una notificación cuando vuelve a haber stock de su talla o cuando el precio baja (por ejemplo, por una promoción de CU37).
+
+### CU43 — Gestionar Programa de Fidelización por Puntos
+- **Actores:** Cliente, Cajero
+- **Plataforma:** Web / Móvil
+- **Descripción:** Cada compra acumula puntos según el monto. El cliente sube de nivel (Bronce, Plata, Oro) con beneficios distintos y puede canjear puntos como descuento en una venta, tanto en caja como en línea.
+
+## 3. Relación con Casos de Uso Existentes
+
+- **CU33 (Dashboard ML):** fuente de datos de CU38 (quiebre de stock) y CU39 (tendencia de productos).
+- **CU07 (Proveedores) y CU08/CU09 (Inventario):** CU38 cierra el ciclo de compra y recepción de mercadería.
+- **CU21/CU22 (Recomendaciones y Chatbot con IA):** CU40 y CU41 reutilizan la integración con Gemini.
+- **CU35 (Recomendar Talla):** CU41 arma el conjunto en la talla recomendada para el cliente.
+- **CU37 (Promociones):** base para CU39 (liquidación) y fuente de alertas de baja de precio en CU42.
