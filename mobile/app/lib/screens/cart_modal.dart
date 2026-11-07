@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,9 +8,13 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
+import '../data/offline_database.dart';
+import '../models/sales_quote.dart';
 import '../services/api_client.dart';
 import '../services/payments_service.dart';
 import '../services/sales_service.dart';
+import '../services/sales_quote_service.dart';
+import '../services/offline_promotion_calculator.dart';
 
 /// Mobile Fase 2: checkout real. Misma maquina de estados que
 /// `web/src/app/features/customer/checkout/purchase-modal.component.ts`
@@ -28,11 +34,77 @@ class _CartModalState extends State<CartModal> {
   final ApiClient _api = ApiClient();
   late final PaymentsService _paymentsService = PaymentsService(_api);
   late final SalesService _salesService = SalesService(_api);
+  late final SalesQuoteService _quoteService = SalesQuoteService(_api);
+  final _couponController = TextEditingController();
+  final _pointsController = TextEditingController();
+  final _offlineCalculator = OfflinePromotionCalculator();
+  List<OfflinePromotion> _cachedPromotions = const [];
+  Map<int, int> _collectionSeasons = const {};
+  SalesQuote? _quote;
+  bool _quoteLoading = false;
 
   _CheckoutStatus _status = _CheckoutStatus.idle;
   String? _errorMessage;
   int? _idMetPagoRetenido;
   List<Map<String, dynamic>>? _itemsRetenidos;
+  String? _codigoCuponRetenido;
+  int? _puntosRetenidos;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarPromocionesOffline();
+  }
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    _pointsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _cargarPromocionesOffline() async {
+    final database = OfflineDatabaseRegistry.activeDatabase;
+    if (database == null) return;
+    try {
+      final promotionsJson = await database.readMetadata('active_promotions');
+      final seasonsJson = await database.readMetadata('collection_seasons');
+      final promotions = promotionsJson == null
+          ? <OfflinePromotion>[]
+          : (jsonDecode(promotionsJson) as List)
+              .map((row) => OfflinePromotion.fromJson(
+                  Map<String, dynamic>.from(row as Map)))
+              .toList();
+      final seasons = seasonsJson == null
+          ? <int, int>{}
+          : (jsonDecode(seasonsJson) as Map).map((key, value) =>
+              MapEntry(int.parse(key.toString()), (value as num).toInt()));
+      if (!mounted) return;
+      setState(() {
+        _cachedPromotions = promotions;
+        _collectionSeasons = seasons;
+      });
+    } catch (_) {
+      // An absent/corrupt optional promotion snapshot leaves list prices intact.
+    }
+  }
+
+  OfflinePromotionQuote _quoteOffline(AppState appState) =>
+      _offlineCalculator.quote(
+        appState.cart
+            .map((item) => OfflineCartLine(
+                  idProducto: int.tryParse(item.product.id) ?? 0,
+                  cantidad: item.quantity,
+                  precio: item.product.price,
+                  idColeccion: item.product.idColeccion,
+                  idTemporada: item.product.idTemporada ??
+                      _collectionSeasons[item.product.idColeccion],
+                  tipo: item.product.category,
+                ))
+            .toList(),
+        _cachedPromotions,
+        now: DateTime.now(),
+      );
 
   List<Map<String, dynamic>> _itemsDesdeCarrito(AppState appState) {
     return appState.cart
@@ -41,6 +113,36 @@ class _CartModalState extends State<CartModal> {
               'cantidad': item.quantity,
             })
         .toList();
+  }
+
+  Future<SalesQuote> _cotizar(AppState appState) async {
+    final quote = await _quoteService.quote(
+      _itemsDesdeCarrito(appState),
+      codigoCupon: _couponController.text.trim().isEmpty
+          ? null
+          : _couponController.text.trim(),
+      puntos: int.tryParse(_pointsController.text.trim()),
+    );
+    if (mounted) setState(() => _quote = quote);
+    return quote;
+  }
+
+  Future<void> _actualizarCotizacion(AppState appState) async {
+    setState(() {
+      _quoteLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      await _cotizar(appState);
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'No se pudo calcular el total.');
+      }
+    } finally {
+      if (mounted) setState(() => _quoteLoading = false);
+    }
   }
 
   Future<void> _iniciarCheckout(AppState appState) async {
@@ -52,7 +154,16 @@ class _CartModalState extends State<CartModal> {
     });
 
     try {
-      final intent = await _paymentsService.crearIntent(items, concepto: 'Compra Voguely');
+      final quote = await _cotizar(appState);
+      final codigoCupon =
+          quote.idCupon == null ? null : _couponController.text.trim();
+      final puntos = quote.puntosCanjeados;
+      final intent = await _paymentsService.crearIntent(
+        items,
+        concepto: 'Compra Voguely',
+        codigoCupon: codigoCupon,
+        puntos: puntos,
+      );
       final clientSecret = intent['clientSecret'] as String;
 
       await Stripe.instance.initPaymentSheet(
@@ -67,7 +178,8 @@ class _CartModalState extends State<CartModal> {
       await Stripe.instance.presentPaymentSheet();
 
       final paymentIntentId = intent['paymentIntentId'] as String;
-      final verificado = await _paymentsService.verificarIntent(paymentIntentId);
+      final verificado =
+          await _paymentsService.verificarIntent(paymentIntentId);
 
       final pagado = verificado['pagado'] == true;
       final idMetPago = verificado['idMetPago'] as int?;
@@ -83,7 +195,8 @@ class _CartModalState extends State<CartModal> {
         return;
       }
 
-      await _crearVenta(appState, idMetPago, items);
+      await _crearVenta(appState, idMetPago, items,
+          codigoCupon: codigoCupon, puntos: puntos);
     } on StripeException catch (e) {
       // API de flutter_stripe no verificada contra pub.dev en esta sesion
       // (sin toolchain) — `e.error.localizedMessage` es el campo esperado
@@ -91,7 +204,8 @@ class _CartModalState extends State<CartModal> {
       // null, para nunca mostrar un mensaje vacio.
       setState(() {
         _status = _CheckoutStatus.error;
-        _errorMessage = e.error.localizedMessage ?? 'El pago fue cancelado o rechazado (${e.error.code}).';
+        _errorMessage = e.error.localizedMessage ??
+            'El pago fue cancelado o rechazado (${e.error.code}).';
       });
     } on ApiException catch (e) {
       setState(() {
@@ -106,14 +220,20 @@ class _CartModalState extends State<CartModal> {
     }
   }
 
-  Future<void> _crearVenta(AppState appState, int idMetPago, List<Map<String, dynamic>> items) async {
+  Future<void> _crearVenta(
+      AppState appState, int idMetPago, List<Map<String, dynamic>> items,
+      {String? codigoCupon, int? puntos}) async {
     try {
-      final venta = await _salesService.crearVenta(idMetPago, items);
+      final venta = await _salesService.crearVenta(idMetPago, items,
+          codigoCupon: codigoCupon, puntos: puntos);
       appState.clearCart();
       setState(() {
         _status = _CheckoutStatus.idle;
         _idMetPagoRetenido = null;
         _itemsRetenidos = null;
+        _codigoCuponRetenido = null;
+        _puntosRetenidos = null;
+        _quote = null;
       });
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -126,6 +246,8 @@ class _CartModalState extends State<CartModal> {
         _errorMessage = e.message;
         _idMetPagoRetenido = idMetPago;
         _itemsRetenidos = items;
+        _codigoCuponRetenido = codigoCupon;
+        _puntosRetenidos = puntos;
       });
     } catch (_) {
       setState(() {
@@ -133,6 +255,8 @@ class _CartModalState extends State<CartModal> {
         _errorMessage = 'Cobro confirmado, pero no pudimos registrar la venta.';
         _idMetPagoRetenido = idMetPago;
         _itemsRetenidos = items;
+        _codigoCuponRetenido = codigoCupon;
+        _puntosRetenidos = puntos;
       });
     }
   }
@@ -142,28 +266,37 @@ class _CartModalState extends State<CartModal> {
     final items = _itemsRetenidos;
     if (idMetPago == null || items == null) return;
     setState(() => _status = _CheckoutStatus.cobrando);
-    await _crearVenta(appState, idMetPago, items);
+    await _crearVenta(appState, idMetPago, items,
+        codigoCupon: _codigoCuponRetenido, puntos: _puntosRetenidos);
   }
 
   void _mostrarConfirmacion(Map<String, dynamic> venta) {
     final fecha = DateTime.tryParse(venta['fecha'] as String? ?? '');
-    final fechaTexto = fecha != null ? DateFormat('dd/MM/yyyy HH:mm').format(fecha.toLocal()) : '';
+    final fechaTexto = fecha != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(fecha.toLocal())
+        : '';
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AetherTheme.sandLight,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        title: Text('Compra confirmada', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+        title: Text('Compra confirmada',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Venta #${venta['idVenta']}', style: GoogleFonts.sourceSerif4(fontSize: 14)),
-            if (fechaTexto.isNotEmpty) Text(fechaTexto, style: GoogleFonts.outfit(fontSize: 12, color: AetherTheme.muted)),
+            Text('Venta #${venta['idVenta']}',
+                style: GoogleFonts.sourceSerif4(fontSize: 14)),
+            if (fechaTexto.isNotEmpty)
+              Text(fechaTexto,
+                  style: GoogleFonts.outfit(
+                      fontSize: 12, color: AetherTheme.muted)),
             const SizedBox(height: 8),
             Text(
               'Total: \$${(venta['total'] as num).toStringAsFixed(2)}',
-              style: GoogleFonts.sourceSerif4(fontSize: 16, fontWeight: FontWeight.bold),
+              style: GoogleFonts.sourceSerif4(
+                  fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -182,6 +315,7 @@ class _CartModalState extends State<CartModal> {
     final appState = context.watch<AppState>();
     final cobrando = _status == _CheckoutStatus.cobrando;
     final cobradoSinVenta = _status == _CheckoutStatus.cobradoSinVenta;
+    final offlineQuote = !appState.isOnline ? _quoteOffline(appState) : null;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
@@ -197,7 +331,9 @@ class _CartModalState extends State<CartModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Bolsa de Compras (${appState.totalCartCount})', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w600)),
+                Text('Bolsa de Compras (${appState.totalCartCount})',
+                    style: GoogleFonts.outfit(
+                        fontSize: 16, fontWeight: FontWeight.w600)),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -214,9 +350,12 @@ class _CartModalState extends State<CartModal> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shopping_bag_outlined, size: 48, color: AetherTheme.border),
+                        const Icon(Icons.shopping_bag_outlined,
+                            size: 48, color: AetherTheme.border),
                         const SizedBox(height: 12),
-                        Text('Tu bolsa está vacía.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: AetherTheme.muted)),
+                        Text('Tu bolsa está vacía.',
+                            style: GoogleFonts.sourceSerif4(
+                                fontSize: 14, color: AetherTheme.muted)),
                       ],
                     ),
                   )
@@ -233,7 +372,9 @@ class _CartModalState extends State<CartModal> {
                             child: SizedBox(
                               width: 60,
                               height: 75,
-                              child: CachedNetworkImage(imageUrl: item.product.imageUrl, fit: BoxFit.cover),
+                              child: CachedNetworkImage(
+                                  imageUrl: item.product.imageUrl,
+                                  fit: BoxFit.cover),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -241,10 +382,20 @@ class _CartModalState extends State<CartModal> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(item.product.name, style: GoogleFonts.sourceSerif4(fontSize: 13, fontWeight: FontWeight.w600)),
-                                Text('Talla: ${item.size} • Color: ${item.product.colorName}', style: GoogleFonts.outfit(fontSize: 10, color: AetherTheme.muted)),
+                                Text(item.product.name,
+                                    style: GoogleFonts.sourceSerif4(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600)),
+                                Text(
+                                    'Talla: ${item.size} • Color: ${item.product.colorName}',
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        color: AetherTheme.muted)),
                                 const SizedBox(height: 4),
-                                Text('\$${item.product.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 12, fontWeight: FontWeight.bold)),
+                                Text('\$${item.product.price.toInt()}',
+                                    style: GoogleFonts.sourceSerif4(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -252,12 +403,20 @@ class _CartModalState extends State<CartModal> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.remove, size: 16),
-                                onPressed: cobrando ? null : () => appState.updateCartQuantity(index, -1),
+                                onPressed: cobrando
+                                    ? null
+                                    : () =>
+                                        appState.updateCartQuantity(index, -1),
                               ),
-                              Text('${item.quantity}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                              Text('${item.quantity}',
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold)),
                               IconButton(
                                 icon: const Icon(Icons.add, size: 16),
-                                onPressed: cobrando ? null : () => appState.updateCartQuantity(index, 1),
+                                onPressed: cobrando
+                                    ? null
+                                    : () =>
+                                        appState.updateCartQuantity(index, 1),
                               ),
                             ],
                           ),
@@ -272,7 +431,8 @@ class _CartModalState extends State<CartModal> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AetherTheme.border, width: 0.5)),
+                border: Border(
+                    top: BorderSide(color: AetherTheme.border, width: 0.5)),
               ),
               child: Column(
                 children: [
@@ -281,19 +441,87 @@ class _CartModalState extends State<CartModal> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
                         _errorMessage!,
-                        style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700),
+                        style: GoogleFonts.outfit(
+                            fontSize: 11, color: Colors.red.shade700),
                       ),
                     ),
                   if (!appState.isOnline)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 12),
-                      child: Text('El pago con tarjeta no está disponible sin conexión.'),
+                      child: Text(
+                          'El pago con tarjeta no está disponible sin conexión.'),
                     ),
+                  if (appState.isOnline) ...[
+                    TextField(
+                      controller: _couponController,
+                      decoration: const InputDecoration(
+                          labelText: 'Código de cupón', isDense: true),
+                      onChanged: (_) => setState(() => _quote = null),
+                    ),
+                    TextField(
+                      controller: _pointsController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                          labelText: 'Puntos a canjear', isDense: true),
+                      onChanged: (_) => setState(() => _quote = null),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _quoteLoading
+                            ? null
+                            : () => _actualizarCotizacion(appState),
+                        child: Text(_quoteLoading
+                            ? 'Calculando…'
+                            : 'Aplicar y ver total'),
+                      ),
+                    ),
+                  ] else
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 10),
+                      child: Text(
+                          'Los cupones y el canje de puntos requieren conexión. Se aplican solo las promociones guardadas.'),
+                    ),
+                  if (_quote != null && appState.isOnline) ...[
+                    _QuoteSubtotalRow(value: _quote!.subtotal),
+                    if (_quote!.cuenta != null)
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                              'Saldo disponible: ${_quote!.cuenta!.saldo} puntos (${_quote!.cuenta!.nivel})')),
+                    _QuoteDiscountRow(
+                        label: 'Promociones',
+                        value: _quote!.descuentoPromociones),
+                    _QuoteDiscountRow(
+                        label: 'Cupón', value: _quote!.descuentoCupon),
+                    _QuoteDiscountRow(
+                        label: 'Puntos', value: _quote!.descuentoPuntos),
+                    for (final aviso in _quote!.avisos)
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(aviso,
+                              style: GoogleFonts.outfit(
+                                  fontSize: 10, color: AetherTheme.muted))),
+                  ],
+                  if (offlineQuote != null &&
+                      offlineQuote.descuentoPromociones > 0) ...[
+                    _QuoteSubtotalRow(value: offlineQuote.subtotal),
+                    _QuoteDiscountRow(
+                        label: 'Promociones guardadas',
+                        value: offlineQuote.descuentoPromociones),
+                  ],
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Subtotal', style: GoogleFonts.outfit(fontSize: 14)),
-                      Text('\$${appState.cartSubtotal.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(
+                          _quote != null && appState.isOnline
+                              ? 'Total cotizado'
+                              : 'Total',
+                          style: GoogleFonts.outfit(fontSize: 14)),
+                      Text(
+                          '\$${(_quote?.total ?? (offlineQuote?.total ?? appState.cartSubtotal)).toStringAsFixed(2)}',
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -304,7 +532,8 @@ class _CartModalState extends State<CartModal> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AetherTheme.charcoalDark,
                         foregroundColor: AetherTheme.sandLight,
-                        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero),
                       ),
                       onPressed: cobrando || !appState.isOnline
                           ? null
@@ -315,11 +544,17 @@ class _CartModalState extends State<CartModal> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: AetherTheme.sandLight),
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AetherTheme.sandLight),
                             )
                           : Text(
-                              cobradoSinVenta ? 'REINTENTAR REGISTRO' : 'FINALIZAR COMPRA',
-                              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                              cobradoSinVenta
+                                  ? 'REINTENTAR REGISTRO'
+                                  : 'FINALIZAR COMPRA',
+                              style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5),
                             ),
                     ),
                   ),
@@ -330,4 +565,36 @@ class _CartModalState extends State<CartModal> {
       ),
     );
   }
+}
+
+class _QuoteSubtotalRow extends StatelessWidget {
+  const _QuoteSubtotalRow({required this.value});
+  final double value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Subtotal'),
+            Text('\$${value.toStringAsFixed(2)}')
+          ],
+        ),
+      );
+}
+
+class _QuoteDiscountRow extends StatelessWidget {
+  const _QuoteDiscountRow({required this.label, required this.value});
+  final String label;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [Text(label), Text('-\$${value.toStringAsFixed(2)}')],
+        ),
+      );
 }

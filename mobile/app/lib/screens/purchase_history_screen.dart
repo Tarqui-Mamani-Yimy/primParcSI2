@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../models/purchase_history_model.dart';
 import '../services/api_client.dart';
 import '../services/purchase_history_service.dart';
+import '../services/size_recommendation_service.dart';
 import '../theme/aether_theme.dart';
 
 /// Mobile Fase 5: historial de compras real del Cliente autenticado
@@ -22,10 +23,14 @@ class PurchaseHistoryScreen extends StatefulWidget {
 class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
   final ApiClient _api = ApiClient();
   late final PurchaseHistoryService _purchaseHistoryService = PurchaseHistoryService(_api);
+  late final SizeRecommendationService _sizeRecommendationService =
+      SizeRecommendationService(_api);
 
   bool _loading = true;
   String? _error;
   List<PurchaseHistoryItem> _items = [];
+  final Map<int, String> _feedbackByProduct = {};
+  final Set<int> _savingFeedback = {};
 
   @override
   void initState() {
@@ -45,6 +50,19 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
         _items = items;
         _loading = false;
       });
+      try {
+        final feedback = await _sizeRecommendationService.getMyFeedback();
+        if (!mounted) return;
+        setState(() {
+          _feedbackByProduct
+            ..clear()
+            ..addEntries(feedback
+                .where((entry) => entry.result != null)
+                .map((entry) => MapEntry(entry.productId, entry.result!)));
+        });
+      } catch (_) {
+        // Purchase history remains usable even if fit feedback is offline.
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -58,6 +76,76 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
         _loading = false;
       });
     }
+  }
+
+  Future<void> _guardarRetroalimentacion(int productId, String result) async {
+    if (_savingFeedback.contains(productId)) return;
+    setState(() => _savingFeedback.add(productId));
+    try {
+      final response = await _sizeRecommendationService.submitFeedback(
+        productId: productId,
+        result: result,
+      );
+      if (!mounted) return;
+      setState(() => _feedbackByProduct[productId] = response.result);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gracias, guardamos cómo te quedó.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo guardar tu respuesta.')),
+      );
+    } finally {
+      if (mounted) setState(() => _savingFeedback.remove(productId));
+    }
+  }
+
+  Widget _feedbackButtons(PurchaseHistoryItem item) {
+    const choices = <(String, String)>[
+      ('pequena', 'Me quedó pequeña'),
+      ('bien', 'Me quedó bien'),
+      ('grande', 'Me quedó grande'),
+    ];
+    final selected = _feedbackByProduct[item.idProducto];
+    final saving = _savingFeedback.contains(item.idProducto);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('¿Cómo te quedó?', style: GoogleFonts.outfit(fontSize: 10, color: AetherTheme.muted)),
+          const SizedBox(height: 3),
+          Wrap(
+            spacing: 5,
+            runSpacing: 2,
+            children: choices.map((choice) {
+              final isSelected = selected == choice.$1;
+              return ChoiceChip(
+                label: Text(choice.$2, style: const TextStyle(fontSize: 10)),
+                selected: isSelected,
+                onSelected: saving
+                    ? null
+                    : (_) => _guardarRetroalimentacion(item.idProducto, choice.$1),
+                selectedColor: AetherTheme.mutedGold.withValues(alpha: 0.35),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              );
+            }).toList(),
+          ),
+          if (saving)
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+        ],
+      ),
+    );
   }
 
   /// Agrupa por `idVenta` preservando el orden de llegada — el backend ya
@@ -146,20 +234,26 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                               // distinto del total de la venta de arriba.
                               ...lineas.map(
                                 (item) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${item.productoNombre ?? 'Producto #${item.idProducto}'}  x${item.cantidad}',
-                                          style: GoogleFonts.outfit(fontSize: 12),
-                                        ),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              '${item.productoNombre ?? 'Producto #${item.idProducto}'}  x${item.cantidad}',
+                                              style: GoogleFonts.outfit(fontSize: 12),
+                                            ),
+                                          ),
+                                          Text(
+                                            'Subtotal: \$${item.subtotalLinea.toStringAsFixed(2)}',
+                                            style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted),
+                                          ),
+                                        ],
                                       ),
-                                      Text(
-                                        'Subtotal: \$${item.subtotalLinea.toStringAsFixed(2)}',
-                                        style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted),
-                                      ),
+                                      _feedbackButtons(item),
                                     ],
                                   ),
                                 ),

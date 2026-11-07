@@ -102,6 +102,7 @@ class OfflineSyncService extends ChangeNotifier {
         return;
       }
       await applyPull(payload, database: database);
+      await _cachePromotionsAndCollections(api, database, generation);
       try {
         final history = await api.get('/api/purchase-history') as List;
         if (generation != _sessionGeneration ||
@@ -146,6 +147,41 @@ class OfflineSyncService extends ChangeNotifier {
       _syncingGenerations.remove(generation);
       _isSyncing = _syncingGenerations.contains(_sessionGeneration);
       notifyListeners();
+    }
+  }
+
+  Future<void> _cachePromotionsAndCollections(
+      ApiClient api, OfflineDatabase database, int generation) async {
+    try {
+      final rows = await api.get('/api/promotions/active') as List;
+      if (generation != _sessionGeneration ||
+          !identical(
+              database, _database ?? OfflineDatabaseRegistry.activeDatabase)) {
+        return;
+      }
+      await database.writeMetadata('active_promotions', jsonEncode(rows));
+    } catch (_) {
+      // Keep the last promotion snapshot if the optional endpoint is unavailable.
+    }
+    try {
+      final rows = await api.get('/api/collections') as List;
+      if (generation != _sessionGeneration ||
+          !identical(
+              database, _database ?? OfflineDatabaseRegistry.activeDatabase)) {
+        return;
+      }
+      final byId = <String, int>{};
+      for (final value in rows) {
+        if (value is Map &&
+            value['idColeccion'] != null &&
+            value['idTemporada'] != null) {
+          byId[value['idColeccion'].toString()] =
+              (value['idTemporada'] as num).toInt();
+        }
+      }
+      await database.writeMetadata('collection_seasons', jsonEncode(byId));
+    } catch (_) {
+      // Season-scoped promotions use the last cached collection mapping.
     }
   }
 

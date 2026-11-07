@@ -7,6 +7,7 @@ import '../providers/app_state.dart';
 import '../models/customer_model.dart';
 import '../services/api_client.dart';
 import '../services/customer_service.dart';
+import '../services/loyalty_service.dart';
 import 'my_reservations_screen.dart';
 import 'purchase_history_screen.dart';
 
@@ -27,15 +28,94 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ApiClient _api = ApiClient();
   late final CustomerService _customerService = CustomerService(_api);
+  late final LoyaltyService _loyaltyService = LoyaltyService(_api);
 
   bool _perfilLoading = true;
   String? _perfilError;
   ClienteMe? _miPerfil;
+  Map<String, dynamic>? _puntos;
+  bool _puntosLoading = true;
 
   @override
   void initState() {
     super.initState();
     _cargarPerfil();
+    _cargarPuntos();
+  }
+
+  Future<void> _cargarPuntos() async {
+    try {
+      final puntos = await _loyaltyService.getMine();
+      if (mounted) {
+        setState(() {
+          _puntos = puntos;
+          _puntosLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _puntosLoading = false);
+    }
+  }
+
+  Widget _seccionPuntos(bool online) {
+    final data = _puntos;
+    if (_puntosLoading) return const Center(child: CircularProgressIndicator());
+    if (data == null) {
+      return Text(online
+          ? 'No se pudo cargar tu saldo de puntos.'
+          : 'Mis puntos requiere conexión a internet.');
+    }
+    final earned = (data['acumulado_historico'] as num?)?.toInt() ?? 0;
+    final level = (data['nivel'] ?? 'Bronce').toString();
+    final nextLevel = data['siguiente_nivel']?.toString();
+    final remaining = (data['puntos_para_siguiente'] as num?)?.toInt() ?? 0;
+    final threshold = level == 'Bronce' ? 2000 : 5000;
+    final progress = nextLevel == null
+        ? 1.0
+        : (level == 'Bronce'
+                ? earned / threshold
+                : (earned - 2000) / (threshold - 2000))
+            .clamp(0.0, 1.0);
+    final movements = (data['movimientos'] as List?) ?? const [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(level,
+              style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AetherTheme.charcoalDark)),
+          Text('${data['saldo'] ?? 0} puntos',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+            value: progress,
+            color: AetherTheme.bronze,
+            backgroundColor: AetherTheme.border),
+        const SizedBox(height: 4),
+        Text(
+            nextLevel == null
+                ? 'Nivel máximo alcanzado'
+                : 'Te faltan $remaining puntos para $nextLevel',
+            style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted)),
+        const SizedBox(height: 12),
+        Text('Historial',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+        if (movements.isEmpty) const Text('Todavía no tienes movimientos.'),
+        for (final item in movements.take(5))
+          if (item is Map)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                  (item['nota'] ?? item['tipo'] ?? 'Movimiento').toString()),
+              subtitle: Text((item['fecha'] ?? '').toString()),
+              trailing: Text('${item['puntos'] ?? 0}'),
+            ),
+      ],
+    );
   }
 
   Future<void> _cargarPerfil() async {
@@ -80,25 +160,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: AetherTheme.sandLight,
-          title: Text('Editar Perfil', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          title: Text('Editar Perfil',
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
-                TextField(controller: telefonoCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Teléfono')),
-                TextField(controller: direccionCtrl, decoration: const InputDecoration(labelText: 'Dirección')),
+                TextField(
+                    controller: nombreCtrl,
+                    decoration: const InputDecoration(labelText: 'Nombre')),
+                TextField(
+                    controller: telefonoCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Teléfono')),
+                TextField(
+                    controller: direccionCtrl,
+                    decoration: const InputDecoration(labelText: 'Dirección')),
                 if (error != null) ...[
                   const SizedBox(height: 8),
-                  Text(error!, style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700)),
+                  Text(error!,
+                      style: GoogleFonts.outfit(
+                          fontSize: 11, color: Colors.red.shade700)),
                 ],
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: guardando ? null : () => Navigator.of(ctx).pop(), child: const Text('CANCELAR')),
+            TextButton(
+                onPressed: guardando ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('CANCELAR')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AetherTheme.charcoalDark, foregroundColor: AetherTheme.sandLight),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AetherTheme.charcoalDark,
+                  foregroundColor: AetherTheme.sandLight),
               onPressed: guardando
                   ? null
                   : () async {
@@ -114,8 +209,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         error = null;
                       });
                       try {
-                        final actualizado = await _customerService.actualizarPerfil(
-                          nombre: nombreCtrl.text.trim().isEmpty ? null : nombreCtrl.text.trim(),
+                        final actualizado =
+                            await _customerService.actualizarPerfil(
+                          nombre: nombreCtrl.text.trim().isEmpty
+                              ? null
+                              : nombreCtrl.text.trim(),
                           telefono: telefonoCtrl.text.trim(),
                           direccion: direccionCtrl.text.trim(),
                         );
@@ -158,33 +256,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: AetherTheme.sandLight,
-          title: Text('Recalibrar Medidas', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+          title: Text('Recalibrar Medidas',
+              style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold, fontSize: 16)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: hCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Altura (cm)')),
-                TextField(controller: cCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Pecho (cm)')),
-                TextField(controller: wCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Cintura (cm)')),
-                TextField(controller: iCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Tiro (cm)')),
+                TextField(
+                    controller: hCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration:
+                        const InputDecoration(labelText: 'Altura (cm)')),
+                TextField(
+                    controller: cCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Pecho (cm)')),
+                TextField(
+                    controller: wCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration:
+                        const InputDecoration(labelText: 'Cintura (cm)')),
+                TextField(
+                    controller: iCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Tiro (cm)')),
                 if (error != null) ...[
                   const SizedBox(height: 8),
-                  Text(error!, style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700)),
+                  Text(error!,
+                      style: GoogleFonts.outfit(
+                          fontSize: 11, color: Colors.red.shade700)),
                 ],
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: guardando ? null : () => Navigator.of(ctx).pop(), child: const Text('CANCELAR')),
+            TextButton(
+                onPressed: guardando ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('CANCELAR')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AetherTheme.charcoalDark, foregroundColor: AetherTheme.sandLight),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: AetherTheme.charcoalDark,
+                  foregroundColor: AetherTheme.sandLight),
               onPressed: guardando
                   ? null
                   : () async {
                       if (!context.read<AppState>().isOnline) {
                         setDialogState(() {
                           guardando = false;
-                          error = 'No se pueden guardar las medidas sin conexión.';
+                          error =
+                              'No se pueden guardar las medidas sin conexión.';
                         });
                         return;
                       }
@@ -193,7 +314,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         error = null;
                       });
                       try {
-                        final actualizado = await _customerService.actualizarPerfil(
+                        final actualizado =
+                            await _customerService.actualizarPerfil(
                           altura: int.tryParse(hCtrl.text),
                           pecho: int.tryParse(cCtrl.text),
                           cintura: int.tryParse(wCtrl.text),
@@ -247,16 +369,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AetherTheme.charcoalDark),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AetherTheme.charcoalDark),
                       )
                     : _perfilError != null
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_perfilError!, style: GoogleFonts.outfit(fontSize: 11, color: Colors.red.shade700)),
+                              Text(_perfilError!,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      color: Colors.red.shade700)),
                               TextButton(
                                 onPressed: _cargarPerfil,
-                                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap),
                                 child: const Text('Reintentar'),
                               ),
                             ],
@@ -264,17 +394,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(_miPerfil!.nombre, style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w600, color: AetherTheme.charcoalDark)),
-                              Text(_miPerfil!.correo ?? '', style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted)),
-                              if ((_miPerfil!.telefono ?? '').isNotEmpty || (_miPerfil!.direccion ?? '').isNotEmpty)
+                              Text(_miPerfil!.nombre,
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: AetherTheme.charcoalDark)),
+                              Text(_miPerfil!.correo ?? '',
+                                  style: GoogleFonts.sourceSerif4(
+                                      fontSize: 12, color: AetherTheme.muted)),
+                              if ((_miPerfil!.telefono ?? '').isNotEmpty ||
+                                  (_miPerfil!.direccion ?? '').isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
                                     [
-                                      if ((_miPerfil!.telefono ?? '').isNotEmpty) _miPerfil!.telefono,
-                                      if ((_miPerfil!.direccion ?? '').isNotEmpty) _miPerfil!.direccion,
+                                      if ((_miPerfil!.telefono ?? '')
+                                          .isNotEmpty)
+                                        _miPerfil!.telefono,
+                                      if ((_miPerfil!.direccion ?? '')
+                                          .isNotEmpty)
+                                        _miPerfil!.direccion,
                                     ].join(' · '),
-                                    style: GoogleFonts.sourceSerif4(fontSize: 11, color: AetherTheme.muted),
+                                    style: GoogleFonts.sourceSerif4(
+                                        fontSize: 11, color: AetherTheme.muted),
                                   ),
                                 ),
                             ],
@@ -282,13 +424,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               if (!_perfilLoading && _perfilError == null && _miPerfil != null)
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20, color: AetherTheme.charcoalDark),
-                  tooltip: appState.isOnline ? 'Editar Perfil' : 'No disponible sin conexión',
+                  icon: const Icon(Icons.edit_outlined,
+                      size: 20, color: AetherTheme.charcoalDark),
+                  tooltip: appState.isOnline
+                      ? 'Editar Perfil'
+                      : 'No disponible sin conexión',
                   onPressed: appState.isOnline ? _showEditProfileDialog : null,
                 ),
             ],
           ),
 
+          const SizedBox(height: 16),
+
+          Card(
+            color: AetherTheme.surface,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Mis puntos',
+                      style: GoogleFonts.outfit(
+                          fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 10),
+                  _seccionPuntos(appState.isOnline),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // Mobile Fase 3: acceso a reservas reales (CU12). Estrictamente
@@ -299,15 +462,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 40,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.event_available, size: 16),
-              label: Text('MIS RESERVAS', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              label: Text('MIS RESERVAS',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AetherTheme.charcoalDark,
                 side: const BorderSide(color: AetherTheme.charcoalDark),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
               ),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MyReservationsScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const MyReservationsScreen()),
                 );
               },
             ),
@@ -323,15 +492,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 40,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.receipt_long, size: 16),
-              label: Text('HISTORIAL DE COMPRAS', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              label: Text('HISTORIAL DE COMPRAS',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AetherTheme.charcoalDark,
                 side: const BorderSide(color: AetherTheme.charcoalDark),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
               ),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PurchaseHistoryScreen()),
+                  MaterialPageRoute(
+                      builder: (_) => const PurchaseHistoryScreen()),
                 );
               },
             ),
@@ -344,7 +519,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.7),
-              border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
+              border:
+                  Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Column(
@@ -355,16 +531,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.straighten, size: 16, color: AetherTheme.charcoalDark),
+                        const Icon(Icons.straighten,
+                            size: 16, color: AetherTheme.charcoalDark),
                         const SizedBox(width: 6),
-                        Text('Medidas Biométricas', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text('Medidas Biométricas',
+                            style: GoogleFonts.outfit(
+                                fontSize: 13, fontWeight: FontWeight.w600)),
                       ],
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.lock, size: 12, color: AetherTheme.muted),
+                        const Icon(Icons.lock,
+                            size: 12, color: AetherTheme.muted),
                         const SizedBox(width: 4),
-                        Text('PRIVADO', style: GoogleFonts.outfit(fontSize: 8.5, color: AetherTheme.muted, fontWeight: FontWeight.bold)),
+                        Text('PRIVADO',
+                            style: GoogleFonts.outfit(
+                                fontSize: 8.5,
+                                color: AetherTheme.muted,
+                                fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -372,10 +556,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _measureItem('ALTURA', _miPerfil?.altura != null ? '${_miPerfil!.altura} cm' : '—'),
-                    _measureItem('PECHO', _miPerfil?.pecho != null ? '${_miPerfil!.pecho} cm' : '—'),
-                    _measureItem('CINTURA', _miPerfil?.cintura != null ? '${_miPerfil!.cintura} cm' : '—'),
-                    _measureItem('TIRO', _miPerfil?.tiro != null ? '${_miPerfil!.tiro} cm' : '—'),
+                    _measureItem(
+                        'ALTURA',
+                        _miPerfil?.altura != null
+                            ? '${_miPerfil!.altura} cm'
+                            : '—'),
+                    _measureItem(
+                        'PECHO',
+                        _miPerfil?.pecho != null
+                            ? '${_miPerfil!.pecho} cm'
+                            : '—'),
+                    _measureItem(
+                        'CINTURA',
+                        _miPerfil?.cintura != null
+                            ? '${_miPerfil!.cintura} cm'
+                            : '—'),
+                    _measureItem(
+                        'TIRO',
+                        _miPerfil?.tiro != null
+                            ? '${_miPerfil!.tiro} cm'
+                            : '—'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -384,11 +584,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 34,
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.tune, size: 14),
-                    label: Text('RECALIBRAR MEDIDAS', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                    label: Text('RECALIBRAR MEDIDAS',
+                        style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AetherTheme.charcoalDark,
                       side: const BorderSide(color: AetherTheme.charcoalDark),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
                     ),
                     onPressed: _miPerfil == null || !appState.isOnline
                         ? null
@@ -406,7 +611,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.7),
-              border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
+              border:
+                  Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
               borderRadius: BorderRadius.circular(2),
             ),
             child: Column(
@@ -414,25 +620,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.auto_awesome, size: 16, color: AetherTheme.bronze),
+                    const Icon(Icons.auto_awesome,
+                        size: 16, color: AetherTheme.bronze),
                     const SizedBox(width: 6),
-                    Text('AI Style Insights', style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text('AI Style Insights',
+                        style: GoogleFonts.outfit(
+                            fontSize: 13, fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 6),
                 Text(
                   profile.styleInsights,
-                  style: GoogleFonts.sourceSerif4(fontSize: 11.5, height: 1.5, color: AetherTheme.textMain),
+                  style: GoogleFonts.sourceSerif4(
+                      fontSize: 11.5, height: 1.5, color: AetherTheme.textMain),
                 ),
                 const SizedBox(height: 12),
-                Text('PALETA RECOMENDADA', style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold, color: AetherTheme.muted)),
+                Text('PALETA RECOMENDADA',
+                    style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: AetherTheme.muted)),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   children: profile.recommendedPalette.map((c) {
-                    final hexColor = Color(int.parse(c.hex.replaceFirst('#', '0xFF')));
+                    final hexColor =
+                        Color(int.parse(c.hex.replaceFirst('#', '0xFF')));
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: AetherTheme.surface,
                         border: Border.all(color: AetherTheme.border),
@@ -456,7 +672,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // 3. Saved Outfits
-          Text('LOOKS GUARDADOS (${profile.savedOutfits.length})', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
+          Text('LOOKS GUARDADOS (${profile.savedOutfits.length})',
+              style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: AetherTheme.muted)),
           const SizedBox(height: 8),
           SizedBox(
             height: 180,
@@ -480,12 +701,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(2),
-                          child: CachedNetworkImage(imageUrl: look.imageUrl, fit: BoxFit.cover, width: double.infinity),
+                          child: CachedNetworkImage(
+                              imageUrl: look.imageUrl,
+                              fit: BoxFit.cover,
+                              width: double.infinity),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(look.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold)),
-                      Text(look.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.sourceSerif4(fontSize: 8.5, color: AetherTheme.muted)),
+                      Text(look.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                              fontSize: 9, fontWeight: FontWeight.bold)),
+                      Text(look.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 8.5, color: AetherTheme.muted)),
                     ],
                   ),
                 );
@@ -510,9 +742,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         child: Column(
           children: [
-            Text(label, style: GoogleFonts.outfit(fontSize: 7.5, color: AetherTheme.muted, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: GoogleFonts.outfit(
+                    fontSize: 7.5,
+                    color: AetherTheme.muted,
+                    fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
-            Text(val, style: GoogleFonts.sourceSerif4(fontSize: 11, fontWeight: FontWeight.bold)),
+            Text(val,
+                style: GoogleFonts.sourceSerif4(
+                    fontSize: 11, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

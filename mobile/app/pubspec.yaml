@@ -29,6 +29,7 @@ dependencies:
   # build real del usuario (sin errores, solo un warning de "unchecked
   # operations") — no se toca.
   camera: ^0.12.1
+  image_picker: 1.2.4
   google_mlkit_pose_detection: ^0.13.0
   # Mobile Fase 1 (infra + auth + catalogo real) — mismo aviso: versiones
   # estimadas, no verificadas contra pub.dev.

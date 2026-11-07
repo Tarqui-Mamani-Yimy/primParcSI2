@@ -5,9 +5,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
 import '../models/product_model.dart';
+import '../models/size_recommendation_model.dart';
 import '../services/api_client.dart';
 import '../services/customer_service.dart';
 import '../services/size_chart.dart';
+import '../services/size_recommendation_service.dart';
 import '../utils/fit_scale.dart';
 import 'ar_try_on_screen.dart';
 import 'reservation_form_screen.dart';
@@ -268,12 +270,17 @@ class _MirrorCanvas extends StatefulWidget {
 class _MirrorCanvasState extends State<_MirrorCanvas> {
   bool _arActivo = false;
   final CustomerService _customerService = CustomerService(ApiClient());
+  final SizeRecommendationService _recommendationService =
+      SizeRecommendationService(ApiClient());
   int? _pecho;
   int? _cintura;
+  SizeRecommendation? _recommendation;
+  bool _loadingRecommendation = true;
 
   @override
   void initState() {
     super.initState();
+    _loadRecommendation();
     // CU11 — determinar ajuste real: se piden las medidas del cliente una
     // sola vez al entrar al probador. Si falla (ej. sin conexion), el HUD
     // simplemente cae al estado "sin medidas" — nunca bloquea la pantalla.
@@ -284,6 +291,66 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
         _cintura = perfil.cintura;
       });
     }).catchError((_) {});
+  }
+
+  @override
+  void didUpdateWidget(covariant _MirrorCanvas oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.id != widget.product.id) {
+      _loadRecommendation();
+    }
+  }
+
+  Future<void> _loadRecommendation() async {
+    final productId = int.tryParse(widget.product.id);
+    setState(() {
+      _recommendation = null;
+      _loadingRecommendation = true;
+    });
+    if (productId == null) {
+      if (mounted) setState(() => _loadingRecommendation = false);
+      return;
+    }
+    try {
+      final recommendation =
+          await _recommendationService.getRecommendation(productId);
+      if (!mounted || productId != int.tryParse(widget.product.id)) return;
+      setState(() {
+        _recommendation = recommendation;
+        _loadingRecommendation = false;
+      });
+    } catch (_) {
+      if (!mounted || productId != int.tryParse(widget.product.id)) return;
+      setState(() => _loadingRecommendation = false);
+    }
+  }
+
+  String? get _offlineFitMessage {
+    if (_loadingRecommendation || _recommendation != null) return null;
+    final result = determinarAjuste(
+      talla: widget.selectedSize,
+      pecho: _pecho,
+      cintura: _cintura,
+    );
+    return result?.mensaje;
+  }
+
+  String get _recommendationMessage {
+    final recommendation = _recommendation;
+    if (recommendation == null) {
+      return _offlineFitMessage ??
+          'Sin conexión: no hay medidas para calcular el ajuste.';
+    }
+    return recommendation.message;
+  }
+
+  String? get _recommendationDetail {
+    final recommendation = _recommendation;
+    if (recommendation == null) return null;
+    return [recommendation.sizeWarning, recommendation.feedback.note]
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .join('\n');
   }
 
   @override
@@ -301,7 +368,13 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
               // cambiar de prenda y reiniciaria la camara en cada cambio.
               // Sin Key, el mismo State persiste y `widget.product` se
               // actualiza solo — ver el comentario en `ArTryOnScreen.build`.
-              ArTryOnScreen(product: widget.product, fitMode: widget.fitMode)
+              ArTryOnScreen(
+                product: widget.product,
+                fitMode: widget.fitMode,
+                recommendation: _recommendation,
+                recommendationLoading: _loadingRecommendation,
+                fallbackFitMessage: _offlineFitMessage,
+              )
             else ...[
               // Escala visual segun "Silueta y Caida" — puramente estetico,
               // nunca afecta el veredicto real de `determinarAjuste`.
@@ -333,24 +406,22 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                     ),
                   ),
                 ),
-              // HUD Overlay — CU11: veredicto real de ajuste (talla del
-              // producto vs. medidas cargadas por el cliente en su perfil),
-              // ya no un numero decorativo fijo.
+              // The backend recommendation is authoritative; the local size
+              // chart is only used if the recommendation request is offline.
               Positioned(
                 bottom: 10,
                 left: 10,
                 right: 10,
                 child: Builder(builder: (context) {
-                  final resultado = determinarAjuste(
-                    talla: widget.selectedSize,
-                    pecho: _pecho,
-                    cintura: _cintura,
-                  );
-                  final color = switch (resultado?.nivel) {
-                    NivelAjuste.perfecto => AetherTheme.mutedGold,
-                    NivelAjuste.ajustado || NivelAjuste.holgado => Colors.orangeAccent,
-                    _ => Colors.white70,
-                  };
+                  final recommendation = _recommendation;
+                  final fit = recommendation?.fitFor(widget.selectedSize);
+                  final color = _loadingRecommendation
+                      ? Colors.white70
+                      : switch (fit) {
+                          'justa' => AetherTheme.mutedGold,
+                          'ajustada' || 'holgada' => Colors.orangeAccent,
+                          _ => Colors.white70,
+                        };
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
@@ -358,19 +429,35 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                       borderRadius: BorderRadius.circular(2),
                       border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            resultado?.mensaje ?? 'Calculando ajuste...',
-                            style: GoogleFonts.outfit(color: color, fontSize: 9.5, fontWeight: FontWeight.w600),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _loadingRecommendation
+                                    ? 'Consultando recomendación de talla…'
+                                    : _recommendationMessage,
+                                style: GoogleFonts.outfit(color: color, fontSize: 9.5, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Text(
+                              'Talla: ${widget.selectedSize}',
+                              style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
+                            ),
+                          ],
+                        ),
+                        if (_recommendationDetail != null) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            _recommendationDetail!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(color: Colors.amber.shade100, fontSize: 9),
                           ),
-                        ),
-                        Text(
-                          'Talla: ${widget.selectedSize}',
-                          style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
-                        ),
+                        ],
                       ],
                     ),
                   );

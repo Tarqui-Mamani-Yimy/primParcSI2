@@ -282,6 +282,19 @@ class OfflineDatabase extends _$OfflineDatabase {
     return row?.value;
   }
 
+  Future<void> writeMetadata(String key, String value) async {
+    await into(offlineMeta).insertOnConflictUpdate(
+      OfflineMetaCompanion.insert(key: key, value: value),
+    );
+  }
+
+  Future<String?> readMetadata(String key) async {
+    final row = await (select(offlineMeta)
+          ..where((meta) => meta.key.equals(key)))
+        .getSingleOrNull();
+    return row?.value;
+  }
+
   String _rowId(String collection, Map<String, dynamic> row) {
     Object? value = switch (collection) {
       'productos' => row['idProducto'],

@@ -137,6 +137,8 @@ class ProductsService {
       // Inventario, por sucursal, separado) — `true` aca es honesto sobre
       // "el producto existe en el catalogo", no una afirmacion de stock.
       inStock: true,
+      idColeccion: (json['idColeccion'] as num?)?.toInt(),
+      idTemporada: (json['idTemporada'] as num?)?.toInt(),
     );
   }
 }

@@ -41,7 +41,8 @@ class ApiClient {
         : (query.map((k, v) => MapEntry(k, v.toString()))
           ..removeWhere((k, v) => v == 'null'));
     return Uri.parse('${ApiConfig.baseUrl}$path').replace(
-      queryParameters: cleanQuery != null && cleanQuery.isNotEmpty ? cleanQuery : null,
+      queryParameters:
+          cleanQuery != null && cleanQuery.isNotEmpty ? cleanQuery : null,
     );
   }
 
@@ -64,8 +65,10 @@ class ApiClient {
     throw ApiException(response.statusCode, message);
   }
 
-  Future<dynamic> get(String path, {Map<String, dynamic>? query, bool auth = true}) async {
-    final response = await http.get(_uri(path, query), headers: await _headers(auth: auth));
+  Future<dynamic> get(String path,
+      {Map<String, dynamic>? query, bool auth = true}) async {
+    final response =
+        await http.get(_uri(path, query), headers: await _headers(auth: auth));
     return _decode(response);
   }
 
@@ -75,6 +78,28 @@ class ApiClient {
       headers: await _headers(auth: auth),
       body: body == null ? null : jsonEncode(body),
     );
+    return _decode(response);
+  }
+
+  Future<dynamic> postMultipart(
+    String path, {
+    required String fieldName,
+    required String fileName,
+    required List<int> bytes,
+    Map<String, dynamic>? query,
+    bool auth = true,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri(path, query));
+    final headers = await _headers(auth: auth);
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+    request.files.add(http.MultipartFile.fromBytes(
+      fieldName,
+      bytes,
+      filename: fileName,
+    ));
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
     return _decode(response);
   }
 

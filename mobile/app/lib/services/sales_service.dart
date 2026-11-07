@@ -14,11 +14,19 @@ class SalesService {
   /// `pagado == true` — nunca se llama esto sin un cobro ya verificado.
   Future<Map<String, dynamic>> crearVenta(
     int idMetPago,
-    List<Map<String, dynamic>> items,
-  ) async {
+    List<Map<String, dynamic>> items, {
+    String? codigoCupon,
+    int? puntos,
+  }) async {
     final data = await _api.post(
       '/api/sales',
-      body: {'idMetPago': idMetPago, 'items': items},
+      body: {
+        'idMetPago': idMetPago,
+        'items': items,
+        if (codigoCupon != null && codigoCupon.isNotEmpty)
+          'codigoCupon': codigoCupon,
+        if (puntos != null && puntos > 0) 'puntos': puntos,
+      },
     ) as Map<String, dynamic>;
     return data;
   }
