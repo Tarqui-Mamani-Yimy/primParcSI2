@@ -52,8 +52,18 @@ def _seed_value(column, tenant, table_name):
         return "devolucion"
     if table_name == "devolucion" and name == "estado":
         return "completed"
+    if table_name == "retroalimentacion_ajuste" and name == "resultado":
+        return "bien"
     if table_name == "movimiento_caja" and name == "kind":
         return "egreso"
+    if table_name == "promocion" and name == "tipo":
+        return "porcentaje"
+    if table_name == "promocion" and name == "alcance":
+        return "todos"
+    if table_name == "cupon" and name == "tipo":
+        return "porcentaje"
+    if table_name == "movimiento_puntos" and name == "tipo":
+        return "ganado"
     if isinstance(column.type, DateTime):
         return datetime(2026, 1, tenant, 12, 0)
     if isinstance(column.type, Date):

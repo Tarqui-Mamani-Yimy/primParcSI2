@@ -1,11 +1,11 @@
 from math import ceil
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_tenant_db
-from app.models import Colecciones, Producto, Proveedor, Temporada
+from app.models import Colecciones, MedidaProducto, Producto, Proveedor, Temporada
 from app.schemas.products import (
     ImagenUploadOut,
     PaginatedProductos,
@@ -13,6 +13,8 @@ from app.schemas.products import (
     ProductoOut,
     ProductoUpdate,
 )
+from app.schemas.size_chart import SizeChartOut, SizeChartReplaceIn
+from app.services.size_chart import get_size_chart as get_product_size_chart
 from app.security import check_limit, get_tenant, require_permiso
 from app.services.storage_supabase import (
     SupabaseNoConfigurado,
@@ -46,6 +48,47 @@ async def _serialize(producto: Producto, session: AsyncSession) -> ProductoOut:
         imagen_url=producto.imagen_url,
         imagenes_secundarias=producto.imagenes_secundarias or [],
     )
+
+async def _require_tenant_product(session: AsyncSession, idProducto: int, tenant_id: int) -> None:
+    product = (await session.execute(
+        select(Producto).where(Producto.idProducto == idProducto, Producto.idEmpresa == tenant_id)
+    )).scalar_one_or_none()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+
+@router.get("/{idProducto}/size-chart", response_model=SizeChartOut)
+async def get_size_chart(
+    idProducto: int,
+    session: AsyncSession = Depends(get_tenant_db),
+    tenant_id: int = Depends(get_tenant),
+):
+    await _require_tenant_product(session, idProducto, tenant_id)
+    return await get_product_size_chart(session, idProducto, tenant_id)
+
+
+@router.put("/{idProducto}/size-chart", response_model=SizeChartOut)
+async def replace_size_chart(
+    idProducto: int,
+    payload: SizeChartReplaceIn,
+    session: AsyncSession = Depends(get_tenant_db),
+    tenant_id: int = Depends(get_tenant),
+    _=Depends(require_permiso("producto.editar")),
+):
+    await _require_tenant_product(session, idProducto, tenant_id)
+    await session.execute(delete(MedidaProducto).where(
+        MedidaProducto.idEmpresa == tenant_id,
+        MedidaProducto.idProducto == idProducto,
+    ))
+    for item in payload.tallas:
+        session.add(MedidaProducto(
+            idEmpresa=tenant_id,
+            idProducto=idProducto,
+            talla=item.talla,
+            **{name: getattr(item, name) for name in ("pecho", "largo", "hombros", "manga", "cintura", "cadera")},
+        ))
+    await session.commit()
+    return await get_product_size_chart(session, idProducto, tenant_id)
 
 
 @router.get("", response_model=PaginatedProductos)

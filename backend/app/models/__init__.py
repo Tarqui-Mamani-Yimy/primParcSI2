@@ -6,6 +6,7 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -202,6 +203,168 @@ class Producto(Base):
     inventarios: Mapped[list["Inventario"]] = relationship(back_populates="producto")
 
 
+class Promocion(Base):
+    __tablename__ = "promocion"
+    __table_args__ = (
+        CheckConstraint("tipo IN ('porcentaje', 'monto_fijo', 'nxm')", name="chk_promocion_tipo"),
+        CheckConstraint("alcance IN ('todos', 'producto', 'coleccion', 'temporada', 'tipo')", name="chk_promocion_alcance"),
+        CheckConstraint(
+            "(tipo = 'porcentaje' AND valor BETWEEN 1 AND 90 AND n IS NULL AND m IS NULL) OR "
+            "(tipo = 'monto_fijo' AND valor > 0 AND n IS NULL AND m IS NULL) OR "
+            "(tipo = 'nxm' AND valor IS NULL AND n > m AND m >= 1)",
+            name="chk_promocion_regla",
+        ),
+        CheckConstraint("fecha_fin >= fecha_inicio", name="chk_promocion_fechas"),
+        Index("idx_promocion_empresa_vigencia", "idEmpresa", "activa", "fecha_inicio", "fecha_fin"),
+    )
+
+    idPromocion: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    valor: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    n: Mapped[int | None] = mapped_column(Integer)
+    m: Mapped[int | None] = mapped_column(Integer)
+    alcance: Mapped[str] = mapped_column(String(20), nullable=False, default="todos")
+    alcance_ref: Mapped[str | None] = mapped_column(String(120))
+    fecha_inicio: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    fecha_fin: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    fecha_creacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class Cupon(Base):
+    __tablename__ = "cupon"
+    __table_args__ = (
+        UniqueConstraint("idEmpresa", "codigo", name="uq_cupon_empresa_codigo"),
+        CheckConstraint("tipo IN ('porcentaje', 'monto_fijo')", name="chk_cupon_tipo"),
+        CheckConstraint("valor > 0", name="chk_cupon_valor"),
+        CheckConstraint("minimo_compra >= 0", name="chk_cupon_minimo"),
+        CheckConstraint("usos_maximos IS NULL OR usos_maximos > 0", name="chk_cupon_usos_maximos"),
+        CheckConstraint("fecha_fin >= fecha_inicio", name="chk_cupon_fechas"),
+        Index("idx_cupon_empresa_codigo", "idEmpresa", "codigo"),
+    )
+
+    idCupon: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    codigo: Mapped[str] = mapped_column(String(30), nullable=False)
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    valor: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    minimo_compra: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    fecha_inicio: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    fecha_fin: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    usos_maximos: Mapped[int | None] = mapped_column(Integer)
+    un_uso_por_cliente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    idCliente: Mapped[int | None] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="SET NULL"))
+    activo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class CuponUso(Base):
+    __tablename__ = "cupon_uso"
+    __table_args__ = (
+        UniqueConstraint("idVenta", name="uq_cupon_uso_venta"),
+        Index("idx_cupon_uso_cliente", "idEmpresa", "idCupon", "idCliente"),
+    )
+
+    idCuponUso: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idCupon: Mapped[int] = mapped_column(ForeignKey("cupon.idCupon", ondelete="RESTRICT"), nullable=False)
+    idVenta: Mapped[int] = mapped_column(ForeignKey("Venta.idVenta", ondelete="CASCADE"), nullable=False)
+    idCliente: Mapped[int | None] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="SET NULL"))
+    fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
+
+
+class CuentaPuntos(Base):
+    __tablename__ = "cuenta_puntos"
+    __table_args__ = (
+        CheckConstraint("saldo >= 0", name="chk_cuenta_puntos_saldo"),
+        CheckConstraint("acumulado_historico >= 0", name="chk_cuenta_puntos_historico"),
+    )
+
+    idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="CASCADE"), primary_key=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    saldo: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    acumulado_historico: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class MovimientoPuntos(Base):
+    __tablename__ = "movimiento_puntos"
+    __table_args__ = (Index("idx_movimiento_puntos_cliente_fecha", "idEmpresa", "idCliente", "fecha"),)
+
+    idMovimientoPuntos: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", ondelete="CASCADE"), nullable=False)
+    idVenta: Mapped[int | None] = mapped_column(ForeignKey("Venta.idVenta", ondelete="SET NULL"))
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    puntos: Mapped[int] = mapped_column(Integer, nullable=False)
+    fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
+    nota: Mapped[str | None] = mapped_column(Text)
+
+
+class MedidaProducto(Base):
+    __tablename__ = "medida_producto"
+    __table_args__ = (
+        UniqueConstraint("idProducto", "talla", name="uq_medida_producto_talla"),
+        CheckConstraint("pecho IS NULL OR pecho > 0", name="chk_medida_producto_pecho"),
+        CheckConstraint("largo IS NULL OR largo > 0", name="chk_medida_producto_largo"),
+        CheckConstraint("hombros IS NULL OR hombros > 0", name="chk_medida_producto_hombros"),
+        CheckConstraint("manga IS NULL OR manga > 0", name="chk_medida_producto_manga"),
+        CheckConstraint("cintura IS NULL OR cintura > 0", name="chk_medida_producto_cintura"),
+        CheckConstraint("cadera IS NULL OR cadera > 0", name="chk_medida_producto_cadera"),
+    )
+
+    idMedida: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idProducto: Mapped[int] = mapped_column(
+        ForeignKey("producto.idProducto", ondelete="CASCADE"), nullable=False
+    )
+    talla: Mapped[str] = mapped_column(String(20), nullable=False)
+    pecho: Mapped[float | None] = mapped_column(Numeric(5, 1))
+    largo: Mapped[float | None] = mapped_column(Numeric(5, 1))
+    hombros: Mapped[float | None] = mapped_column(Numeric(5, 1))
+    manga: Mapped[float | None] = mapped_column(Numeric(5, 1))
+    cintura: Mapped[float | None] = mapped_column(Numeric(5, 1))
+    cadera: Mapped[float | None] = mapped_column(Numeric(5, 1))
+
+
+class RetroalimentacionAjuste(Base):
+    __tablename__ = "retroalimentacion_ajuste"
+    __table_args__ = (
+        UniqueConstraint("idCliente", "idProducto", name="uq_retroalimentacion_cliente_producto"),
+        CheckConstraint("resultado IN ('pequena', 'bien', 'grande')", name="chk_retroalimentacion_resultado"),
+        Index("idx_retroalimentacion_empresa_producto", "idEmpresa", "idProducto"),
+    )
+
+    idRetro: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idCliente: Mapped[int] = mapped_column(
+        ForeignKey("Cliente.idCliente", ondelete="CASCADE"), nullable=False
+    )
+    idProducto: Mapped[int] = mapped_column(
+        ForeignKey("producto.idProducto", ondelete="CASCADE"), nullable=False
+    )
+    talla: Mapped[str] = mapped_column(String(20), nullable=False)
+    resultado: Mapped[str] = mapped_column(String(10), nullable=False)
+    comentario: Mapped[str | None] = mapped_column(String(255))
+    fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class EmbeddingProducto(Base):
+    __tablename__ = "embedding_producto"
+
+    idProducto: Mapped[int] = mapped_column(
+        ForeignKey("producto.idProducto", ondelete="CASCADE"), primary_key=True
+    )
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    vector: Mapped[list[float]] = mapped_column(
+        ARRAY(Float).with_variant(JSON, "sqlite"), nullable=False
+    )
+    imagen_url: Mapped[str] = mapped_column(Text, nullable=False)
+    fecha: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+
 class Cliente(Base):
     __tablename__ = "Cliente"
 
@@ -312,6 +475,13 @@ class Venta(Base):
     idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     fecha: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
     total: Mapped[float] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
+    subtotal: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    descuento_promociones: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    descuento_cupon: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    descuento_puntos: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    idCupon: Mapped[int | None] = mapped_column(ForeignKey("cupon.idCupon", ondelete="SET NULL"))
+    puntos_canjeados: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    puntos_ganados: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente", onupdate="CASCADE"), nullable=False)
     idMetPago: Mapped[int] = mapped_column(ForeignKey("metodo_pago.idMetPago", onupdate="CASCADE"), nullable=False)
     fechaActualizacion: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False)
@@ -360,6 +530,8 @@ class DetalleVenta(Base):
     idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
     precio_unitario: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    precio_lista: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    idPromocion: Mapped[int | None] = mapped_column(ForeignKey("promocion.idPromocion", ondelete="SET NULL"))
     idProducto: Mapped[int] = mapped_column(ForeignKey("producto.idProducto", onupdate="CASCADE"), nullable=False)
     idVenta: Mapped[int] = mapped_column(ForeignKey("Venta.idVenta", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     codigoReserva: Mapped[int | None] = mapped_column(ForeignKey("Reserva.codigoReserva", ondelete="SET NULL", onupdate="CASCADE"))
