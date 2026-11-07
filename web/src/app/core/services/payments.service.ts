@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
@@ -24,6 +24,9 @@ export interface PagoIntentIn {
   // activa la rama de anticipo del 10% en el backend; requiere codigoSucursal.
   proposito?: 'venta' | 'reserva_deposito';
   codigoSucursal?: number;
+  idCliente?: number | null;
+  codigoCupon?: string | null;
+  puntos?: number | null;
 }
 
 export interface PagoIntentOut {
@@ -52,6 +55,7 @@ export class PaymentsService {
   // Promesa cacheada: el script de Stripe.js se carga una sola vez por
   // sesión de página, nunca en cada llamada del componente.
   private stripePromise: Promise<Stripe | null> | null = null;
+  readonly lastErrorStatus = signal<number | null>(null);
 
   constructor(
     private http: HttpClient,
@@ -66,11 +70,13 @@ export class PaymentsService {
   }
 
   crearIntent(payload: PagoIntentIn): Promise<PagoIntentOut | null> {
+    this.lastErrorStatus.set(null);
     return firstValueFrom(
       this.http.post<PagoIntentOut>(`${API_URL}/api/payments/intents`, payload)
     ).catch((err) => {
+      this.lastErrorStatus.set(err.status ?? null);
       const msg = err.error?.detail || 'No se pudo iniciar el cobro con tarjeta.';
-      this.notificationService.error('Error', msg);
+      this.notificationService.error('Error', typeof msg === 'string' ? msg : JSON.stringify(msg));
       return null;
     });
   }

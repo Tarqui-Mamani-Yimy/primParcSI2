@@ -1,14 +1,16 @@
 import { Component, EventEmitter, Input, OnInit, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import type { CartLine, Venta } from '../../../core/models';
+import { FormsModule } from '@angular/forms';
+import type { CartLine, LoyaltyAccountQuote, QuoteResponse, Venta } from '../../../core/models';
 import { PaymentsService } from '../../../core/services/payments.service';
 import { SalesService } from '../../../core/services/sales.service';
 import { SyncService } from '../../../core/services/sync.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { PromotionsService } from '../../../core/services/promotions.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../../shared/components/receipt-modal.component';
 
-type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' | 'error';
+type EstadoCompra = 'resumen' | 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' | 'error';
 
 /**
  * Checkout de compra digital (CU17/CU18, generalizado por CU16 a una o mas
@@ -31,14 +33,14 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
 @Component({
   selector: 'app-purchase-modal',
   standalone: true,
-  imports: [CommonModule, CardPaymentComponent, ReceiptModalComponent],
+  imports: [CommonModule, FormsModule, CardPaymentComponent, ReceiptModalComponent],
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <div
         *ngIf="estado() !== 'comprado'"
-        class="bg-white max-w-md w-full rounded-2xl border border-[#E8E2DA] shadow-xl overflow-hidden flex flex-col"
+        class="bg-white max-w-md w-full rounded-2xl border border-[#E8E2DA] shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div class="p-5 border-b border-[#E8E2DA] flex items-start justify-between">
+        <div class="p-5 border-b border-[#E8E2DA] flex items-start justify-between shrink-0">
           <div>
             <span class="text-[11px] font-bold uppercase tracking-wider text-[#16A34A]">Comprar ahora</span>
             <h2 class="text-base font-bold text-[#17141A] mt-0.5 leading-snug">{{ tituloCompra() }}</h2>
@@ -54,25 +56,152 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
           </button>
         </div>
 
-        <div class="p-5 space-y-4">
+        <div class="p-5 space-y-4 overflow-y-auto flex-1">
+
+          <!-- ESTADO RESUMEN / COTIZACIÓN (CU37 / CU43 / S9) -->
+          <div *ngIf="estado() === 'resumen'" class="space-y-4 text-xs">
+            <!-- Lista de productos -->
+            <div class="space-y-2 border border-[#E8E2DA] rounded-xl p-3 bg-[#FAF8F5]/60 max-h-40 overflow-y-auto">
+              <div *ngFor="let l of lineas" class="flex items-center justify-between gap-2">
+                <div class="truncate">
+                  <p class="font-bold text-[#17141A] truncate">{{ l.producto.nombre }}</p>
+                  <p class="text-[11px] text-[#5A5561]">Cant: {{ l.cantidad }} · Bs {{ l.producto.venta.toFixed(2) }} c/u</p>
+                </div>
+                <span class="font-semibold text-[#17141A] shrink-0">
+                  Bs {{ (l.producto.venta * l.cantidad).toFixed(2) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Entrada de Cupón de Descuento (CU37, S9) -->
+            <div class="space-y-1.5 p-3 rounded-xl border border-[#E8E2DA] bg-white">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">
+                Cupón de descuento
+              </label>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  [(ngModel)]="codigoCuponInput"
+                  (ngModelChange)="onCodigoChange($event)"
+                  placeholder="EJ. VERANO10"
+                  class="flex-1 px-3 py-1.5 border border-[#E8E2DA] rounded-lg text-xs font-mono font-bold uppercase focus:outline-none focus:border-[#38133E]"
+                />
+                <button
+                  type="button"
+                  (click)="aplicarCupon()"
+                  [disabled]="cotizando() || !codigoCuponInput.trim()"
+                  class="px-3 py-1.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer disabled:opacity-40"
+                >
+                  {{ cotizando() ? '…' : 'Aplicar' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Canje de Puntos de Fidelización (CU43, S9) -->
+            <div *ngIf="cuentaPuntos() as cuenta" class="space-y-2 p-3 rounded-xl border border-[#E8E2DA] bg-white">
+              <div class="flex items-center justify-between">
+                <label class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">
+                  Puntos de fidelización
+                </label>
+                <span class="text-[10px] font-bold text-[#38133E]">
+                  Saldo: {{ cuenta.saldo }} pts (Nivel {{ cuenta.nivel }})
+                </span>
+              </div>
+
+              <div *ngIf="cuenta.puntos_max_canjeables > 0" class="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  [max]="cuenta.puntos_max_canjeables"
+                  [(ngModel)]="puntosInput"
+                  (ngModelChange)="onPuntosChange($event)"
+                  placeholder="Puntos a canjear"
+                  class="flex-1 px-3 py-1.5 border border-[#E8E2DA] rounded-lg text-xs focus:outline-none focus:border-[#38133E]"
+                />
+                <button
+                  type="button"
+                  (click)="canjearMaximosPuntos()"
+                  class="px-2.5 py-1.5 border border-[#38133E] text-[#38133E] hover:bg-[#F5EBF7] rounded-lg text-[11px] font-bold uppercase transition-colors cursor-pointer"
+                >
+                  Máx ({{ cuenta.puntos_max_canjeables }})
+                </button>
+              </div>
+
+              <p class="text-[10px] text-[#5A5561]">
+                1 pt = Bs 0.10 de descuento (hasta el 50% del total).
+              </p>
+            </div>
+
+            <!-- Avisos del servidor sobre cupón o puntos -->
+            <div *ngIf="avisos().length > 0" class="space-y-1">
+              <div *ngFor="let a of avisos()" class="p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px] text-amber-700">info</span>
+                <span>{{ a }}</span>
+              </div>
+            </div>
+
+            <!-- Desglose de Precios (Autoritativo del servidor vía S4 / quote) -->
+            <div *ngIf="quoteResult() as q" class="border-t border-dashed border-[#E8E2DA] pt-3 space-y-1.5">
+              <div class="flex items-center justify-between text-[#5A5561]">
+                <span>Subtotal</span>
+                <span>Bs {{ q.subtotal.toFixed(2) }}</span>
+              </div>
+
+              <div *ngIf="q.descuento_promociones > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+                <span>Promociones aplicadas</span>
+                <span>-Bs {{ q.descuento_promociones.toFixed(2) }}</span>
+              </div>
+
+              <div *ngIf="q.descuento_cupon > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+                <span>Cupón aplicado</span>
+                <span>-Bs {{ q.descuento_cupon.toFixed(2) }}</span>
+              </div>
+
+              <div *ngIf="q.descuento_puntos > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+                <span>Puntos canjeados ({{ q.puntos_canjeados }} pts)</span>
+                <span>-Bs {{ q.descuento_puntos.toFixed(2) }}</span>
+              </div>
+
+              <div class="pt-2 border-t border-[#E8E2DA] flex items-center justify-between">
+                <span class="text-sm font-bold text-[#17141A] uppercase">Total a pagar</span>
+                <span class="text-lg font-bold text-[#38133E]">Bs {{ q.total.toFixed(2) }}</span>
+              </div>
+
+              <div *ngIf="q.puntos_a_ganar > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
+                <span>Puntos a ganar con esta compra:</span>
+                <span>+{{ q.puntos_a_ganar }} pts</span>
+              </div>
+            </div>
+
+            <!-- Botón para avanzar al pago con tarjeta -->
+            <button
+              type="button"
+              (click)="iniciarCobro()"
+              [disabled]="enviando() || cotizando()"
+              class="w-full py-2.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer disabled:opacity-50 mt-2"
+            >
+              {{ enviando() ? 'Preparando tarjeta…' : ('Pagar con tarjeta · Bs ' + totalAPagar().toFixed(2)) }}
+            </button>
+          </div>
+
           <!-- Preparando el cobro (crearIntent en curso) -->
           <div *ngIf="estado() === 'iniciando' && !errorMensaje()" class="py-8 text-center">
-            <p class="text-sm text-[#9B94A3]">Preparando el cobro…</p>
+            <p class="text-sm text-[#9B94A3]">Preparando el cobro con Stripe…</p>
           </div>
 
           <!-- crearIntent fallo: sin stock o Stripe no disponible; el servicio ya notifico el motivo -->
           <div *ngIf="errorMensaje()" class="space-y-3">
             <p class="text-sm font-bold text-rose-700">{{ errorMensaje() }}</p>
             <button
-              (click)="cerrar.emit()"
+              (click)="estado.set('resumen'); errorMensaje.set(null)"
               class="w-full px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide text-[#5A5561] border border-[#E8E2DA] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
             >
-              Cerrar
+              Volver al resumen
             </button>
           </div>
 
           <!-- Widget de tarjeta (unica modalidad — Requirement "Card-Only Modality") -->
-          <div *ngIf="estado() === 'cobrando' && clientSecret()">
+          <div *ngIf="estado() === 'cobrando' && clientSecret()" class="space-y-3">
             <app-card-payment
               [clientSecret]="clientSecret()"
               [concepto]="'Compra: ' + tituloCompra()"
@@ -80,6 +209,14 @@ type EstadoCompra = 'iniciando' | 'cobrando' | 'cobrado_sin_venta' | 'comprado' 
               (fallo)="onCardFallo($event)"
               (cancelado)="onCardCancelado()"
             ></app-card-payment>
+
+            <button
+              type="button"
+              (click)="estado.set('resumen')"
+              class="w-full py-1 text-center text-[11px] text-[#5A5561] hover:underline cursor-pointer"
+            >
+              ← Modificar cupón o puntos
+            </button>
           </div>
 
           <!-- Cobrado pero venta fallida: retener idMetPago, nunca cobrar dos veces -->
@@ -115,22 +252,83 @@ export class PurchaseModalComponent implements OnInit {
   @Output() cerrar = new EventEmitter<void>();
   @Output() completada = new EventEmitter<Venta>();
 
-  estado = signal<EstadoCompra>('iniciando');
+  estado = signal<EstadoCompra>('resumen');
   clientSecret = signal<string | null>(null);
   idMetPagoActual = signal<number | null>(null);
   ventaCreada = signal<Venta | null>(null);
   enviando = signal(false);
   errorMensaje = signal<string | null>(null);
 
+  codigoCuponInput = '';
+  codigoCupon = signal<string>('');
+  puntosInput: number | null = null;
+  puntosACanjear = signal<number>(0);
+  quoteResult = signal<QuoteResponse | null>(null);
+  cotizando = signal<boolean>(false);
+  cuentaPuntos = signal<LoyaltyAccountQuote | null>(null);
+  avisos = signal<string[]>([]);
+
   constructor(
     private paymentsService: PaymentsService,
     private salesService: SalesService,
+    private promotionsService: PromotionsService,
     private notificationService: NotificationService,
     public syncService: SyncService,
   ) {}
 
   ngOnInit(): void {
-    this.iniciarCobro();
+    void this.actualizarCotizacion();
+  }
+
+  onCodigoChange(val: string): void {
+    this.codigoCuponInput = val.toUpperCase().trim();
+  }
+
+  aplicarCupon(): void {
+    this.codigoCupon.set(this.codigoCuponInput.toUpperCase().trim());
+    void this.actualizarCotizacion();
+  }
+
+  onPuntosChange(val: number): void {
+    this.puntosACanjear.set(Math.max(0, Number(val) || 0));
+    void this.actualizarCotizacion();
+  }
+
+  canjearMaximosPuntos(): void {
+    const max = this.cuentaPuntos()?.puntos_max_canjeables ?? 0;
+    this.puntosInput = max;
+    this.puntosACanjear.set(max);
+    void this.actualizarCotizacion();
+  }
+
+  totalAPagar(): number {
+    return this.quoteResult()?.total ?? this.lineas.reduce((acc, l) => acc + l.producto.venta * l.cantidad, 0);
+  }
+
+  async actualizarCotizacion(): Promise<void> {
+    if (!this.syncService.isOnline()) {
+      this.errorMensaje.set('Operación no disponible sin conexión a internet.');
+      return;
+    }
+    this.cotizando.set(true);
+    try {
+      const res = await this.promotionsService.quote({
+        items: this.itemsDeLineas(),
+        codigoCupon: this.codigoCupon() || undefined,
+        puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
+      });
+      this.quoteResult.set(res);
+      this.avisos.set(res.avisos || []);
+      if (res.cuenta) {
+        this.cuentaPuntos.set(res.cuenta);
+      }
+    } catch (err: any) {
+      console.warn('Error al cotizar compra:', err);
+      const msg = err.error?.detail || 'No se pudo cotizar la compra.';
+      this.avisos.set([msg]);
+    } finally {
+      this.cotizando.set(false);
+    }
   }
 
   // Una sola linea conserva la redaccion original ("Comprar ahora" y
@@ -161,22 +359,26 @@ export class PurchaseModalComponent implements OnInit {
   // POST /api/payments/intents: el servidor valida stock ANTES de crear el
   // intento (Requirement "Stock Verified Before Any Charge") — si no hay
   // stock en ninguna sucursal, devuelve 400 y esta llamada nunca cobra nada.
-  private async iniciarCobro(): Promise<void> {
+  async iniciarCobro(): Promise<void> {
     if (!this.syncService.isOnline()) {
       this.errorMensaje.set('Operación no disponible sin conexión a internet.');
       return;
     }
     this.enviando.set(true);
+    this.errorMensaje.set(null);
     const intent = await this.paymentsService.crearIntent({
       items: this.itemsDeLineas(),
       claveIntento: crypto.randomUUID(),
       concepto: `Compra en línea — ${this.tituloCompra()}`,
+      codigoCupon: this.codigoCupon() || undefined,
+      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
     if (!intent) {
       // El servicio ya notifico el motivo real (sin stock, Stripe no
       // configurado, etc.) via NotificationService.
-      this.errorMensaje.set('No se pudo iniciar la compra. Cerrá esta ventana e intentá de nuevo.');
+      this.errorMensaje.set('No se pudo iniciar la compra. Verificá los datos e intentá de nuevo.');
+      this.estado.set('resumen');
       return;
     }
     this.clientSecret.set(intent.clientSecret);
@@ -206,7 +408,8 @@ export class PurchaseModalComponent implements OnInit {
   }
 
   onCardCancelado(): void {
-    this.cerrar.emit();
+    this.clientSecret.set(null);
+    this.estado.set('resumen');
   }
 
   /**
@@ -224,6 +427,8 @@ export class PurchaseModalComponent implements OnInit {
     const venta = await this.salesService.crearVenta({
       idMetPago,
       items: this.itemsDeLineas(),
+      codigoCupon: this.codigoCupon() || undefined,
+      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
 

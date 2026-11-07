@@ -186,7 +186,10 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
 
       <!-- Contenido de la vista actual -->
       <main class="flex-1 overflow-y-auto bg-[#FAF8F5]">
-        <app-customer-catalog *ngIf="currentView() === 'catalog'"></app-customer-catalog>
+        <app-customer-catalog
+          *ngIf="currentView() === 'catalog'"
+          (irAPerfil)="currentView.set('profile')"
+        ></app-customer-catalog>
 
         <app-customer-reservations *ngIf="currentView() === 'reservations'"></app-customer-reservations>
 

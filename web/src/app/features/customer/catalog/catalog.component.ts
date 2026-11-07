@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -12,6 +12,7 @@ import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
 import { PurchaseModalComponent } from '../checkout/purchase-modal.component';
 import { CartDrawerComponent } from '../cart/cart-drawer.component';
+import { VisualSearchModalComponent } from './visual-search-modal.component';
 
 const PAGE_SIZE = 12;
 
@@ -25,15 +26,29 @@ const PAGE_SIZE = 12;
     ReservationFormComponent,
     PurchaseModalComponent,
     CartDrawerComponent,
+    VisualSearchModalComponent,
   ],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
 
       <!-- Encabezado -->
-      <div class="pb-5 border-b border-[#E8E2DA]">
-        <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
-        <h1 class="text-2xl font-bold text-[#17141A] tracking-tight mt-0.5">Explorar Productos</h1>
-        <p class="text-xs text-[#5A5561] mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-[#E8E2DA]">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#38133E]">Catálogo</span>
+          <h1 class="text-2xl font-bold text-[#17141A] tracking-tight mt-0.5">Explorar Productos</h1>
+          <p class="text-xs text-[#5A5561] mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            (click)="openVisualSearch()"
+            class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-xl text-xs font-bold tracking-wide uppercase transition-colors shadow-xs cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-[18px]">photo_camera</span>
+            <span>Buscar por foto</span>
+          </button>
+        </div>
       </div>
 
       <!-- Recomendado para vos (CU22, IA) -->
@@ -206,6 +221,7 @@ const PAGE_SIZE = 12;
       (reservar)="onReservar($event)"
       (comprar)="onComprar($event)"
       (agregarAlCarrito)="onAgregarAlCarrito($event)"
+      (irAPerfil)="onIrAPerfil()"
     ></app-product-detail>
 
     <app-reservation-form
@@ -223,6 +239,12 @@ const PAGE_SIZE = 12;
       (cerrar)="checkoutLineas.set(null)"
       (completada)="onCompraCompletada()"
     ></app-purchase-modal>
+
+    <app-visual-search-modal
+      *ngIf="showVisualSearchModal()"
+      (cerrar)="closeVisualSearch()"
+      (seleccionarProducto)="onProductSelectedFromVisualSearch($event)"
+    ></app-visual-search-modal>
   `
 })
 export class CatalogComponent implements OnInit, OnDestroy {
@@ -235,6 +257,7 @@ export class CatalogComponent implements OnInit, OnDestroy {
 
   page = signal<number>(1);
   selectedProductId = signal<number | null>(null);
+  showVisualSearchModal = signal<boolean>(false);
   reservandoProducto = signal<ProductOut | null>(null);
   recomendaciones = signal<RecomendacionOut[]>([]);
   catalogProducts = signal<ProductOut[]>([]);
@@ -310,6 +333,20 @@ export class CatalogComponent implements OnInit, OnDestroy {
     this.fetchProducts();
   }
 
+  @Output() irAPerfil = new EventEmitter<void>();
+
+  openVisualSearch() {
+    this.showVisualSearchModal.set(true);
+  }
+
+  closeVisualSearch() {
+    this.showVisualSearchModal.set(false);
+  }
+
+  onProductSelectedFromVisualSearch(idProducto: number) {
+    this.selectedProductId.set(idProducto);
+  }
+
   openDetail(item: ProductOut) {
     this.selectedProductId.set(item.idProducto);
   }
@@ -318,8 +355,15 @@ export class CatalogComponent implements OnInit, OnDestroy {
     this.selectedProductId.set(null);
   }
 
+  onIrAPerfil() {
+    this.closeDetail();
+    this.showVisualSearchModal.set(false);
+    this.irAPerfil.emit();
+  }
+
   onReservar(producto: ProductOut) {
     this.selectedProductId.set(null);
+    this.showVisualSearchModal.set(false);
     this.reservandoProducto.set(producto);
   }
 
@@ -332,6 +376,7 @@ export class CatalogComponent implements OnInit, OnDestroy {
     // ni escribe el carrito real (Requirement "Buy-Now Remains Independent
     // of the Cart").
     this.selectedProductId.set(null);
+    this.showVisualSearchModal.set(false);
     this.checkoutDesdeCarrito.set(false);
     this.checkoutLineas.set([{ producto: evt.producto, cantidad: evt.cantidad }]);
   }

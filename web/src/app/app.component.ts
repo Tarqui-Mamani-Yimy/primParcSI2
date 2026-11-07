@@ -30,6 +30,7 @@ import { DiscrepanciesComponent } from './features/inventory/discrepancies.compo
 import { SyncQueueComponent } from './features/sync-queue/sync-queue.component';
 import { ReturnsComponent } from './features/returns/returns.component';
 import { AiReportsComponent } from './features/ai-reports/ai-reports.component';
+import { PromotionsComponent } from './features/promotions/promotions.component';
 
 @Component({
   selector: 'app-root',
@@ -60,7 +61,8 @@ import { AiReportsComponent } from './features/ai-reports/ai-reports.component';
     SubscriptionComponent,
     PlatformComponent,
     ReturnsComponent,
-    AiReportsComponent
+    AiReportsComponent,
+    PromotionsComponent
   ],
   template: `
     <!-- Banner PWA Update (Pantallas Públicas) -->
@@ -395,6 +397,10 @@ import { AiReportsComponent } from './features/ai-reports/ai-reports.component';
             <app-platform
               *ngIf="activeView() === 'platform'"
             ></app-platform>
+
+            <app-promotions
+              *ngIf="activeView() === 'promotions'"
+            ></app-promotions>
           </main>
         </div>
       </div>
@@ -582,6 +588,8 @@ export class AppComponent implements OnInit {
         return 'Mi Suscripción y Capacidad de Plan';
       case 'platform':
         return 'Panel de Plataforma — Gestión Global';
+      case 'promotions':
+        return 'Promociones y Cupones de Descuento';
       default:
         return 'Operaciones';
     }

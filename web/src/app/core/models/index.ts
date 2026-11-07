@@ -279,6 +279,8 @@ export interface DetalleVenta {
   idProducto: number;
   producto_nombre: string | null;
   idVenta: number;
+  precio_lista?: number | null;
+  idPromocion?: number | null;
 }
 
 export interface Venta {
@@ -293,6 +295,13 @@ export interface Venta {
   discrepanciaStock?: boolean;
   discrepanciaResueltaEn?: string | null;
   discrepanciaNota?: string | null;
+  subtotal?: number | null;
+  descuento_promociones?: number;
+  descuento_cupon?: number;
+  descuento_puntos?: number;
+  idCupon?: number | null;
+  puntos_canjeados?: number;
+  puntos_ganados?: number;
 }
 
 export interface MetodoPago {
@@ -316,6 +325,8 @@ export interface VentaIn {
   idMetPago: number;
   codigoSucursal?: number;
   items: { idProducto: number; cantidad: number }[];
+  codigoCupon?: string | null;
+  puntos?: number | null;
 }
 
 // Línea de ticket en memoria del cliente: nunca se envía tal cual al
@@ -947,4 +958,251 @@ export interface MLCustomerSegmentsOut {
   segments: MLCustomerSegmentSummary[];
   customers: MLCustomerSegmentItem[];
 }
+
+// ─────────────────────────────────────────────
+// SIZE CHART (CU34 - Tabla de Medidas por Producto)
+// ─────────────────────────────────────────────
+
+export interface MedidaTalla {
+  talla: string;
+  pecho: number | null;
+  largo: number | null;
+  hombros: number | null;
+  manga: number | null;
+  cintura: number | null;
+  cadera: number | null;
+}
+
+export interface SizeChartResponse {
+  idProducto: number;
+  fuente: 'propia' | 'generica';
+  tallas: MedidaTalla[];
+}
+
+export interface SizeChartUpdatePayload {
+  tallas: MedidaTalla[];
+}
+
+// ─────────────────────────────────────────────
+// SIZE RECOMMENDATION & FIT FEEDBACK (CU35 + CU36)
+// ─────────────────────────────────────────────
+
+export type AjusteTipo = 'ajustada' | 'justa' | 'holgada';
+export type FitResultado = 'pequena' | 'bien' | 'grande';
+
+export interface SizeRecommendationOut {
+  idProducto: number;
+  fuente: 'propia' | 'generica';
+  sin_medidas: boolean;
+  medidas_cliente: {
+    pecho: number | null;
+    cintura: number | null;
+  };
+  talla_recomendada: string | null;
+  ajuste: AjusteTipo | null;
+  mensaje: string;
+  aviso_talla: string | null;
+  tallas: Array<{
+    talla: string;
+    ajuste: AjusteTipo;
+  }>;
+  retroalimentacion: {
+    total: number;
+    pequena: number;
+    bien: number;
+    grande: number;
+    nota: string | null;
+  };
+}
+
+export interface FitFeedbackIn {
+  resultado: FitResultado;
+  comentario?: string | null;
+}
+
+export interface ClientFitFeedbackItem {
+  idProducto: number;
+  nombre: string;
+  talla: string;
+  imagen_url: string | null;
+  resultado: FitResultado | null;
+  fecha: string | null;
+}
+
+export interface FitFeedbackSummaryItem {
+  idProducto: number;
+  nombre: string;
+  talla: string;
+  total: number;
+  pequena: number;
+  bien: number;
+  grande: number;
+  alerta: boolean;
+}
+
+// ─────────────────────────────────────────────
+// BÚSQUEDA VISUAL / FOTO (CU40 / S6, S7, S8)
+// ─────────────────────────────────────────────
+
+export interface VisualSearchResultItem {
+  idProducto: number;
+  nombre: string;
+  talla: string | null;
+  color: string | null;
+  venta: number;
+  imagen_url: string | null;
+  similitud: number;
+  stock_total: number;
+}
+
+export interface VisualSearchResponse {
+  resultados: VisualSearchResultItem[];
+  indexados: number;
+}
+
+export interface VisualReindexResponse {
+  indexados: number;
+  omitidos: number;
+  errores: number;
+}
+
+// ─────────────────────────────────────────────
+// PROMOTIONS & COUPONS (CU37) & LOYALTY (CU43)
+// ─────────────────────────────────────────────
+
+export type PromotionTipo = 'porcentaje' | 'monto_fijo' | 'nxm';
+export type PromotionAlcance = 'todos' | 'producto' | 'coleccion' | 'temporada' | 'tipo';
+
+export interface Promocion {
+  idPromocion: number;
+  idEmpresa: number;
+  nombre: string;
+  tipo: PromotionTipo;
+  valor: number | null;
+  n: number | null;
+  m: number | null;
+  alcance: PromotionAlcance;
+  alcance_ref: string | null;
+  fecha_inicio: string;
+  fecha_fin: string;
+  activa: boolean;
+  fecha_creacion?: string;
+  productos?: number[] | null;
+}
+
+export interface PromocionIn {
+  nombre: string;
+  tipo: PromotionTipo;
+  valor?: number | null;
+  n?: number | null;
+  m?: number | null;
+  alcance: PromotionAlcance;
+  alcance_ref?: string | null;
+  fecha_inicio: string;
+  fecha_fin: string;
+  activa?: boolean;
+}
+
+export type CuponTipo = 'porcentaje' | 'monto_fijo';
+
+export interface Cupon {
+  idCupon: number;
+  idEmpresa: number;
+  codigo: string;
+  tipo: CuponTipo;
+  valor: number;
+  minimo_compra: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+  usos_maximos: number | null;
+  un_uso_por_cliente: boolean;
+  idCliente: number | null;
+  activo: boolean;
+}
+
+export interface CuponIn {
+  codigo: string;
+  tipo: CuponTipo;
+  valor: number;
+  minimo_compra?: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+  usos_maximos?: number | null;
+  un_uso_por_cliente?: boolean;
+  idCliente?: number | null;
+  activo?: boolean;
+}
+
+export interface QuoteItemIn {
+  idProducto: number;
+  cantidad: number;
+}
+
+export interface QuoteRequest {
+  items: QuoteItemIn[];
+  idCliente?: number | null;
+  codigoCupon?: string | null;
+  puntos?: number | null;
+}
+
+export interface QuoteLineOut {
+  idProducto: number;
+  cantidad: number;
+  precio_lista: number;
+  idPromocion: number | null;
+  descuento_promocion: number;
+  precio_unitario: number;
+}
+
+export interface LoyaltyAccountQuote {
+  saldo: number;
+  nivel: 'Bronce' | 'Plata' | 'Oro';
+  puntos_max_canjeables: number;
+}
+
+export interface QuoteResponse {
+  lineas?: QuoteLineOut[];
+  items?: QuoteLineOut[];
+  subtotal: number;
+  descuento_promociones: number;
+  descuento_cupon: number;
+  descuento_puntos: number;
+  total: number;
+  idCupon: number | null;
+  puntos_canjeados: number;
+  puntos_a_ganar: number;
+  avisos: string[];
+  cuenta?: LoyaltyAccountQuote | null;
+}
+
+export interface LoyaltyMovement {
+  idMovimientoPuntos: number;
+  tipo: 'ganado' | 'canjeado' | 'revertido' | 'devuelto';
+  puntos: number;
+  fecha: string;
+  nota: string | null;
+}
+
+export interface LoyaltyMeResponse {
+  saldo: number;
+  acumulado_historico: number;
+  nivel: 'Bronce' | 'Plata' | 'Oro';
+  multiplicador: number;
+  siguiente_nivel: 'Plata' | 'Oro' | null;
+  puntos_para_siguiente: number;
+  movimientos: LoyaltyMovement[];
+}
+
+export interface LoyaltyCustomerResponse {
+  saldo: number;
+  acumulado_historico: number;
+  nivel: 'Bronce' | 'Plata' | 'Oro';
+  multiplicador: number;
+  siguiente_nivel: 'Plata' | 'Oro' | null;
+  puntos_para_siguiente: number;
+}
+
+
+
+
 

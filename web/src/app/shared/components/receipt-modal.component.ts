@@ -49,7 +49,12 @@ import type { Venta } from '../../core/models';
             </thead>
             <tbody>
               <tr *ngFor="let d of venta.detalles" class="border-b border-[#FAF8F5]">
-                <td class="py-1.5 text-[#17141A]">{{ d.producto_nombre || ('Producto #' + d.idProducto) }}</td>
+                <td class="py-1.5 text-[#17141A]">
+                  <div>{{ d.producto_nombre || ('Producto #' + d.idProducto) }}</div>
+                  <div *ngIf="d.precio_lista && d.precio_lista > d.precio_unitario" class="text-[10px] text-emerald-700">
+                    Promo aplicada (lista: Bs {{ d.precio_lista.toFixed(2) }})
+                  </div>
+                </td>
                 <td class="py-1.5 text-center text-[#5A5561]">{{ d.cantidad }}</td>
                 <td class="py-1.5 text-right text-[#5A5561]">Bs {{ d.precio_unitario.toFixed(2) }}</td>
                 <td class="py-1.5 text-right font-medium text-[#17141A]">Bs {{ (d.precio_unitario * d.cantidad).toFixed(2) }}</td>
@@ -57,9 +62,44 @@ import type { Venta } from '../../core/models';
             </tbody>
           </table>
 
-          <div class="border-t border-dashed border-[#E8E2DA] pt-3 flex items-center justify-between">
-            <span class="text-sm font-bold text-[#17141A] uppercase tracking-wide">Total</span>
-            <span class="text-lg font-bold text-[#38133E]">Bs {{ venta.total.toFixed(2) }}</span>
+          <!-- Desglose de Totales y Descuentos (CU37 / CU43 / S9) -->
+          <div class="border-t border-dashed border-[#E8E2DA] pt-2 space-y-1 text-xs">
+            <div *ngIf="venta.subtotal != null" class="flex items-center justify-between text-[#5A5561]">
+              <span>Subtotal</span>
+              <span>Bs {{ venta.subtotal.toFixed(2) }}</span>
+            </div>
+
+            <div *ngIf="venta.descuento_promociones && venta.descuento_promociones > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+              <span>Ahorraste en promociones</span>
+              <span>-Bs {{ venta.descuento_promociones.toFixed(2) }}</span>
+            </div>
+
+            <div *ngIf="venta.descuento_cupon && venta.descuento_cupon > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+              <span>Ahorraste con cupón</span>
+              <span>-Bs {{ venta.descuento_cupon.toFixed(2) }}</span>
+            </div>
+
+            <div *ngIf="venta.descuento_puntos && venta.descuento_puntos > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+              <span>Ahorraste con puntos ({{ venta.puntos_canjeados }} pts)</span>
+              <span>-Bs {{ venta.descuento_puntos.toFixed(2) }}</span>
+            </div>
+
+            <div class="border-t border-[#E8E2DA] pt-2 flex items-center justify-between">
+              <span class="text-sm font-bold text-[#17141A] uppercase tracking-wide">Total</span>
+              <span class="text-lg font-bold text-[#38133E]">Bs {{ venta.total.toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <!-- Resumen de Puntos de Fidelización (CU43 / S9) -->
+          <div *ngIf="(venta.puntos_ganados && venta.puntos_ganados > 0) || (venta.puntos_canjeados && venta.puntos_canjeados > 0)" class="bg-[#F5EBF7]/60 rounded-lg p-2.5 text-xs text-[#38133E] space-y-0.5 border border-[#E8E2DA]">
+            <p *ngIf="venta.puntos_ganados && venta.puntos_ganados > 0" class="font-bold flex items-center justify-between">
+              <span>Puntos ganados con esta compra:</span>
+              <span>+{{ venta.puntos_ganados }} pts</span>
+            </p>
+            <p *ngIf="venta.puntos_canjeados && venta.puntos_canjeados > 0" class="text-[11px] flex items-center justify-between text-[#5A5561]">
+              <span>Puntos canjeados:</span>
+              <span>-{{ venta.puntos_canjeados }} pts</span>
+            </p>
           </div>
         </div>
 

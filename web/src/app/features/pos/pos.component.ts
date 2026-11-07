@@ -7,12 +7,17 @@ import {
   Cliente,
   InventoryLocation,
   InventoryStockEntry,
+  LoyaltyAccountQuote,
+  LoyaltyCustomerResponse,
   ProductOut,
+  QuoteLineOut,
+  QuoteResponse,
   TicketLine,
   Venta,
 } from '../../core/models';
 import { SalesService } from '../../core/services/sales.service';
 import { PaymentsService } from '../../core/services/payments.service';
+import { PromotionsService } from '../../core/services/promotions.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OfflineDbService } from '../../core/services/offline-db.service';
 import { SyncService } from '../../core/services/sync.service';
@@ -98,7 +103,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
           <select
             class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white cursor-pointer"
             [ngModel]="selectedCliente()"
-            (ngModelChange)="selectedCliente.set($event)"
+            (ngModelChange)="onClienteChange($event)"
             name="cliente"
           >
             <option [ngValue]="null" disabled>Seleccioná un cliente</option>
@@ -173,8 +178,22 @@ type Modalidad = 'efectivo' | 'tarjeta';
                   >+</button>
                 </div>
               </td>
-              <td class="px-4 py-3 text-right text-gray-600">Bs {{ line.precioUnitario.toFixed(2) }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-gray-900">Bs {{ (line.precioUnitario * line.cantidad).toFixed(2) }}</td>
+              <td class="px-4 py-3 text-right">
+                <div *ngIf="getPromoLine(line.idProducto) as pl; else precioNormal">
+                  <div *ngIf="pl.descuento_promocion > 0" class="line-through text-gray-400 text-[11px]">
+                    Bs {{ pl.precio_lista.toFixed(2) }}
+                  </div>
+                  <div class="text-gray-900 font-medium">
+                    Bs {{ pl.precio_unitario.toFixed(2) }}
+                  </div>
+                </div>
+                <ng-template #precioNormal>
+                  <span class="text-gray-600">Bs {{ line.precioUnitario.toFixed(2) }}</span>
+                </ng-template>
+              </td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900">
+                Bs {{ getLineSubtotal(line).toFixed(2) }}
+              </td>
               <td class="px-4 py-3 text-right">
                 <button
                   (click)="removerLinea(line.idProducto)"
@@ -188,9 +207,114 @@ type Modalidad = 'efectivo' | 'tarjeta';
             </tr>
           </tbody>
         </table>
-        <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-          <span class="text-xs text-gray-500">Subtotal indicativo (el total real lo confirma el servidor)</span>
-          <span class="text-base font-bold text-gray-900">Bs {{ subtotalIndicativo().toFixed(2) }}</span>
+
+        <!-- Desglose de Totales (S4 / S7 / S9) -->
+        <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-1.5 text-xs">
+          <div class="flex items-center justify-between text-gray-600">
+            <span>Subtotal</span>
+            <span class="font-semibold text-gray-900">Bs {{ subtotalCotizado().toFixed(2) }}</span>
+          </div>
+
+          <div *ngIf="descuentoPromociones() > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+            <span>Promociones aplicadas</span>
+            <span>-Bs {{ descuentoPromociones().toFixed(2) }}</span>
+          </div>
+
+          <div *ngIf="descuentoCupon() > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+            <span>Cupón aplicado ({{ codigoCupon() }})</span>
+            <span>-Bs {{ descuentoCupon().toFixed(2) }}</span>
+          </div>
+
+          <div *ngIf="descuentoPuntos() > 0" class="flex items-center justify-between text-emerald-700 font-medium">
+            <span>Descuento por puntos ({{ puntosACanjear() }} pts)</span>
+            <span>-Bs {{ descuentoPuntos().toFixed(2) }}</span>
+          </div>
+
+          <div class="pt-2 border-t border-gray-200 flex items-center justify-between">
+            <span class="text-sm font-bold text-gray-900 uppercase tracking-wide">Total a cobrar</span>
+            <span class="text-base font-bold text-[#38133E]">Bs {{ totalAPagar().toFixed(2) }}</span>
+          </div>
+
+          <div *ngIf="puntosAGanar() > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
+            <span>Puntos a ganar con esta venta:</span>
+            <span>+{{ puntosAGanar() }} pts</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cupones y Puntos de Fidelización (CU37 / CU43 / S9) -->
+      <div *ngIf="ticketLines().length > 0 && estado() === 'ticket'" class="bg-white rounded-xl border border-gray-200 shadow-xs p-4 space-y-3">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <!-- Entrada de Cupón -->
+          <div class="flex-1 space-y-1">
+            <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Cupón de descuento</label>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                class="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-1.5 uppercase font-mono disabled:bg-gray-100 disabled:cursor-not-allowed"
+                placeholder="EJ. VERANO20"
+                [ngModel]="codigoCupon()"
+                (ngModelChange)="onCodigoCuponChange($event)"
+                [disabled]="!syncService.isOnline() || lineasBloqueadas()"
+              />
+              <button
+                type="button"
+                (click)="aplicarCupon()"
+                [disabled]="!syncService.isOnline() || !codigoCupon().trim() || lineasBloqueadas()"
+                class="px-3 py-1.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Aplicar
+              </button>
+            </div>
+            <p *ngIf="!syncService.isOnline()" class="text-[11px] text-amber-700">
+              Cupones de descuento no disponibles sin conexión.
+            </p>
+          </div>
+
+          <!-- Canje de Puntos de Fidelización (CU43, B3) -->
+          <div *ngIf="quoteResult()?.cuenta as cuenta" class="flex-1 space-y-1">
+            <div class="flex items-center justify-between">
+              <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Puntos de fidelización</label>
+              <span class="text-[10px] font-bold text-[#38133E]">
+                Saldo: {{ cuenta.saldo }} pts (Nivel {{ cuenta.nivel }})
+              </span>
+            </div>
+
+            <div *ngIf="syncService.isOnline(); else offlinePuntos" class="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                [max]="cuenta.puntos_max_canjeables"
+                class="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-1.5 disabled:bg-gray-100"
+                placeholder="Puntos a canjear"
+                [ngModel]="puntosACanjear()"
+                (ngModelChange)="onPuntosChange($event)"
+                [disabled]="cuenta.puntos_max_canjeables === 0 || lineasBloqueadas()"
+              />
+              <button
+                type="button"
+                *ngIf="cuenta.puntos_max_canjeables > 0"
+                (click)="canjearMaximosPuntos()"
+                [disabled]="lineasBloqueadas()"
+                class="px-2.5 py-1.5 border border-[#38133E] text-[#38133E] hover:bg-[#F5EBF7] rounded-lg text-[11px] font-bold uppercase transition-colors cursor-pointer"
+              >
+                Máx ({{ cuenta.puntos_max_canjeables }})
+              </button>
+            </div>
+            <ng-template #offlinePuntos>
+              <p class="text-[11px] text-amber-700">
+                Canje de puntos deshabilitado sin conexión.
+              </p>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Avisos del servidor -->
+        <div *ngIf="avisosCotizacion().length > 0" class="space-y-1 pt-1">
+          <div *ngFor="let aviso of avisosCotizacion()" class="p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-amber-700">info</span>
+            <span>{{ aviso }}</span>
+          </div>
         </div>
       </div>
 
@@ -321,6 +445,14 @@ export class PosComponent implements OnInit {
   clientSecret = signal<string | null>(null);
   ventaCreada = signal<Venta | null>(null);
 
+  codigoCupon = signal<string>('');
+  puntosACanjear = signal<number>(0);
+  quoteResult = signal<QuoteResponse | null>(null);
+  clienteCuentaPuntos = signal<LoyaltyAccountQuote | LoyaltyCustomerResponse | null>(null);
+  avisosCotizacion = signal<string[]>([]);
+  cotizando = signal<boolean>(false);
+  private cachedProductsMap = new Map<number, ProductOut>();
+
   // Latch de sesión: si crearIntent falla (típicamente Stripe no configurado
   // en el servidor, 503), "Tarjeta" se deshabilita para el resto de la
   // sesión de caja — nunca vuelve a intentarse sola.
@@ -357,6 +489,7 @@ export class PosComponent implements OnInit {
     private http: HttpClient,
     private salesService: SalesService,
     private paymentsService: PaymentsService,
+    private promotionsService: PromotionsService,
     private notificationService: NotificationService,
     private offlineDbService: OfflineDbService,
     public syncService: SyncService,
@@ -364,6 +497,7 @@ export class PosComponent implements OnInit {
     this.syncService.syncCompleted.subscribe(() => {
       this.cargarSucursales();
       this.cargarClientes();
+      void this.loadProductsCache();
       const currentBranch = this.selectedBranch();
       if (currentBranch !== null) {
         this.onBranchChange(currentBranch);
@@ -374,6 +508,22 @@ export class PosComponent implements OnInit {
   ngOnInit(): void {
     this.cargarSucursales();
     this.cargarClientes();
+    void this.loadProductsCache();
+    void this.promotionsService.getActivePromotions();
+  }
+
+  private async loadProductsCache(): Promise<void> {
+    try {
+      const db = this.offlineDbService.getActiveDb();
+      const prods = await db.productos.toArray();
+      for (const p of prods) {
+        this.cachedProductsMap.set(p.idProducto, p);
+      }
+    } catch {}
+  }
+
+  getProductoFromCache(idProducto: number): ProductOut | undefined {
+    return this.cachedProductsMap.get(idProducto);
   }
 
   private async cargarSucursales(): Promise<void> {
@@ -518,6 +668,7 @@ export class PosComponent implements OnInit {
       };
       return [...lines, nueva];
     });
+    void this.actualizarCotizacion();
   }
 
   ajustarCantidad(idProducto: number, delta: number): void {
@@ -535,6 +686,7 @@ export class PosComponent implements OnInit {
         })
         .filter(l => l.cantidad > 0)
     );
+    void this.actualizarCotizacion();
   }
 
   removerLinea(idProducto: number): void {
@@ -542,6 +694,121 @@ export class PosComponent implements OnInit {
       return;
     }
     this.ticketLines.update(lines => lines.filter(l => l.idProducto !== idProducto));
+    void this.actualizarCotizacion();
+  }
+
+  async onClienteChange(id: number | null): Promise<void> {
+    this.selectedCliente.set(id);
+    this.puntosACanjear.set(0);
+    this.clienteCuentaPuntos.set(null);
+    if (id !== null && this.syncService.isOnline()) {
+      try {
+        const data = await this.promotionsService.getCustomerLoyalty(id);
+        this.clienteCuentaPuntos.set(data);
+      } catch {}
+    }
+    void this.actualizarCotizacion();
+  }
+
+  onCodigoCuponChange(val: string): void {
+    this.codigoCupon.set(val.toUpperCase().trim());
+  }
+
+  aplicarCupon(): void {
+    void this.actualizarCotizacion();
+  }
+
+  onPuntosChange(val: number): void {
+    this.puntosACanjear.set(Math.max(0, Number(val) || 0));
+    void this.actualizarCotizacion();
+  }
+
+  canjearMaximosPuntos(): void {
+    const max = this.puntosMaximosCanjeables();
+    this.puntosACanjear.set(max);
+    void this.actualizarCotizacion();
+  }
+
+  puntosMaximosCanjeables(): number {
+    return this.quoteResult()?.cuenta?.puntos_max_canjeables ?? 0;
+  }
+
+  getPromoLine(idProducto: number): QuoteLineOut | null {
+    const q = this.quoteResult();
+    const lines = q?.lineas ?? q?.items;
+    return lines?.find(l => l.idProducto === idProducto) ?? null;
+  }
+
+  getLineSubtotal(line: TicketLine): number {
+    const pl = this.getPromoLine(line.idProducto);
+    return pl ? pl.precio_unitario * line.cantidad : line.precioUnitario * line.cantidad;
+  }
+
+  totalAPagar(): number {
+    return this.quoteResult()?.total ?? this.subtotalIndicativo();
+  }
+
+  subtotalCotizado(): number {
+    return this.quoteResult()?.subtotal ?? this.subtotalIndicativo();
+  }
+
+  descuentoPromociones(): number {
+    return this.quoteResult()?.descuento_promociones ?? 0;
+  }
+
+  descuentoCupon(): number {
+    return this.quoteResult()?.descuento_cupon ?? 0;
+  }
+
+  descuentoPuntos(): number {
+    return this.quoteResult()?.descuento_puntos ?? 0;
+  }
+
+  puntosAGanar(): number {
+    return this.quoteResult()?.puntos_a_ganar ?? Math.floor(this.totalAPagar() / 10);
+  }
+
+  async actualizarCotizacion(): Promise<void> {
+    const lines = this.ticketLines();
+    if (lines.length === 0) {
+      this.quoteResult.set(null);
+      this.avisosCotizacion.set([]);
+      return;
+    }
+
+    const items = lines.map(l => ({ idProducto: l.idProducto, cantidad: l.cantidad }));
+
+    if (this.syncService.isOnline()) {
+      this.cotizando.set(true);
+      try {
+        const res = await this.promotionsService.quote({
+          items,
+          idCliente: this.selectedCliente() ?? undefined,
+          codigoCupon: this.codigoCupon().trim() || undefined,
+          puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
+        });
+        this.quoteResult.set(res);
+        this.avisosCotizacion.set(res.avisos || []);
+        if (res.cuenta) {
+          this.clienteCuentaPuntos.set(res.cuenta);
+        }
+      } catch (err: any) {
+        console.warn('Error al cotizar venta POS:', err);
+        const offlineRes = this.promotionsService.quoteOffline(items, id => this.getProductoFromCache(id));
+        this.quoteResult.set(offlineRes);
+        this.avisosCotizacion.set([]);
+      } finally {
+        this.cotizando.set(false);
+      }
+    } else {
+      const offlineRes = this.promotionsService.quoteOffline(items, id => this.getProductoFromCache(id));
+      this.quoteResult.set(offlineRes);
+      const avisos: string[] = [];
+      if (this.codigoCupon().trim() || this.puntosACanjear() > 0) {
+        avisos.push('Cupones y canje de puntos deshabilitados sin conexión a internet.');
+      }
+      this.avisosCotizacion.set(avisos);
+    }
   }
 
   onElegirModalidad(modalidad: Modalidad): void {
@@ -570,19 +837,27 @@ export class PosComponent implements OnInit {
     if (this.enviando() || !this.validarAntesDeCobrar()) {
       return;
     }
-    this.enviando.set(true);
     const codigoSucursal = this.selectedBranch();
     const idCliente = this.selectedCliente();
     if (codigoSucursal === null || idCliente === null) {
-      this.enviando.set(false);
       return;
     }
+
+    if ((this.codigoCupon().trim() || this.puntosACanjear() > 0) && !this.syncService.isOnline()) {
+      this.notificationService.warning(
+        'Modo offline',
+        'El cupón y el canje de puntos no están disponibles sin conexión.',
+      );
+      return;
+    }
+
+    this.enviando.set(true);
     const idLocal = await this.syncService.enqueueOfflineSale({
       comprobanteLocal: `LOCAL-${crypto.randomUUID()}`,
       fechaLocal: new Date().toISOString(),
       codigoSucursal,
       idCliente,
-      pago: { tipo: 'Efectivo', monto: this.subtotalIndicativo() },
+      pago: { tipo: 'Efectivo', monto: this.totalAPagar() },
       items: this.ticketLines().map(line => ({ idProducto: line.idProducto, cantidad: line.cantidad })),
     });
     if (!idLocal) {
@@ -604,8 +879,7 @@ export class PosComponent implements OnInit {
       } else {
         this.notificationService.warning('Venta pendiente', 'La venta quedó guardada en este dispositivo y se sincronizará al recuperar la conexión.');
       }
-      this.ticketLines.set([]);
-      this.modalidad.set(null);
+      this.resetearTicket();
       if (this.selectedBranch() !== null) await this.onBranchChange(this.selectedBranch()!, false);
     }
   }
@@ -645,13 +919,18 @@ export class PosComponent implements OnInit {
       items: this.ticketLines().map(l => ({ idProducto: l.idProducto, cantidad: l.cantidad })),
       claveIntento: crypto.randomUUID(),
       concepto: 'Venta presencial (POS)',
+      idCliente: this.selectedCliente() ?? undefined,
+      codigoCupon: this.codigoCupon() || undefined,
+      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
     if (!intent) {
-      // El servicio ya notificó el error. La causa más común es Stripe no
-      // configurado (503): se deshabilita "Tarjeta" para el resto de la sesión.
-      this.cardLatchedOff.set(true);
-      this.modalidad.set(null);
+      // Si Stripe no está configurado (503), se deshabilita Tarjeta para la sesión.
+      // Errores de validación/cotización (400) muestran el error y permiten reintentar (B2).
+      if (this.paymentsService.lastErrorStatus() === 503) {
+        this.cardLatchedOff.set(true);
+        this.modalidad.set(null);
+      }
       return;
     }
     this.clientSecret.set(intent.clientSecret);
@@ -702,6 +981,8 @@ export class PosComponent implements OnInit {
       idMetPago,
       codigoSucursal,
       items: this.ticketLines().map(l => ({ idProducto: l.idProducto, cantidad: l.cantidad })),
+      codigoCupon: this.codigoCupon() || undefined,
+      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
 
@@ -738,5 +1019,10 @@ export class PosComponent implements OnInit {
     this.clientSecret.set(null);
     this.ventaCreada.set(null);
     this.enviando.set(false);
+    this.codigoCupon.set('');
+    this.puntosACanjear.set(0);
+    this.quoteResult.set(null);
+    this.clienteCuentaPuntos.set(null);
+    this.avisosCotizacion.set([]);
   }
 }

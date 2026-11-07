@@ -2,9 +2,10 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signa
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { ProductOut } from '../../../core/models';
+import { ProductOut, SizeRecommendationOut } from '../../../core/models';
 import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { SyncService } from '../../../core/services/sync.service';
+import { SizeChartService } from '../../../core/services/size-chart.service';
 import { environment } from '../../../../environments/environment';
 import { CANTIDAD_MAXIMA_LINEA } from '../../../core/services/cart.service';
 import { classifyProductDetailError, ProductDetailError } from './product-detail-error';
@@ -64,6 +65,107 @@ const API_URL = environment.apiUrl;
               <div class="p-3 bg-[#F5EBF7] rounded-xl border border-[#E8E2DA] my-3 inline-block w-fit">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">Precio</p>
                 <p class="text-lg font-bold text-[#38133E] mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
+              </div>
+
+              <!-- Caja: Tu talla recomendada (CU35, S8) -->
+              <div class="my-3 p-3.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-xl space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-[#38133E]">straighten</span>
+                    <span class="text-xs font-bold text-[#17141A]">Tu talla recomendada</span>
+                  </div>
+                  <div *ngIf="recomendacion() as rec" class="flex items-center gap-1.5">
+                    <span
+                      *ngIf="rec.talla_recomendada && rec.ajuste"
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-800 border border-emerald-200': rec.ajuste === 'justa',
+                        'bg-amber-100 text-amber-800 border border-amber-200': rec.ajuste === 'ajustada',
+                        'bg-blue-100 text-blue-800 border border-blue-200': rec.ajuste === 'holgada'
+                      }"
+                    >
+                      Ajuste {{ rec.ajuste }}
+                    </span>
+                    <span
+                      *ngIf="rec.fuente === 'generica'"
+                      class="text-[9px] text-[#9B94A3] bg-white px-1.5 py-0.5 rounded border border-[#E8E2DA]"
+                      title="Basado en tabla genérica de respaldo"
+                    >
+                      Genérica
+                    </span>
+                  </div>
+                </div>
+
+                <div *ngIf="loadingRecomendacion()" class="py-2 text-center text-xs text-[#9B94A3]">
+                  Calculando recomendación personalizada…
+                </div>
+
+                <div *ngIf="!loadingRecomendacion() && recomendacion() as rec" class="space-y-2">
+                  <!-- Caso sin_medidas -->
+                  <div *ngIf="rec.sin_medidas" class="p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg text-xs text-amber-900 space-y-1.5">
+                    <p class="leading-relaxed">{{ rec.mensaje }}</p>
+                    <button
+                      type="button"
+                      (click)="irAPerfil.emit()"
+                      class="inline-flex items-center gap-1 text-[11px] font-bold text-[#38133E] hover:underline cursor-pointer"
+                    >
+                      <span>Registrar mis medidas en Mi Perfil</span>
+                      <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </button>
+                  </div>
+
+                  <!-- Caso con medidas -->
+                  <div *ngIf="!rec.sin_medidas" class="space-y-2">
+                    <div class="flex items-baseline gap-2">
+                      <span *ngIf="rec.talla_recomendada" class="text-xl font-extrabold text-[#38133E]">
+                        Talla {{ rec.talla_recomendada }}
+                      </span>
+                      <span *ngIf="!rec.talla_recomendada" class="text-xs font-bold text-[#5A5561]">
+                        Sin recomendación directa
+                      </span>
+                    </div>
+
+                    <p class="text-xs text-[#5A5561] leading-relaxed">
+                      {{ rec.mensaje }}
+                    </p>
+
+                    <!-- Aviso de talla destacado (S4 / S8) -->
+                    <div
+                      *ngIf="rec.aviso_talla"
+                      class="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-xs font-bold text-amber-900 flex items-start gap-1.5"
+                    >
+                      <span class="material-symbols-outlined text-[16px] text-amber-700 shrink-0 mt-0.5">warning</span>
+                      <span>{{ rec.aviso_talla }}</span>
+                    </div>
+
+                    <!-- Chips por talla con su ajuste (S8) -->
+                    <div *ngIf="rec.tallas && rec.tallas.length > 0" class="pt-1">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-[#9B94A3] mb-1">Ajuste por talla:</p>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span
+                          *ngFor="let item of rec.tallas"
+                          class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium border"
+                          [ngClass]="{
+                            'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold': item.talla === rec.talla_recomendada,
+                            'bg-white border-[#E8E2DA] text-[#5A5561]': item.talla !== rec.talla_recomendada
+                          }"
+                        >
+                          <span class="font-bold">{{ item.talla }}:</span>
+                          <span class="capitalize text-[10px]">{{ item.ajuste }}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Nota de retroalimentación de clientes (S5 / S8) -->
+                    <div
+                      *ngIf="rec.retroalimentacion?.nota"
+                      class="p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-start gap-1.5"
+                    >
+                      <span class="material-symbols-outlined text-[16px] text-blue-700 shrink-0 mt-0.5">reviews</span>
+                      <span>{{ rec.retroalimentacion.nota }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="flex items-center gap-2 mb-3" *ngIf="stripeDisponible">
@@ -156,9 +258,12 @@ export class ProductDetailComponent implements OnChanges {
   @Output() reservar = new EventEmitter<ProductOut>();
   @Output() comprar = new EventEmitter<{ producto: ProductOut; cantidad: number }>();
   @Output() agregarAlCarrito = new EventEmitter<{ producto: ProductOut; cantidad: number }>();
+  @Output() irAPerfil = new EventEmitter<void>();
 
   producto = signal<ProductOut | null>(null);
+  recomendacion = signal<SizeRecommendationOut | null>(null);
   loading = signal<boolean>(true);
+  loadingRecomendacion = signal<boolean>(false);
   loadError = signal<ProductDetailError | null>(null);
   cantidad = signal<number>(1);
 
@@ -176,12 +281,14 @@ export class ProductDetailComponent implements OnChanges {
     private http: HttpClient,
     private offlineDbService: OfflineDbService,
     public syncService: SyncService,
+    private sizeChartService: SizeChartService,
   ) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['idProducto']) {
       this.cantidad.set(1);
       this.fetchProducto();
+      this.fetchRecomendacion();
     }
   }
 
@@ -235,6 +342,22 @@ export class ProductDetailComponent implements OnChanges {
     } else if (!hadCached) {
       this.loading.set(false);
       this.loadError.set('not-found');
+    }
+  }
+
+  private async fetchRecomendacion() {
+    this.recomendacion.set(null);
+    if (!this.syncService.isOnline()) {
+      return;
+    }
+    this.loadingRecomendacion.set(true);
+    try {
+      const rec = await this.sizeChartService.getSizeRecommendation(this.idProducto);
+      this.recomendacion.set(rec);
+    } catch {
+      this.recomendacion.set(null);
+    } finally {
+      this.loadingRecomendacion.set(false);
     }
   }
 }

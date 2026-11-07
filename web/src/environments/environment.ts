@@ -1,4 +1,4 @@
-const viteEnv = (import.meta as any).env;
+const viteEnv = (import.meta as any).env || {};
 
 const isLocalhost =
   typeof window !== 'undefined' &&

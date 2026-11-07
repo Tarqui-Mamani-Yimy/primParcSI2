@@ -22,7 +22,8 @@ export type AppView =
   | 'platform'
   | 'sync-queue'
   | 'returns'
-  | 'ai-reports';
+  | 'ai-reports'
+  | 'promotions';
 
 @Component({
   selector: 'app-sidebar',
@@ -360,6 +361,28 @@ export type AppView =
               Administración
             </div>
 
+            <!-- Promociones y Cupones (Gating: promocion.gestionar) -->
+            <button
+              *ngIf="canManagePromotions"
+              (click)="selectView('promotions')"
+              [class.bg-ys-primary-soft]="currentView === 'promotions'"
+              [class.text-ys-primary]="currentView === 'promotions'"
+              [class.font-semibold]="currentView === 'promotions'"
+              [class.text-ys-muted]="currentView !== 'promotions'"
+              class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[#F3EFEA] hover:text-[#17141A] cursor-pointer group"
+            >
+              <div
+                [class.bg-ys-primary]="currentView === 'promotions'"
+                [class.text-white]="currentView === 'promotions'"
+                [class.bg-ys-surface]="currentView !== 'promotions'"
+                [class.text-ys-muted]="currentView !== 'promotions'"
+                class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-colors"
+              >
+                <span class="material-symbols-outlined text-[18px]">sell</span>
+              </div>
+              <span class="font-medium tracking-tight">Promociones y Cupones</span>
+            </button>
+
             <!-- Personal y Nodos -->
             <button
               (click)="selectView('team')"
@@ -617,6 +640,10 @@ export class SidebarComponent {
     const isAdmin = rol === 'Administrador' || this.authService.isSuperAdmin();
     const hasPerm = this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
     return isAdmin && hasPerm && this.authService.hasFeature('reportes');
+  }
+
+  get canManagePromotions(): boolean {
+    return this.authService.hasPermission('promocion.gestionar');
   }
 
   get canViewIndicadores(): boolean {

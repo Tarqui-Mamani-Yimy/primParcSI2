@@ -3,12 +3,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ArchiveService } from '../../core/services/archive.service';
 import { SyncService } from '../../core/services/sync.service';
-import { ProductOut, ProductoIn } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
+import { VisualSearchService } from '../../core/services/visual-search.service';
+import { ProductOut, ProductoIn, VisualReindexResponse } from '../../core/models';
+import { SizeChartModalComponent } from './size-chart-modal.component';
+import { FitIndicatorsModalComponent } from './fit-indicators-modal.component';
 
 @Component({
   selector: 'app-archive',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SizeChartModalComponent, FitIndicatorsModalComponent],
   template: `
     <div class="p-6 md:p-8 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-200">
 
@@ -20,7 +25,32 @@ import { ProductOut, ProductoIn } from '../../core/models';
           <p class="text-xs text-gray-500 mt-1">Gestión del catálogo de productos, proveedores y colecciones.</p>
         </div>
 
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            *ngIf="canEditProduct()"
+            type="button"
+            (click)="reindexVisualSearch()"
+            [disabled]="isReindexing() || !syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : 'Indexar imágenes para búsqueda por foto'"
+            class="px-3.5 py-2 bg-white border border-[#38133E] text-[#38133E] hover:bg-[#F5EBF7] rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="isReindexing()">
+              {{ isReindexing() ? 'sync' : 'photo_library' }}
+            </span>
+            <span>{{ isReindexing() ? 'Indexando...' : 'Indexar imágenes para búsqueda por foto' }}</span>
+          </button>
+
+          <button
+            *ngIf="canEditProduct()"
+            (click)="showFitIndicatorsModal.set(true)"
+            [disabled]="!syncService.isOnline()"
+            [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
+            class="px-3.5 py-2 bg-white border border-[#38133E] text-[#38133E] hover:bg-[#F5EBF7] rounded-lg text-xs font-bold tracking-wide uppercase transition-colors shadow-xs flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <span class="material-symbols-outlined text-[18px]">rule</span>
+            <span>Indicadores de ajuste</span>
+          </button>
+
           <button
             (click)="openCreateModal()"
             [disabled]="!syncService.isOnline()"
@@ -31,6 +61,30 @@ import { ProductOut, ProductoIn } from '../../core/models';
             <span>Agregar Producto</span>
           </button>
         </div>
+      </div>
+
+      <!-- Resumen de Reindexación para Búsqueda Visual (CU40 / S6 / S8) -->
+      <div
+        *ngIf="reindexSummary() as res"
+        class="bg-[#F5EBF7] border border-[#38133E]/30 rounded-xl p-4 flex items-center justify-between shadow-xs animate-in fade-in duration-150"
+      >
+        <div class="flex items-center gap-3">
+          <span class="material-symbols-outlined text-[24px] text-[#38133E]">auto_awesome</span>
+          <div>
+            <p class="text-xs font-bold text-[#17141A]">Indexación de imágenes para búsqueda por foto finalizada</p>
+            <p class="text-xs text-[#5A5561] mt-0.5">
+              Productos indexados: <strong class="text-[#38133E]">{{ res.indexados }}</strong> · Omitidos (sin cambios o sin foto): <strong>{{ res.omitidos }}</strong> · Errores: <strong [class.text-rose-600]="res.errores > 0">{{ res.errores }}</strong>
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          (click)="reindexSummary.set(null)"
+          class="text-[#5A5561] hover:text-[#17141A] p-1 rounded-md cursor-pointer"
+          aria-label="Cerrar notificación"
+        >
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
       </div>
 
       <!-- Filtros -->
@@ -106,14 +160,25 @@ import { ProductOut, ProductoIn } from '../../core/models';
               <p class="text-xs text-gray-600 mt-1 leading-relaxed line-clamp-2">{{ item.descripcion }}</p>
             </div>
 
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-              <div class="text-xs text-gray-500">
+            <div class="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+              <div class="text-xs text-gray-500 truncate">
                 <span class="font-semibold">{{ item.coleccion_nombre }}</span>
               </div>
-              <button
-                (click)="inspectProduct(item)"
-                class="px-3 py-1.5 bg-[#17141A] text-white hover:bg-[#38133E] rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
-              >Inspeccionar</button>
+              <div class="flex items-center gap-1.5">
+                <button
+                  *ngIf="canEditProduct()"
+                  (click)="openSizeChart(item)"
+                  class="px-2.5 py-1.5 bg-white border border-[#38133E] text-[#38133E] hover:bg-[#F5EBF7] rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-1"
+                  title="Gestionar tabla de medidas"
+                >
+                  <span class="material-symbols-outlined text-[16px]">straighten</span>
+                  <span>Tabla de medidas</span>
+                </button>
+                <button
+                  (click)="inspectProduct(item)"
+                  class="px-3 py-1.5 bg-[#17141A] text-white hover:bg-[#38133E] rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer"
+                >Inspeccionar</button>
+              </div>
             </div>
           </div>
         </div>
@@ -194,8 +259,17 @@ import { ProductOut, ProductoIn } from '../../core/models';
           </div>
         </div>
 
-        <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-          <button (click)="inspectingItem.set(null)" class="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors">
+        <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-2">
+          <button
+            *ngIf="canEditProduct() && inspectingItem() as p"
+            (click)="openSizeChart(p)"
+            class="px-3 py-1.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span class="material-symbols-outlined text-[16px]">straighten</span>
+            <span>Tabla de medidas</span>
+          </button>
+          <div *ngIf="!canEditProduct()"></div>
+          <button (click)="inspectingItem.set(null)" class="px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer">
             Cerrar
           </button>
         </div>
@@ -298,12 +372,32 @@ import { ProductOut, ProductoIn } from '../../core/models';
         </form>
       </div>
     </div>
+
+    <!-- Modal: Tabla de medidas por producto (CU34 / S7) -->
+    <app-size-chart-modal
+      *ngIf="selectedProductForSizeChart()"
+      [product]="selectedProductForSizeChart()!"
+      (close)="selectedProductForSizeChart.set(null)"
+    ></app-size-chart-modal>
+
+    <!-- Modal: Indicadores de ajuste y tallas (CU36 / S8) -->
+    <app-fit-indicators-modal
+      *ngIf="showFitIndicatorsModal()"
+      (close)="showFitIndicatorsModal.set(false)"
+      (editarMedidas)="onEditarMedidasDesdeIndicadores($event)"
+    ></app-fit-indicators-modal>
   `
 })
 export class ArchiveComponent implements OnInit {
   inspectingItem = signal<ProductOut | null>(null);
   showCreateModal = signal<boolean>(false);
+  showFitIndicatorsModal = signal<boolean>(false);
+  selectedProductForSizeChart = signal<ProductOut | null>(null);
   uploadingImagen = signal<boolean>(false);
+  isReindexing = signal<boolean>(false);
+  reindexSummary = signal<VisualReindexResponse | null>(null);
+
+  canEditProduct = computed(() => this.authService.hasPermission('producto.editar'));
 
   searchQuery = '';
   filterTipo = '';
@@ -325,8 +419,31 @@ export class ArchiveComponent implements OnInit {
 
   constructor(
     public archiveService: ArchiveService,
-    public syncService: SyncService
+    public syncService: SyncService,
+    public authService: AuthService,
+    private visualSearchService: VisualSearchService,
+    private notificationService: NotificationService
   ) {}
+
+  async reindexVisualSearch(): Promise<void> {
+    if (this.isReindexing() || !this.syncService.isOnline()) return;
+    this.isReindexing.set(true);
+    this.reindexSummary.set(null);
+    try {
+      const res = await this.visualSearchService.reindexCatalog();
+      this.reindexSummary.set(res);
+      this.notificationService.success(
+        'Indexación completada',
+        `Indexados: ${res.indexados}, Omitidos: ${res.omitidos}, Errores: ${res.errores}`
+      );
+    } catch (error: any) {
+      console.error('Error al indexar imágenes para búsqueda por foto:', error);
+      const mensaje = error?.error?.detail || error?.message || 'No se pudo completar la indexación.';
+      this.notificationService.error('Error al indexar', mensaje);
+    } finally {
+      this.isReindexing.set(false);
+    }
+  }
 
   ngOnInit() {
     this.archiveService.loadProducts();
@@ -348,6 +465,35 @@ export class ArchiveComponent implements OnInit {
 
   inspectProduct(item: ProductOut) {
     this.inspectingItem.set(item);
+  }
+
+  openSizeChart(item: ProductOut) {
+    this.selectedProductForSizeChart.set(item);
+  }
+
+  onEditarMedidasDesdeIndicadores(idProducto: number) {
+    this.showFitIndicatorsModal.set(false);
+    const item = this.archiveService.products().find((p) => p.idProducto === idProducto);
+    if (item) {
+      this.openSizeChart(item);
+    } else {
+      this.openSizeChart({
+        idProducto,
+        nombre: `Producto #${idProducto}`,
+        descripcion: null,
+        costo: 0,
+        venta: 0,
+        tipo: null,
+        talla: null,
+        color: null,
+        idProveedor: 0,
+        idColeccion: 0,
+        proveedor_nombre: '',
+        coleccion_nombre: '',
+        imagen_url: null,
+        imagenes_secundarias: [],
+      });
+    }
   }
 
   openCreateModal() {

@@ -8,8 +8,10 @@ import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { SyncService } from '../../../core/services/sync.service';
 import { OutboxService } from '../../../core/services/outbox.service';
 import { NotificationService } from '../../../core/services/notification.service';
+import { SizeChartService } from '../../../core/services/size-chart.service';
+import { PromotionsService } from '../../../core/services/promotions.service';
 import { environment } from '../../../../environments/environment';
-import type { CachedCliente } from '../../../core/models';
+import type { CachedCliente, ClientFitFeedbackItem, FitResultado, LoyaltyMeResponse } from '../../../core/models';
 
 @Component({
   selector: 'app-customer-profile',
@@ -201,6 +203,211 @@ import type { CachedCliente } from '../../../core/models';
         </form>
       </div>
 
+      <!-- Sección: ¿Cómo te quedó? (CU36 / S8) -->
+      <div class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
+        <div>
+          <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">Mis Compras • Ajuste</span>
+          <h2 class="text-xl font-bold text-[#17141A] mt-1">¿Cómo te quedó?</h2>
+          <p class="text-sm text-[#5A5561] mt-1">
+            Indica cómo te quedaron las prendas que compraste. Tu opinión ayuda a otros clientes y a calibrar las medidas.
+          </p>
+        </div>
+
+        <!-- Estado de carga -->
+        <div *ngIf="loadingFeedback()" class="py-8 text-center text-xs text-[#9B94A3]">
+          Cargando tus compras…
+        </div>
+
+        <!-- Sin compras para opinar -->
+        <div *ngIf="!loadingFeedback() && boughtProducts().length === 0" class="py-8 text-center text-xs text-[#5A5561]">
+          No tienes productos comprados pendientes de evaluar.
+        </div>
+
+        <!-- Lista de productos comprados -->
+        <div *ngIf="!loadingFeedback() && boughtProducts().length > 0" class="space-y-4">
+          <div
+            *ngFor="let item of boughtProducts()"
+            class="p-4 rounded-xl border border-[#E8E2DA] bg-[#FAF8F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          >
+            <!-- Info producto -->
+            <div class="flex items-center space-x-3 min-w-0">
+              <img
+                [src]="item.imagen_url || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=200'"
+                [alt]="item.nombre"
+                class="w-12 h-12 rounded-lg object-cover border border-[#E8E2DA] shrink-0"
+              />
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-[#17141A] truncate">{{ item.nombre }}</p>
+                <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <span class="text-xs font-semibold text-[#5A5561]">Talla: {{ item.talla }}</span>
+                  <span
+                    *ngIf="item.resultado"
+                    class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                    [ngClass]="{
+                      'bg-amber-100 text-amber-800 border border-amber-200': item.resultado === 'pequena',
+                      'bg-emerald-100 text-emerald-800 border border-emerald-200': item.resultado === 'bien',
+                      'bg-blue-100 text-blue-800 border border-blue-200': item.resultado === 'grande'
+                    }"
+                  >
+                    Guardado: Me quedó {{ labelResultado(item.resultado) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3 Botones de retroalimentación (S8) -->
+            <div class="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
+              <button
+                type="button"
+                (click)="onSelectResultado(item, 'pequena')"
+                [disabled]="submittingFeedbackId() === item.idProducto || !syncService.isOnline()"
+                class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border"
+                [ngClass]="{
+                  'bg-amber-500 text-white border-amber-600 shadow-xs': item.resultado === 'pequena',
+                  'bg-white text-[#5A5561] border-[#E8E2DA] hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300': item.resultado !== 'pequena'
+                }"
+              >
+                Me quedó pequeña
+              </button>
+
+              <button
+                type="button"
+                (click)="onSelectResultado(item, 'bien')"
+                [disabled]="submittingFeedbackId() === item.idProducto || !syncService.isOnline()"
+                class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border"
+                [ngClass]="{
+                  'bg-emerald-600 text-white border-emerald-700 shadow-xs': item.resultado === 'bien',
+                  'bg-white text-[#5A5561] border-[#E8E2DA] hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300': item.resultado !== 'bien'
+                }"
+              >
+                Me quedó bien
+              </button>
+
+              <button
+                type="button"
+                (click)="onSelectResultado(item, 'grande')"
+                [disabled]="submittingFeedbackId() === item.idProducto || !syncService.isOnline()"
+                class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border"
+                [ngClass]="{
+                  'bg-blue-600 text-white border-blue-700 shadow-xs': item.resultado === 'grande',
+                  'bg-white text-[#5A5561] border-[#E8E2DA] hover:bg-blue-50 hover:text-blue-800 hover:border-blue-300': item.resultado !== 'grande'
+                }"
+              >
+                Me quedó grande
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Mis Puntos de Fidelización (CU43 / S9) -->
+      <div class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">Programa de Fidelización</span>
+            <h2 class="text-xl font-bold text-[#17141A] mt-1">Mis Puntos y Beneficios</h2>
+            <p class="text-sm text-[#5A5561] mt-1">
+              Acumulá puntos con cada compra y canjealos por descuentos directos en caja o en línea.
+            </p>
+          </div>
+          <div *ngIf="loyaltyData() as l" class="shrink-0">
+            <span
+              class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border shadow-xs"
+              [ngClass]="{
+                'bg-amber-100 text-amber-900 border-amber-300': l.nivel === 'Bronce',
+                'bg-slate-200 text-slate-800 border-slate-300': l.nivel === 'Plata',
+                'bg-yellow-100 text-yellow-800 border-yellow-300': l.nivel === 'Oro'
+              }"
+            >
+              Nivel {{ l.nivel }} ({{ l.multiplicador }}×)
+            </span>
+          </div>
+        </div>
+
+        <div *ngIf="loadingLoyalty()" class="py-6 text-center text-xs text-[#9B94A3]">
+          Cargando puntos…
+        </div>
+
+        <div *ngIf="!loadingLoyalty() && loyaltyData() as l" class="space-y-6">
+          <!-- Tarjetas de resumen -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-4 rounded-xl bg-[#F5EBF7]/60 border border-[#E8E2DA]">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">Saldo Disponible</span>
+              <p class="text-2xl font-black text-[#38133E] mt-1">{{ l.saldo }} pts</p>
+              <p class="text-[11px] text-[#5A5561] mt-0.5">Equivalente a Bs {{ (l.saldo * 0.1).toFixed(2) }} de descuento</p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2DA]">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">Total Histórico Acumulado</span>
+              <p class="text-2xl font-black text-[#17141A] mt-1">{{ l.acumulado_historico }} pts</p>
+              <p class="text-[11px] text-[#5A5561] mt-0.5">Determina tu nivel de cliente</p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#FAF8F5] border border-[#E8E2DA]">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">Multiplicador</span>
+              <p class="text-2xl font-black text-[#17141A] mt-1">{{ l.multiplicador }}×</p>
+              <p class="text-[11px] text-[#5A5561] mt-0.5">Ganas {{ l.multiplicador }} pt por cada 10 Bs pagados</p>
+            </div>
+          </div>
+
+          <!-- Barra de progreso hacia el siguiente nivel -->
+          <div *ngIf="l.siguiente_nivel" class="p-4 rounded-xl bg-white border border-[#E8E2DA] space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-[#17141A]">Próximo nivel: {{ l.siguiente_nivel }}</span>
+              <span class="text-[#38133E] font-semibold">Faltan {{ l.puntos_para_siguiente }} pts</span>
+            </div>
+            <p class="text-[11px] text-[#5A5561]">
+              Continúa comprando para desbloquear más beneficios y mayor multiplicador de puntos.
+            </p>
+          </div>
+
+          <div *ngIf="!l.siguiente_nivel" class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-amber-600">military_tech</span>
+            <span>¡Felicitaciones! Has alcanzado el nivel máximo de fidelización (Oro).</span>
+          </div>
+
+          <!-- Historial de Movimientos -->
+          <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[#9B94A3]">Historial de Movimientos</h3>
+
+            <div *ngIf="l.movimientos.length === 0" class="py-4 text-center text-xs text-[#9B94A3]">
+              Aún no tienes movimientos registrados.
+            </div>
+
+            <div *ngIf="l.movimientos.length > 0" class="border border-[#E8E2DA] rounded-xl overflow-hidden divide-y divide-[#E8E2DA]">
+              <div
+                *ngFor="let m of l.movimientos"
+                class="p-3 bg-white flex items-center justify-between text-xs hover:bg-[#FAF8F5]"
+              >
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                      [ngClass]="{
+                        'bg-emerald-100 text-emerald-800': m.tipo === 'ganado',
+                        'bg-amber-100 text-amber-800': m.tipo === 'canjeado',
+                        'bg-rose-100 text-rose-800': m.tipo === 'revertido',
+                        'bg-blue-100 text-blue-800': m.tipo === 'devuelto'
+                      }"
+                    >
+                      {{ m.tipo }}
+                    </span>
+                    <span class="text-[11px] text-[#5A5561]">{{ formatearFechaMovimiento(m.fecha) }}</span>
+                  </div>
+                  <p *ngIf="m.nota" class="text-[11px] text-[#5A5561]">{{ m.nota }}</p>
+                </div>
+                <span
+                  class="font-black text-sm"
+                  [ngClass]="m.puntos >= 0 ? 'text-emerald-700' : 'text-rose-700'"
+                >
+                  {{ m.puntos >= 0 ? '+' + m.puntos : m.puntos }} pts
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <ng-template #noUser>
         <div class="bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 text-sm text-[#5A5561]">
           No se encontraron datos de la cuenta.
@@ -216,6 +423,8 @@ export class CustomerProfileComponent implements OnInit {
   private offlineDbService = inject(OfflineDbService);
   private outboxService = inject(OutboxService);
   private notificationService = inject(NotificationService);
+  private sizeChartService = inject(SizeChartService);
+  private promotionsService = inject(PromotionsService);
 
   nombre = '';
   telefono = '';
@@ -227,10 +436,89 @@ export class CustomerProfileComponent implements OnInit {
 
   saving = signal(false);
   hasPendingProfileOp = signal(false);
+  boughtProducts = signal<ClientFitFeedbackItem[]>([]);
+  loadingFeedback = signal<boolean>(false);
+  submittingFeedbackId = signal<number | null>(null);
+
+  loyaltyData = signal<LoyaltyMeResponse | null>(null);
+  loadingLoyalty = signal<boolean>(false);
 
   async ngOnInit(): Promise<void> {
     await this.loadProfileData();
     await this.checkPendingProfileOp();
+    void this.loadMyFeedback();
+    void this.loadLoyalty();
+  }
+
+  async loadLoyalty(): Promise<void> {
+    if (!this.syncService.isOnline()) return;
+    this.loadingLoyalty.set(true);
+    try {
+      const data = await this.promotionsService.getMyLoyalty();
+      this.loyaltyData.set(data);
+    } catch {
+      this.loyaltyData.set(null);
+    } finally {
+      this.loadingLoyalty.set(false);
+    }
+  }
+
+  formatearFechaMovimiento(fecha: string): string {
+    if (!fecha) return '';
+    try {
+      return new Date(fecha).toLocaleDateString('es-BO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return fecha;
+    }
+  }
+
+  async loadMyFeedback(): Promise<void> {
+    if (!this.syncService.isOnline()) return;
+    this.loadingFeedback.set(true);
+    try {
+      const items = await this.sizeChartService.getMyFitFeedback();
+      this.boughtProducts.set(items || []);
+    } catch {
+      this.boughtProducts.set([]);
+    } finally {
+      this.loadingFeedback.set(false);
+    }
+  }
+
+  labelResultado(res: FitResultado): string {
+    switch (res) {
+      case 'pequena': return 'pequeña';
+      case 'bien': return 'bien';
+      case 'grande': return 'grande';
+      default: return res;
+    }
+  }
+
+  async onSelectResultado(item: ClientFitFeedbackItem, resultado: FitResultado): Promise<void> {
+    if (!this.syncService.isOnline()) {
+      this.notificationService.warning('Sin conexión', 'Se requiere conexión a internet para opinar.');
+      return;
+    }
+
+    this.submittingFeedbackId.set(item.idProducto);
+    try {
+      await this.sizeChartService.submitFitFeedback(item.idProducto, { resultado });
+      item.resultado = resultado;
+      item.fecha = new Date().toISOString();
+      this.boughtProducts.update(list => [...list]);
+      this.notificationService.success('Ajuste guardado', `Tu opinión sobre "${item.nombre}" se guardó correctamente.`);
+    } catch (err: any) {
+      const msg = err.error?.detail || 'No se pudo registrar tu opinión.';
+      this.notificationService.error('Error', typeof msg === 'string' ? msg : 'Error al guardar opinión.');
+    } finally {
+      this.submittingFeedbackId.set(null);
+    }
   }
 
   private async loadProfileData(): Promise<void> {
