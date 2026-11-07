@@ -13,6 +13,7 @@ from app.models import (Bitacora, Cliente, DetalleVenta, Historial, Inventario, 
 from app.security import get_current_payload, require_feature, require_permiso
 from app.schemas.fase2 import OfflineSaleIn
 from app.services.idempotency import body_hash, replay_if_present, save_result
+from app.services.pricing import cotizar, registrar_puntos_venta
 
 router = APIRouter(prefix="/api/sync", tags=["sync"])
 SYNC_MODELS = {"productos": Producto, "sucursales": Sucursal, "inventario": Inventario,
@@ -109,7 +110,12 @@ async def sync_sale(payload: OfflineSaleIn, request: Request, response: Response
                     session=Depends(get_tenant_db), auth: dict = Depends(get_current_payload)):
     if not request.headers.get("Idempotency-Key"):
         raise HTTPException(status_code=422, detail={"code": "idempotency_key_required"})
-    pending = await replay_if_present(request, session, auth, response, payload.model_dump(mode="json"))
+    if payload.codigoCupon is not None or payload.puntos is not None:
+        raise HTTPException(status_code=422, detail={"code": "offline_coupon_or_points_not_allowed"})
+    idempotency_body = payload.model_dump(mode="json")
+    idempotency_body.pop("codigoCupon", None)
+    idempotency_body.pop("puntos", None)
+    pending = await replay_if_present(request, session, auth, response, idempotency_body)
     if pending is not None and not isinstance(pending, tuple):
         return pending
     if payload.pago.tipo != "Efectivo":
@@ -132,20 +138,34 @@ async def sync_sale(payload: OfflineSaleIn, request: Request, response: Response
     customer = await session.get(Cliente, payload.idCliente)
     if customer is None:
         raise HTTPException(status_code=422, detail={"code": "customer_not_found"})
+    for item in payload.items:
+        if item.cantidad <= 0:
+            raise HTTPException(status_code=422, detail={"code": "invalid_quantity"})
+        product = (await session.execute(select(Producto).where(
+            Producto.idProducto == item.idProducto, Producto.idEmpresa == int(auth["empresa"])
+        ))).scalar_one_or_none()
+        if product is None:
+            raise HTTPException(status_code=422, detail={"code": "product_not_found", "idProducto": item.idProducto})
     method = MetodoPago(tipo="Efectivo", estado="Activo", fecha=datetime.now(timezone.utc),
                        monto=payload.pago.monto, origen="offline", idUserPago=int(auth["sub"]),
                        consumidoEn=datetime.now(timezone.utc))
     session.add(method)
     await session.flush()
-    sale = Venta(idCliente=customer.idCliente, idMetPago=method.idMetPago, total=0,
+    try:
+        quote = await cotizar(session, int(auth["empresa"]), payload.items, customer.idCliente,
+                              None, None, payload.fechaLocal, "offline")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail={"code": "pricing_failed", "message": str(exc)})
+    sale = Venta(idCliente=customer.idCliente, idMetPago=method.idMetPago, total=quote["total"],
                  fecha=payload.fechaLocal,
+                 subtotal=quote["subtotal"], descuento_promociones=quote["descuento_promociones"],
+                 descuento_cupon=0, descuento_puntos=0, puntos_ganados=quote["puntos_a_ganar"],
                  origen="offline", comprobanteLocal=payload.comprobanteLocal,
                  discrepanciaStock=False)
     session.add(sale)
     await session.flush()
-    total = 0.0
     sale_details = []
-    for item in payload.items:
+    for item, priced in zip(payload.items, quote["lineas"]):
         if item.cantidad <= 0:
             raise HTTPException(status_code=422, detail={"code": "invalid_quantity"})
         product = await session.get(Producto, item.idProducto)
@@ -160,8 +180,8 @@ async def sync_sale(payload: OfflineSaleIn, request: Request, response: Response
         if inv.cantidad_actual - inv.cantidad_reservada < item.cantidad:
             sale.discrepanciaStock = True
         inv.cantidad_actual -= item.cantidad
-        total += float(product.venta) * item.cantidad
-        detail = DetalleVenta(cantidad=item.cantidad, precio_unitario=product.venta,
+        detail = DetalleVenta(cantidad=item.cantidad, precio_unitario=priced["precio_unitario"],
+                              precio_lista=priced["precio_lista"], idPromocion=priced["idPromocion"],
                               idProducto=product.idProducto, idVenta=sale.idVenta)
         sale_details.append((detail, product.nombre))
         session.add(detail)
@@ -169,15 +189,21 @@ async def sync_sale(payload: OfflineSaleIn, request: Request, response: Response
                                motivo=f"Offline sale {sale.idVenta}", idInv=inv.idInv))
         session.add(Historial(idProducto=product.idProducto, idCliente=customer.idCliente,
                               idVenta=sale.idVenta))
-    sale.total = total
+    total = quote["total"]
     if round(payload.pago.monto, 2) != round(total, 2):
         raise HTTPException(status_code=422, detail={"code": "offline_payment_amount_mismatch"})
     await session.flush()
+    await registrar_puntos_venta(session, quote, int(auth["empresa"]), customer.idCliente, sale.idVenta, sale.fecha)
     detail_results = [{"codigoVenta": detail.codigoVenta, "cantidad": detail.cantidad,
                        "precio_unitario": float(detail.precio_unitario),
+                       "precio_lista": float(detail.precio_lista) if detail.precio_lista is not None else None,
+                       "idPromocion": detail.idPromocion,
                        "idProducto": detail.idProducto, "producto_nombre": product_name,
                        "idVenta": detail.idVenta} for detail, product_name in sale_details]
     result = {"idVenta": sale.idVenta, "fecha": sale.fecha.isoformat(), "total": total,
+              "subtotal": float(sale.subtotal), "descuento_promociones": float(sale.descuento_promociones),
+              "descuento_cupon": 0, "descuento_puntos": 0, "puntos_canjeados": 0,
+              "puntos_ganados": sale.puntos_ganados,
               "idCliente": sale.idCliente, "idMetPago": method.idMetPago, "detalles": detail_results,
               "origen": "offline", "comprobanteLocal": payload.comprobanteLocal,
               "discrepanciaStock": sale.discrepanciaStock,
@@ -197,6 +223,8 @@ def _inventory_result(inv: Inventario) -> dict:
 
 
 async def _apply_offline_sale(session, payload: OfflineSaleIn, auth: dict, now: datetime):
+    if payload.codigoCupon is not None or payload.puntos is not None:
+        raise HTTPException(422, detail={"code": "offline_coupon_or_points_not_allowed"})
     if payload.pago.tipo != "Efectivo" or not payload.items:
         raise HTTPException(422, detail={"code": "offline_sale_invalid"})
     if payload.pago.monto < 0:
@@ -243,22 +271,27 @@ async def _apply_offline_sale(session, payload: OfflineSaleIn, auth: dict, now: 
                         origen="offline", idUserPago=int(auth["sub"]), consumidoEn=now)
     session.add(method)
     await session.flush()
+    try:
+        quote = await cotizar(session, int(auth["empresa"]), payload.items, customer.idCliente,
+                              None, None, payload.fechaLocal, "offline")
+    except ValueError as exc:
+        raise HTTPException(422, detail={"code": "pricing_failed", "message": str(exc)})
     sale = Venta(idCliente=customer.idCliente, idMetPago=method.idMetPago,
-                 total=0, fecha=payload.fechaLocal, origen="offline",
+                 total=quote["total"], subtotal=quote["subtotal"],
+                 descuento_promociones=quote["descuento_promociones"],
+                 puntos_ganados=quote["puntos_a_ganar"], fecha=payload.fechaLocal, origen="offline",
                  comprobanteLocal=payload.comprobanteLocal, discrepanciaStock=False)
     session.add(sale)
     await session.flush()
 
-    total = 0.0
     details = []
-    for item in payload.items:
+    for item, priced in zip(payload.items, quote["lineas"]):
         product = products[item.idProducto]
         inv = inventory[item.idProducto]
         inv.cantidad_actual -= item.cantidad
         inv.fechaActualizacion = now
-        price = float(product.venta)
-        total += price * item.cantidad
-        detail = DetalleVenta(cantidad=item.cantidad, precio_unitario=price,
+        detail = DetalleVenta(cantidad=item.cantidad, precio_unitario=priced["precio_unitario"],
+                              precio_lista=priced["precio_lista"], idPromocion=priced["idPromocion"],
                               idProducto=item.idProducto, idVenta=sale.idVenta)
         session.add(detail)
         session.add(Movimiento(tipo="venta", cantidad=-item.cantidad,
@@ -266,16 +299,22 @@ async def _apply_offline_sale(session, payload: OfflineSaleIn, auth: dict, now: 
         session.add(Historial(idProducto=item.idProducto, idCliente=customer.idCliente,
                               idVenta=sale.idVenta))
         details.append((detail, product.nombre))
+    total = quote["total"]
     if round(payload.pago.monto, 2) != round(total, 2):
         raise HTTPException(422, detail={"code": "offline_payment_amount_mismatch"})
-    sale.total = total
     await session.flush()
+    await registrar_puntos_venta(session, quote, int(auth["empresa"]), customer.idCliente, sale.idVenta, sale.fecha)
     serialized_details = [{"codigoVenta": detail.codigoVenta, "cantidad": detail.cantidad,
                            "precio_unitario": float(detail.precio_unitario),
+                           "precio_lista": float(detail.precio_lista) if detail.precio_lista is not None else None,
+                           "idPromocion": detail.idPromocion,
                            "idProducto": detail.idProducto, "producto_nombre": product_name,
                            "idVenta": detail.idVenta} for detail, product_name in details]
     return {"status": "synced", "venta": {"idVenta": sale.idVenta,
-            "fecha": sale.fecha.isoformat(), "total": total, "idCliente": sale.idCliente,
+            "fecha": sale.fecha.isoformat(), "total": total,
+            "subtotal": float(sale.subtotal), "descuento_promociones": float(sale.descuento_promociones),
+            "descuento_cupon": 0, "descuento_puntos": 0, "puntos_canjeados": 0,
+            "puntos_ganados": sale.puntos_ganados, "idCliente": sale.idCliente,
             "idMetPago": method.idMetPago, "detalles": serialized_details, "origen": "offline",
             "comprobanteLocal": sale.comprobanteLocal, "discrepanciaStock": False,
             "discrepanciaResueltaEn": None, "discrepanciaNota": None},

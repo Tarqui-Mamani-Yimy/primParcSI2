@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Literal, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class ORMModel(BaseModel):
@@ -176,6 +176,8 @@ class VentaIn(BaseModel):
     idMetPago: int
     codigoSucursal: Optional[int] = None  # None => el backend resuelve la sucursal
     items: list[DetalleVentaIn]
+    codigoCupon: Optional[str] = None
+    puntos: Optional[int] = Field(default=None, ge=0)
 
 
 class DetalleVentaOut(BaseModel):
@@ -185,12 +187,19 @@ class DetalleVentaOut(BaseModel):
     idProducto: int
     producto_nombre: Optional[str] = None
     idVenta: int
+    precio_lista: Optional[float] = None
 
 
 class VentaOut(ORMModel):
     idVenta: int
     fecha: datetime
     total: float
+    subtotal: Optional[float] = None
+    descuento_promociones: float = 0
+    descuento_cupon: float = 0
+    descuento_puntos: float = 0
+    puntos_canjeados: int = 0
+    puntos_ganados: int = 0
     idCliente: int
     idMetPago: int
     detalles: list[DetalleVentaOut] = []
@@ -219,6 +228,8 @@ class OfflineSaleIn(BaseModel):
     idCliente: int | None = None
     pago: OfflineSalePayment
     items: list[OfflineSaleItem]
+    codigoCupon: str | None = None
+    puntos: int | None = None
 
 
 class ResolveDiscrepancyIn(BaseModel):
@@ -314,6 +325,9 @@ class PagoIntentIn(BaseModel):
     # requiere codigoSucursal (D2) para el chequeo de stock branch-scoped.
     proposito: Literal["venta", "reserva_deposito"] = "venta"
     codigoSucursal: Optional[int] = None
+    idCliente: Optional[int] = None
+    codigoCupon: Optional[str] = None
+    puntos: Optional[int] = None
 
 
 class PagoIntentOut(BaseModel):

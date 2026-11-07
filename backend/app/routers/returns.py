@@ -22,6 +22,7 @@ from app.schemas.returns import CreateExchangeIn, CreateReturnIn, ReturnItemIn, 
 from app.security import require_permiso
 from app.services.bitacora import registrar_bitacora
 from app.services.inventory_stock import adjust_inventory_and_record_movement
+from app.services.pricing import aplicar_puntos_devolucion
 from app.services.pagos_stripe import (
     StripeNoConfigurado,
     StripePagoError,
@@ -314,6 +315,9 @@ async def _finalize(session: AsyncSession, record: Devolucion, auth: dict, reque
             )
         )
     ).scalars().all()
+    sale = await session.get(Venta, record.idVenta)
+    if sale is not None:
+        await aplicar_puntos_devolucion(session, tenant_id, sale, record, details)
     for detail in details:
         inventory = (
             await session.execute(

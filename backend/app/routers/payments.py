@@ -7,6 +7,7 @@ ordinario. El monto SIEMPRE se calcula aqui, del lado servidor, a partir de
 `Producto.venta` — nunca del valor `amount` que pudiera mandar el cliente.
 """
 
+from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -14,10 +15,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_tenant_db
-from app.models import MetodoPago, Producto
+from app.models import Cliente, MetodoPago, Producto
 from app.schemas.fase2 import PagoIntentIn, PagoIntentOut, PagoIntentVerificadoOut
 from app.security import require_feature, require_permiso
 from app.services.disponibilidad import resolver_inventario
+from app.services.pricing import cotizar
 from app.services.pagos_stripe import (
     StripeNoConfigurado,
     StripePagoError,
@@ -62,6 +64,7 @@ async def create_payment_intent(
     if not payload.items:
         raise HTTPException(status_code=400, detail="Debe enviar al menos un item")
 
+    id_user = int(auth["sub"])
     if payload.proposito == "reserva_deposito":
         # Anticipo de reserva (CU12): un solo producto, una sola unidad, monto
         # = 10% de Producto.venta con piso (D1/D2/D4 en design.md) — nunca la
@@ -106,14 +109,30 @@ async def create_payment_intent(
                 ),
             )
     else:
-        total = Decimal("0")
         for item in payload.items:
             if item.cantidad <= 0:
                 raise HTTPException(status_code=400, detail="cantidad debe ser > 0")
             producto = await session.get(Producto, item.idProducto)
             if not producto:
                 raise HTTPException(status_code=400, detail=f"Producto {item.idProducto} inexistente")
-            total += Decimal(str(producto.venta)) * item.cantidad
+        id_cliente = payload.idCliente
+        if "venta.ver" not in auth.get("permisos", []):
+            customer = (await session.execute(select(Cliente).where(Cliente.idUser == id_user))).scalar_one_or_none()
+            if customer is None:
+                raise HTTPException(status_code=403, detail="La cuenta no tiene un cliente asociado")
+            if id_cliente is not None and id_cliente != customer.idCliente:
+                raise HTTPException(status_code=403, detail="No puede pagar en nombre de otro cliente")
+            id_cliente = customer.idCliente
+        try:
+            quote = await cotizar(session, int(auth["empresa"]), payload.items, id_cliente,
+                                  payload.codigoCupon, payload.puntos, datetime.now(timezone.utc), "online")
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        if payload.codigoCupon and quote["idCupon"] is None:
+            raise HTTPException(status_code=400, detail=quote["avisos"][-1] if quote["avisos"] else "Cupón inválido o vencido")
+        if payload.puntos and quote["puntos_canjeados"] != payload.puntos:
+            raise HTTPException(status_code=400, detail="Los puntos solicitados superan el saldo o el límite de canje")
+        total = Decimal(str(quote["total"]))
 
         # Stock verificado ANTES de cobrar (D5): branch-agnostico, la misma
         # formula de `create_sale` — ninguna fila individual de `Inventario`
@@ -129,13 +148,16 @@ async def create_payment_intent(
                     ),
                 )
 
-    id_user = int(auth["sub"])
     clave_idempotencia = f"pi:{id_user}:{payload.claveIntento}"
     metadata = {
         "idUser": str(id_user),
         "concepto": payload.concepto or "",
         "proposito": payload.proposito,
     }
+    if payload.proposito == "venta":
+        metadata["idCliente"] = str(id_cliente or "")
+        metadata["codigoCupon"] = (payload.codigoCupon or "").strip().upper()
+        metadata["puntos"] = str(payload.puntos or 0)
     if payload.proposito == "reserva_deposito":
         # Ligadura producto/sucursal (correccion review CU12,
         # R1/R3-deposit-product-mismatch): se persiste en el MetodoPago al

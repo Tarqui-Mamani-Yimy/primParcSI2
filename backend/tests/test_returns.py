@@ -424,6 +424,29 @@ def test_cash_refund_registers_cash_egress(return_env):
         assert egress.kind == "egreso"
 
 
+def test_reservation_confirmation_line_refunds_full_paid_amount_in_cu31(return_env):
+    with Session(return_env.engine) as session:
+        sale = session.get(Venta, 100)
+        detail = session.get(DetalleVenta, 1001)
+        sale.total = Decimal("80.00")
+        detail.cantidad = 1
+        detail.precio_unitario = Decimal("100.00")
+        detail.precio_lista = Decimal("100.00")
+        session.commit()
+
+    response = return_env.client.post("/api/returns", json=_return_payload(), headers=_headers())
+
+    assert response.status_code == 201, response.text
+    assert response.json()["refund_amount"] == "100.00"
+    with Session(return_env.engine) as session:
+        egress = session.execute(
+            text("SELECT amount, kind FROM movimiento_caja WHERE return_id = :id"),
+            {"id": response.json()["id"]},
+        ).one()
+        assert Decimal(str(egress.amount)) == Decimal("100.00")
+        assert egress.kind == "egreso"
+
+
 def test_qr_payment_returns_are_rejected_instead_of_refunded_as_cash(return_env):
     with Session(return_env.engine) as session:
         method = session.get(MetodoPago, 100)

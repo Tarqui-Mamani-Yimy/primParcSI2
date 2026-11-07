@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
@@ -25,6 +25,7 @@ from app.schemas.fase2 import (
 )
 from app.security import require_feature, get_current_payload, require_permiso
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
+from app.services.pricing import cotizar, registrar_puntos_venta, puntos_por_venta, cuenta_bloqueada
 from app.services.idempotency import replay_if_present, save_result
 
 router = APIRouter(prefix="/api/reservations", tags=["reservations"], dependencies=[Depends(require_feature("reservas"))])
@@ -250,13 +251,29 @@ async def confirm_reservation(
     else:
         total_confirmacion = float(producto.venta)
 
-    venta = Venta(total=total_confirmacion, idCliente=reserva.idCliente, idMetPago=payload.idMetPago)
+    account = await cuenta_bloqueada(session, int(auth["empresa"]), reserva.idCliente)
+    quote = await cotizar(session, int(auth["empresa"]),
+                          [{"idProducto": reserva.idProducto, "cantidad": 1}],
+                          reserva.idCliente, None, None, datetime.now(timezone.utc), "reserva")
+    # Exception to the S4 line-total invariant for reservation confirmations:
+    # the deposit was paid earlier, so Venta.total is only the remaining amount,
+    # while the detail retains list price so a CU31 return refunds the full amount paid.
+    quote["total"] = round(total_confirmacion, 2)
+    quote["lineas"][0]["precio_unitario"] = round(float(producto.venta), 2)
+    quote["subtotal"] = round(total_confirmacion, 2)
+    quote["puntos_a_ganar"] = puntos_por_venta(total_confirmacion,
+                                              account.acumulado_historico if account else 0)
+    venta = Venta(total=quote["total"], subtotal=quote["subtotal"],
+                  descuento_promociones=0, descuento_cupon=0, descuento_puntos=0,
+                  puntos_ganados=quote["puntos_a_ganar"], idCliente=reserva.idCliente,
+                  idMetPago=payload.idMetPago)
     session.add(venta)
     await session.flush()
 
     detalle = DetalleVenta(
         cantidad=1,
-        precio_unitario=float(producto.venta),
+        precio_unitario=quote["lineas"][0]["precio_unitario"],
+        precio_lista=float(producto.venta),
         idProducto=reserva.idProducto,
         idVenta=venta.idVenta,
         codigoReserva=codigoReserva,
@@ -271,6 +288,9 @@ async def confirm_reservation(
             idInv=inv.idInv,
         )
     )
+
+    await registrar_puntos_venta(session, quote, int(auth["empresa"]), reserva.idCliente,
+                                  venta.idVenta, venta.fecha)
     session.add(
         Historial(
             idProducto=reserva.idProducto,
@@ -287,6 +307,8 @@ async def confirm_reservation(
         idVenta=venta.idVenta,
         fecha=venta.fecha,
         total=float(venta.total),
+        subtotal=float(venta.subtotal) if venta.subtotal is not None else None,
+        puntos_ganados=venta.puntos_ganados,
         idCliente=venta.idCliente,
         idMetPago=venta.idMetPago,
         detalles=[],

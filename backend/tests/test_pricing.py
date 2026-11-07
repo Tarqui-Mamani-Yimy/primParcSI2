@@ -211,6 +211,33 @@ def test_quote_rounds_money_to_cents_and_returns_invalid_coupon_as_notice(pricin
     assert round(sum(line["precio_unitario"] * line["cantidad"] for line in quote["lineas"]), 2) == quote["total"]
 
 
+def test_public_quote_contract_does_not_require_a_payment_method(pricing_session):
+    from app.routers.sales import quote_sale
+    from app.schemas.promotions import CotizacionIn
+
+    result = asyncio.run(quote_sale(
+        CotizacionIn(items=[{"idProducto": 1, "cantidad": 1}], idCliente=101),
+        pricing_session,
+        {"empresa": 1, "sub": "10", "permisos": ["venta.ver"]},
+    ))
+
+    assert result["total"] == 100
+    assert result["cuenta"] == {"saldo": 1000, "nivel": "Oro", "puntos_max_canjeables": 500}
+
+
+def test_quote_max_redeemable_points_is_capped_by_customer_balance(pricing_session):
+    account = pricing_session.session.get(CuentaPuntos, 101)
+    account.saldo = 37
+    pricing_session.session.flush()
+
+    quote = asyncio.run(__import__("app.routers.sales", fromlist=["quote_sale"]).quote_sale(
+        __import__("app.schemas.promotions", fromlist=["CotizacionIn"]).CotizacionIn(
+            items=[{"idProducto": 1, "cantidad": 1}], idCliente=101),
+        pricing_session, {"empresa": 1, "sub": "10", "permisos": ["venta.ver"]}))
+
+    assert quote["cuenta"]["puntos_max_canjeables"] == 37
+
+
 def test_active_promotions_resolve_product_ids_for_each_scope(pricing_session):
     from app.routers.promotions import active_promotions
 
@@ -275,6 +302,103 @@ def test_duplicate_coupon_returns_conflict(pricing_session):
 
     assert exc.value.status_code == 409
     assert exc.value.detail == "Ya existe un cupón con ese código"
+
+
+def test_staff_payment_intent_binds_customer_and_rejects_already_used_coupon(
+    pricing_session, monkeypatch
+):
+    from uuid import uuid4
+    from app.routers import payments
+    from app.schemas.fase2 import PagoIntentIn
+
+    pricing_session.add(_coupon())
+    pricing_session.add(CuponUso(idEmpresa=1, idCupon=10, idVenta=901, idCliente=101,
+                                 fecha=datetime(2026, 3, 1, tzinfo=timezone.utc)))
+    pricing_session.session.flush()
+    monkeypatch.setattr(payments, "_requerir_stripe_configurado", lambda: None)
+    async def inventory(*_args): return object()
+    monkeypatch.setattr(payments, "resolver_inventario", inventory)
+    called = False
+    async def create_intent(**_kwargs):
+        nonlocal called
+        called = True
+        return {"id": "pi-test", "client_secret": "secret"}
+    monkeypatch.setattr(payments, "crear_payment_intent", create_intent)
+    payload = PagoIntentIn(items=[{"idProducto": 1, "cantidad": 1}], claveIntento=uuid4(),
+                           idCliente=101, codigoCupon="TEST")
+
+    with pytest.raises(__import__("fastapi").HTTPException) as exc:
+        asyncio.run(payments.create_payment_intent(payload, pricing_session,
+            {"empresa": 1, "sub": "999", "permisos": ["venta.crear", "venta.ver"]}))
+
+    assert exc.value.status_code == 400
+    assert "Ya usaste este cupón" in exc.value.detail
+    assert called is False
+
+
+def test_staff_payment_intent_metadata_contains_priced_customer_and_discounts(
+    pricing_session, monkeypatch
+):
+    from uuid import uuid4
+    from app.routers import payments
+    from app.schemas.fase2 import PagoIntentIn
+
+    pricing_session.add(_coupon(idCupon=12, codigo="SAVE", un_uso_por_cliente=False))
+    pricing_session.session.flush()
+    monkeypatch.setattr(payments, "_requerir_stripe_configurado", lambda: None)
+    async def inventory(*_args): return object()
+    monkeypatch.setattr(payments, "resolver_inventario", inventory)
+    captured = {}
+    async def create_intent(**kwargs):
+        captured.update(kwargs)
+        return {"id": "pi-bound", "client_secret": "secret"}
+    monkeypatch.setattr(payments, "crear_payment_intent", create_intent)
+    payload = PagoIntentIn(items=[{"idProducto": 1, "cantidad": 1}], claveIntento=uuid4(),
+                           idCliente=101, codigoCupon=" save ", puntos=10)
+
+    asyncio.run(payments.create_payment_intent(payload, pricing_session,
+        {"empresa": 1, "sub": "999", "permisos": ["venta.crear", "venta.ver"]}))
+
+    assert captured["metadata"]["idCliente"] == "101"
+    assert captured["metadata"]["codigoCupon"] == "SAVE"
+    assert captured["metadata"]["puntos"] == "10"
+
+
+@pytest.mark.parametrize(
+    ("code", "points", "metadata"),
+    [(None, None, {"idCliente": "999", "codigoCupon": "", "puntos": "0"}),
+     ("BIND", None, {"idCliente": "101", "codigoCupon": "", "puntos": "0"}),
+     (None, 10, {"idCliente": "101", "codigoCupon": "", "puntos": "0"})],
+)
+def test_sale_rejects_stripe_intent_customer_coupon_or_points_mismatch(
+    pricing_session, monkeypatch, code, points, metadata
+):
+    from types import SimpleNamespace
+    from starlette.background import BackgroundTasks
+    from app.routers import sales
+    from app.schemas.fase2 import VentaIn
+
+    if code:
+        pricing_session.add(_coupon(idCupon=11, codigo=code))
+        pricing_session.session.flush()
+    method = MetodoPago(idMetPago=77, idEmpresa=1, tipo="Tarjeta (Stripe)", monto=100,
+                        stripePaymentIntentId="pi-bound", origen="tarjeta_stripe")
+    pricing_session.add(method)
+    pricing_session.session.flush()
+    async def get_intent(_intent_id): return {"metadata": metadata}
+    monkeypatch.setattr(sales, "obtener_payment_intent", get_intent)
+    payload = VentaIn(idCliente=101, idMetPago=77,
+                      items=[{"idProducto": 1, "cantidad": 1}], codigoCupon=code, puntos=points)
+    request = SimpleNamespace(headers={}, method="POST", url=SimpleNamespace(path="/api/sales"),
+                              client=SimpleNamespace(host="127.0.0.1"))
+
+    with pytest.raises(__import__("fastapi").HTTPException) as exc:
+        asyncio.run(sales.create_sale(payload, request, __import__("fastapi").Response(),
+            BackgroundTasks(), pricing_session,
+            {"empresa": 1, "sub": "10", "permisos": ["venta.crear", "venta.ver"]}, None))
+
+    assert exc.value.status_code == 409
+    assert exc.value.detail == "La venta no coincide con los datos cotizados en el pago"
 
 
 def _coupon(**overrides):

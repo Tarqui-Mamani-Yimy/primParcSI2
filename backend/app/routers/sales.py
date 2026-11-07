@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response, Query
 from sqlalchemy import select
@@ -11,16 +11,20 @@ from app.models import (
     DetalleVenta,
     Historial,
     Inventario,
+    MetodoPago,
     Movimiento,
     Producto,
     Venta,
 )
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut, ResolveDiscrepancyIn
+from app.schemas.promotions import CotizacionIn
 from app.security import require_feature, get_current_payload, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.recomendaciones_gemini import generar_recomendaciones_post_venta
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 from app.services.idempotency import replay_if_present, save_result
+from app.services.pricing import cotizar, registrar_puntos_venta, registrar_uso_cupon
+from app.services.pagos_stripe import StripeNoConfigurado, StripePagoError, obtener_payment_intent
 
 router = APIRouter(prefix="/api/sales", tags=["sales"], dependencies=[Depends(require_feature("ventas"))])
 
@@ -43,6 +47,7 @@ async def _serialize_detalle(d: DetalleVenta, session: AsyncSession) -> DetalleV
         codigoVenta=d.codigoVenta,
         cantidad=d.cantidad,
         precio_unitario=float(d.precio_unitario),
+        precio_lista=float(d.precio_lista) if d.precio_lista is not None else None,
         idProducto=d.idProducto,
         producto_nombre=p.nombre if p else None,
         idVenta=d.idVenta,
@@ -62,6 +67,12 @@ async def _serialize_venta(v: Venta, session: AsyncSession, detalles: list[Detal
         idVenta=v.idVenta,
         fecha=v.fecha,
         total=float(v.total),
+        subtotal=float(v.subtotal) if v.subtotal is not None else None,
+        descuento_promociones=float(v.descuento_promociones or 0),
+        descuento_cupon=float(v.descuento_cupon or 0),
+        descuento_puntos=float(v.descuento_puntos or 0),
+        puntos_canjeados=int(v.puntos_canjeados or 0),
+        puntos_ganados=int(v.puntos_ganados or 0),
         idCliente=v.idCliente,
         idMetPago=v.idMetPago,
         detalles=[await _serialize_detalle(d, session) for d in detalles],
@@ -142,6 +153,24 @@ async def resolve_discrepancy(idVenta: int, payload: ResolveDiscrepancyIn,
             "discrepanciaResueltaEn": venta.discrepanciaResueltaEn, "discrepanciaNota": venta.discrepanciaNota}
 
 
+@router.post("/quote")
+async def quote_sale(payload: CotizacionIn, session: AsyncSession = Depends(get_tenant_db),
+                     auth: dict = Depends(require_permiso("venta.crear"))):
+    id_cliente = payload.idCliente
+    if "venta.ver" not in auth.get("permisos", []):
+        cliente = await _cliente_del_caller(session, auth)
+        if cliente is None:
+            raise HTTPException(status_code=403, detail="La cuenta no tiene un cliente asociado")
+        if id_cliente is not None and id_cliente != cliente.idCliente:
+            raise HTTPException(status_code=403, detail="No puede cotizar para otro cliente")
+        id_cliente = cliente.idCliente
+    try:
+        return await cotizar(session, int(auth["empresa"]), payload.items, id_cliente,
+                             payload.codigoCupon, payload.puntos, datetime.now(timezone.utc), "online")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 @router.post("", response_model=VentaOut, status_code=201)
 async def create_sale(
     payload: VentaIn,
@@ -152,7 +181,12 @@ async def create_sale(
     auth: dict = Depends(require_permiso("venta.crear")),
     _pos=Depends(require_feature("pos")),
 ):
-    pending = await replay_if_present(request, session, auth, response, payload.model_dump(mode="json"))
+    idempotency_body = payload.model_dump(mode="json")
+    if payload.codigoCupon is None:
+        idempotency_body.pop("codigoCupon", None)
+    if payload.puntos is None:
+        idempotency_body.pop("puntos", None)
+    pending = await replay_if_present(request, session, auth, response, idempotency_body)
     if pending is not None and not isinstance(pending, tuple):
         return pending
     if not payload.items:
@@ -176,6 +210,31 @@ async def create_sale(
     if id_cliente is None or not await session.get(Cliente, id_cliente):
         raise HTTPException(status_code=400, detail="Cliente inexistente")
 
+    try:
+        quote = await cotizar(session, int(auth["empresa"]), payload.items, id_cliente,
+                              payload.codigoCupon, payload.puntos, datetime.now(timezone.utc), "online")
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if payload.codigoCupon and quote["idCupon"] is None:
+        raise HTTPException(status_code=400, detail=quote["avisos"][-1] if quote["avisos"] else "Cupón inválido o vencido")
+    if payload.puntos and quote["puntos_canjeados"] != payload.puntos:
+        raise HTTPException(status_code=400, detail="Los puntos solicitados superan el saldo o el límite de canje")
+
+    metodo_pago = await session.get(MetodoPago, payload.idMetPago)
+    if metodo_pago is not None and metodo_pago.origen == "tarjeta_stripe":
+        try:
+            intent = await obtener_payment_intent(metodo_pago.stripePaymentIntentId)
+        except StripeNoConfigurado:
+            raise HTTPException(status_code=503, detail="Stripe no esta configurado en este servidor")
+        except StripePagoError:
+            raise HTTPException(status_code=502, detail="No se pudo verificar el intento de pago con Stripe")
+        metadata = intent.get("metadata") or {}
+        expected = (str(id_cliente), (payload.codigoCupon or "").strip().upper(), str(payload.puntos or 0))
+        actual = (str(metadata.get("idCliente", "")), (metadata.get("codigoCupon") or "").strip().upper(),
+                  str(int(metadata.get("puntos") or 0)))
+        if actual != expected:
+            raise HTTPException(status_code=409, detail="La venta no coincide con los datos cotizados en el pago")
+
     # Guard centralizado (Payment Method Single-Use Across Sales / Cross-Table
     # Single-Use): ownership + origen tarjeta_stripe para autocompra, y ahora
     # ademas rechaza un idMetPago ya consumido por CUALQUIER Venta O Reserva
@@ -183,12 +242,18 @@ async def create_sale(
     # criterio previo ("venta.ver" not in permisos), sin cambio de semantica.
     await exigir_metodo_pago_consumible(session, payload.idMetPago, int(auth["sub"]), es_autocompra)
 
-    total = 0.0
-    venta = Venta(total=0.0, idCliente=id_cliente, idMetPago=payload.idMetPago)
+    if metodo_pago is not None and metodo_pago.origen == "tarjeta_stripe" and round(float(metodo_pago.monto), 2) != round(quote["total"], 2):
+        raise HTTPException(status_code=409, detail="El monto cobrado no coincide con el total de la venta")
+
+    venta = Venta(total=quote["total"], subtotal=quote["subtotal"],
+                  descuento_promociones=quote["descuento_promociones"],
+                  descuento_cupon=quote["descuento_cupon"], descuento_puntos=quote["descuento_puntos"],
+                  idCupon=quote["idCupon"], puntos_canjeados=quote["puntos_canjeados"],
+                  puntos_ganados=quote["puntos_a_ganar"], idCliente=id_cliente, idMetPago=payload.idMetPago)
     session.add(venta)
     await session.flush()
 
-    for item in payload.items:
+    for item, priced in zip(payload.items, quote["lineas"]):
         if item.cantidad <= 0:
             raise HTTPException(status_code=400, detail="cantidad debe ser > 0")
         producto = await session.get(Producto, item.idProducto)
@@ -237,13 +302,14 @@ async def create_sale(
                     ),
                 )
 
-        precio_unitario = float(producto.venta)
+        precio_unitario = priced["precio_unitario"]
         inv.cantidad_actual -= item.cantidad
-        total += precio_unitario * item.cantidad
 
         detalle = DetalleVenta(
             cantidad=item.cantidad,
             precio_unitario=precio_unitario,
+            precio_lista=priced["precio_lista"],
+            idPromocion=priced["idPromocion"],
             idProducto=item.idProducto,
             idVenta=venta.idVenta,
         )
@@ -267,7 +333,11 @@ async def create_sale(
         )
         await session.flush()
 
-    venta.total = total
+    try:
+        await registrar_uso_cupon(session, quote, int(auth["empresa"]), id_cliente, venta.idVenta, venta.fecha)
+        await registrar_puntos_venta(session, quote, int(auth["empresa"]), id_cliente, venta.idVenta, venta.fecha)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
     await _registrar_bitacora(session, f"Venta {venta.idVenta} creada", int(auth["sub"]), request.client.host if request.client else "0.0.0.0")
     await session.flush()
 
