@@ -1,5 +1,7 @@
 from math import ceil
+import logging
 
+import anyio
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,8 +16,16 @@ from app.schemas.products import (
     ProductoUpdate,
 )
 from app.schemas.size_chart import SizeChartOut, SizeChartReplaceIn
+from app.schemas.visual_search import VisualReindexOut, VisualSearchOut
 from app.services.size_chart import get_size_chart as get_product_size_chart
 from app.security import check_limit, get_tenant, require_permiso
+from app.services.visual_search import (
+    InvalidImageError,
+    embed_image,
+    index_product_image,
+    reindex_products,
+    search_products,
+)
 from app.services.storage_supabase import (
     SupabaseNoConfigurado,
     SupabaseStorageError,
@@ -24,30 +34,10 @@ from app.services.storage_supabase import (
 )
 
 router = APIRouter(prefix="/api/products", tags=["products"])
+logger = logging.getLogger(__name__)
 
 _TIPOS_IMAGEN_PERMITIDOS = {"image/jpeg", "image/png", "image/webp"}
 _TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024
-
-
-async def _serialize(producto: Producto, session: AsyncSession) -> ProductoOut:
-    proveedor = await session.get(Proveedor, producto.idProveedor)
-    coleccion = await session.get(Colecciones, producto.idColeccion)
-    return ProductoOut(
-        idProducto=producto.idProducto,
-        nombre=producto.nombre,
-        descripcion=producto.descripcion,
-        costo=float(producto.costo),
-        venta=float(producto.venta),
-        tipo=producto.tipo,
-        talla=producto.talla,
-        color=producto.color,
-        idProveedor=producto.idProveedor,
-        idColeccion=producto.idColeccion,
-        proveedor_nombre=proveedor.nombre if proveedor else None,
-        coleccion_nombre=coleccion.nombre_coleccion if coleccion else None,
-        imagen_url=producto.imagen_url,
-        imagenes_secundarias=producto.imagenes_secundarias or [],
-    )
 
 async def _require_tenant_product(session: AsyncSession, idProducto: int, tenant_id: int) -> None:
     product = (await session.execute(
@@ -89,6 +79,27 @@ async def replace_size_chart(
         ))
     await session.commit()
     return await get_product_size_chart(session, idProducto, tenant_id)
+
+
+async def _serialize(producto: Producto, session: AsyncSession) -> ProductoOut:
+    proveedor = await session.get(Proveedor, producto.idProveedor)
+    coleccion = await session.get(Colecciones, producto.idColeccion)
+    return ProductoOut(
+        idProducto=producto.idProducto,
+        nombre=producto.nombre,
+        descripcion=producto.descripcion,
+        costo=float(producto.costo),
+        venta=float(producto.venta),
+        tipo=producto.tipo,
+        talla=producto.talla,
+        color=producto.color,
+        idProveedor=producto.idProveedor,
+        idColeccion=producto.idColeccion,
+        proveedor_nombre=proveedor.nombre if proveedor else None,
+        coleccion_nombre=coleccion.nombre_coleccion if coleccion else None,
+        imagen_url=producto.imagen_url,
+        imagenes_secundarias=producto.imagenes_secundarias or [],
+    )
 
 
 @router.get("", response_model=PaginatedProductos)
@@ -174,6 +185,52 @@ async def upload_imagen_producto(
     return ImagenUploadOut(imagen_url=url)
 
 
+async def _index_image_after_product_save(
+    session: AsyncSession, producto: Producto, tenant_id: int
+) -> None:
+    product_id = producto.idProducto
+    try:
+        await index_product_image(session, producto, tenant_id)
+    except Exception:
+        # Image indexing is best-effort: it must never roll back a product save.
+        try:
+            await session.rollback()
+        except Exception:
+            logger.exception("No se pudo limpiar la sesión tras fallar la indexación")
+        logger.exception("No se pudo indexar la imagen del producto %s", product_id)
+
+
+@router.post("/visual-search", response_model=VisualSearchOut)
+async def visual_search(
+    imagen: UploadFile = File(...),
+    limit: int = Query(8, ge=1, le=24),
+    session: AsyncSession = Depends(get_tenant_db),
+    tenant_id: int = Depends(get_tenant),
+):
+    if tenant_id is None:
+        raise HTTPException(status_code=403, detail="Tenant requerido")
+    contents = await imagen.read(_TAMANO_MAXIMO_BYTES + 1)
+    if len(contents) > _TAMANO_MAXIMO_BYTES:
+        raise HTTPException(status_code=400, detail="La imagen no es válida o supera 5 MB")
+    try:
+        vector = await anyio.to_thread.run_sync(embed_image, contents)
+    except InvalidImageError as exc:
+        raise HTTPException(status_code=400, detail="La imagen no es válida o supera 5 MB") from exc
+    result = await search_products(session, tenant_id, vector, limit)
+    return result
+
+
+@router.post("/visual-search/reindex", response_model=VisualReindexOut)
+async def reindex_visual_search(
+    session: AsyncSession = Depends(get_tenant_db),
+    tenant_id: int = Depends(get_tenant),
+    _=Depends(require_permiso("producto.editar")),
+):
+    if tenant_id is None:
+        raise HTTPException(status_code=403, detail="Tenant requerido")
+    return await reindex_products(session, tenant_id)
+
+
 @router.get("/{idProducto}", response_model=ProductoOut)
 async def get_product(
     idProducto: int,
@@ -200,6 +257,7 @@ async def create_product(
     session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.crear")),
     _limit=Depends(check_limit("productos")),
+    tenant_id: int = Depends(get_tenant),
 ):
     if not await session.get(Proveedor, payload.idProveedor):
         raise HTTPException(status_code=400, detail="Proveedor inexistente")
@@ -210,7 +268,10 @@ async def create_product(
     session.add(producto)
     await session.commit()
     await session.refresh(producto)
-    return await _serialize(producto, session)
+    response = await _serialize(producto, session)
+    if producto.imagen_url:
+        await _index_image_after_product_save(session, producto, tenant_id)
+    return response
 
 
 @router.put("/{idProducto}", response_model=ProductoOut)
@@ -219,12 +280,14 @@ async def update_product(
     payload: ProductoUpdate,
     session: AsyncSession = Depends(get_tenant_db),
     _=Depends(require_permiso("producto.editar")),
+    tenant_id: int = Depends(get_tenant),
 ):
     producto = await session.get(Producto, idProducto)
     if not producto:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
     data = payload.model_dump(exclude_unset=True)
+    image_changed = "imagen_url" in data and data["imagen_url"] != producto.imagen_url
     if "idProveedor" in data and not await session.get(Proveedor, data["idProveedor"]):
         raise HTTPException(status_code=400, detail="Proveedor inexistente")
     if "idColeccion" in data and not await session.get(Colecciones, data["idColeccion"]):
@@ -235,7 +298,10 @@ async def update_product(
 
     await session.commit()
     await session.refresh(producto)
-    return await _serialize(producto, session)
+    response = await _serialize(producto, session)
+    if image_changed:
+        await _index_image_after_product_save(session, producto, tenant_id)
+    return response
 
 
 @router.delete("/{idProducto}", status_code=204)
