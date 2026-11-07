@@ -32,6 +32,7 @@ from app.routers import (
     seasons,
     suppliers,
     sync,
+    size_recommendations,
     team,
     tenant_platform,
 )
@@ -110,6 +111,7 @@ for router in (
     sales.router,
     reservations.router,
     purchase_history.router,
+    size_recommendations.router,
     logs.router,
     tenant_platform.router,
     sync.router,
