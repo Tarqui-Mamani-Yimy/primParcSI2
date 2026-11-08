@@ -19,14 +19,17 @@ from app.schemas.size_recommendation import (
     FitFeedbackSummaryOut,
     SizeRecommendationOut,
 )
-from app.security import get_current_payload, get_tenant, require_permiso
+from app.security import get_current_payload, get_tenant, require_feature, require_permiso
 from app.services.size_recommendation import (
     feedback_note,
     get_feedback_counts,
     recommend_size,
 )
 
-router = APIRouter(tags=["size-recommendations", "fit-feedback"])
+router = APIRouter(
+    tags=["size-recommendations", "fit-feedback"],
+    dependencies=[Depends(require_feature("tallas"))],
+)
 
 
 async def _require_client(session: AsyncSession, payload: dict, tenant_id: int) -> Cliente:

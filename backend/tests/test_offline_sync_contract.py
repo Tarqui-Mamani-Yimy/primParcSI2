@@ -447,11 +447,19 @@ def test_offline_sale_uses_active_promotion_price(monkeypatch):
     assert result["venta"]["detalles"][0]["precio_unitario"] == round(product_price * 0.8, 2)
 
 
-def test_reservation_confirmation_ignores_promotion_and_records_points(monkeypatch):
+@pytest.mark.parametrize(
+    ("features", "expected_points"),
+    [(["fidelizacion"], 12), ([], 0)],
+)
+def test_reservation_confirmation_points_follow_plan_features(
+    monkeypatch, features, expected_points
+):
     from datetime import date, datetime, timezone
     from sqlalchemy.orm import Session
     from app.models import CuentaPuntos, Inventario, MetodoPago, Producto, Promocion, Reserva
+    from app.routers import reservations
     from app.routers.reservations import confirm_reservation
+    from app.services import pricing
     from app.schemas.fase2 import ReservaConfirmarIn
     from tests.test_multitenant_route_isolation import (
         _test_database, _fixture_primary_key, AsyncSessionAdapter,
@@ -476,6 +484,13 @@ def test_reservation_confirmation_ignores_promotion_and_records_points(monkeypat
         async def refresh(self, obj):
             self.session.refresh(obj)
 
+    async def plan_features(*_args):
+        return features
+
+    monkeypatch.setattr(pricing, "get_plan_features", plan_features)
+    monkeypatch.setattr(
+        reservations, "get_plan_features", plan_features, raising=False
+    )
     engine = _test_database(monkeypatch)
     reservation_id = _fixture_primary_key(engine, "codigoReserva", 1)
     with Session(engine) as db:
@@ -524,8 +539,8 @@ def test_reservation_confirmation_ignores_promotion_and_records_points(monkeypat
     assert sale.total == 80
     assert detail.precio_unitario == detail.precio_lista == 100
     assert detail.cantidad * detail.precio_unitario == 100
-    assert sale.puntos_ganados == 12
-    assert account.saldo == 12
+    assert sale.puntos_ganados == expected_points
+    assert account.saldo == expected_points
 
 
 def test_promotion_management_requires_permission():
@@ -535,7 +550,7 @@ def test_promotion_management_requires_permission():
     from app.security import get_current_payload
 
     async def no_db():
-        yield None
+        yield _Session(["promociones"])
 
     app.dependency_overrides[get_tenant_db] = no_db
     app.dependency_overrides[get_current_payload] = lambda: {

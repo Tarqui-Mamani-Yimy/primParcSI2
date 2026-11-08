@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_tenant_db
 from app.models import Cliente, MetodoPago, Producto
 from app.schemas.fase2 import PagoIntentIn, PagoIntentOut, PagoIntentVerificadoOut
-from app.security import require_feature, require_permiso
+from app.security import get_plan_features, require_feature, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.pricing import cotizar
 from app.services.pagos_stripe import (
@@ -128,9 +128,10 @@ async def create_payment_intent(
                                   payload.codigoCupon, payload.puntos, datetime.now(timezone.utc), "online")
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
-        if payload.codigoCupon and quote["idCupon"] is None:
+        features = await get_plan_features(session, int(auth["empresa"]))
+        if payload.codigoCupon and quote["idCupon"] is None and "promociones" in features:
             raise HTTPException(status_code=400, detail=quote["avisos"][-1] if quote["avisos"] else "Cupón inválido o vencido")
-        if payload.puntos and quote["puntos_canjeados"] != payload.puntos:
+        if payload.puntos and quote["puntos_canjeados"] != payload.puntos and "fidelizacion" in features:
             raise HTTPException(status_code=400, detail="Los puntos solicitados superan el saldo o el límite de canje")
         total = Decimal(str(quote["total"]))
 

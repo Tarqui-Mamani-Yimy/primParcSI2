@@ -56,7 +56,8 @@ def _require_admin(auth: dict) -> None:
         )
 
 
-@router.post("/ai", response_model=AIReportOut)
+@router.post("/ai", response_model=AIReportOut,
+             dependencies=[Depends(require_feature("ia"))])
 async def create_ai_report(
     payload: AIReportIn,
     session: AsyncSession = Depends(get_tenant_db),
@@ -67,7 +68,7 @@ async def create_ai_report(
 
 @router.post(
     "/ai/csv",
-    dependencies=[Depends(require_feature("reportes_export"))],
+    dependencies=[Depends(require_feature("ia")), Depends(require_feature("reportes_export"))],
 )
 async def create_ai_report_csv(
     payload: AIReportIn,
@@ -85,7 +86,7 @@ async def create_ai_report_csv(
     )
 
 
-@router.post("/ai/transcribe")
+@router.post("/ai/transcribe", dependencies=[Depends(require_feature("ia"))])
 async def transcribe_ai_audio(
     audio: UploadFile = File(...),
     auth: dict = Depends(require_permiso("reporte.ver")),

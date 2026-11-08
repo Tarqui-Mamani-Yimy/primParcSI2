@@ -98,6 +98,8 @@ def _test_database(monkeypatch):
     sqlite3.register_adapter(dict, json.dumps)
     engine = create_engine("sqlite://")
     Base.metadata.create_all(engine)
+    from tests.plan_fixtures import ADVANCED_FEATURES
+
     with engine.begin() as connection:
         for table in Base.metadata.sorted_tables:
             is_tenant_table = "idEmpresa" in table.c
@@ -127,6 +129,17 @@ def _test_database(monkeypatch):
                     if column.name not in values:
                         values[column.name] = 1000 * tenant + 1
                 connection.execute(table.insert().values(**values))
+        plan = Base.metadata.tables["Plan"]
+        connection.execute(plan.insert().values(
+            idPlan=1001,
+            codigo="avanzado",
+            nombre="Profesional",
+            precioMensual=0,
+            precioAnual=0,
+            features=ADVANCED_FEATURES,
+            limites={},
+        ))
+        connection.execute(Base.metadata.tables["Suscripcion"].update().values(idPlan=1001))
     return engine
 
 

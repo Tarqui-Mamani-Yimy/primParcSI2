@@ -94,6 +94,9 @@ def visual_env(monkeypatch):
     )
     Base.metadata.create_all(engine)
     with Session(engine) as session:
+        from tests.plan_fixtures import seed_advanced_plan
+
+        seed_advanced_plan(session, tenant_ids=(1, 2, 3))
         session.add_all([
             Proveedor(idProveedor=1, idEmpresa=1, nombre="Proveedor A"),
             Colecciones(idColeccion=1, idEmpresa=1, nombre_coleccion="Colección A", idTemporada=1),

@@ -62,6 +62,9 @@ def recommendation_env(monkeypatch):
         (5, "Talla grande", "XS"), (6, "Feedback alert", "M"),
     ]
     with Session(engine) as session:
+        from tests.plan_fixtures import seed_advanced_plan
+
+        seed_advanced_plan(session, tenant_ids=(1, 2))
         for product_id, name, size in products:
             session.add(Producto(
                 idProducto=product_id, idEmpresa=1, nombre=name, talla=size,

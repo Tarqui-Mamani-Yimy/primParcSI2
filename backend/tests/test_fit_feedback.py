@@ -58,6 +58,9 @@ def feedback_env(monkeypatch):
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(engine)
     with Session(engine) as session:
+        from tests.plan_fixtures import seed_advanced_plan
+
+        seed_advanced_plan(session, tenant_ids=(1, 2))
         for product_id, tenant, size in ((1, 1, "M"), (2, 1, "S"), (99, 2, "L")):
             session.add(Producto(
                 idProducto=product_id, idEmpresa=tenant, nombre=f"Product {product_id}",

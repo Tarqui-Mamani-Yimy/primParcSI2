@@ -18,6 +18,7 @@ from app.models import (
     Producto,
     Promocion,
 )
+from app.security import get_plan_features
 
 CENT = Decimal("0.01")
 ZERO = Decimal("0.00")
@@ -219,8 +220,11 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
     """Quote sale items once; every sale/payment endpoint consumes this result."""
     if not items:
         raise ValueError("Debe enviar al menos un item")
+    features = await get_plan_features(session, tenant_id)
+    promotions_enabled = "promociones" in features
+    loyalty_enabled = "fidelizacion" in features
     instant = fecha if fecha.tzinfo else fecha.replace(tzinfo=timezone.utc)
-    promotions = await _promotions(session, tenant_id, instant, canal)
+    promotions = await _promotions(session, tenant_id, instant, canal) if promotions_enabled else []
     quantities: list[int] = []
     lines: list[dict] = []
     line_amounts: list[Decimal] = []
@@ -264,7 +268,7 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
 
     notices: list[str] = []
     coupon = None
-    if canal == "online":
+    if canal == "online" and promotions_enabled:
         coupon = await _cupon_valido(session, tenant_id, codigo_cupon, id_cliente, instant,
                                      after_promotions, notices)
     coupon_discount_target = _coupon_discount(coupon, after_promotions) if coupon else ZERO
@@ -277,14 +281,14 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
     discount_coupon = _money(after_promotions - after_coupon)
 
     account = None
-    if id_cliente is not None:
+    if id_cliente is not None and loyalty_enabled:
         account = await cuenta_bloqueada(session, tenant_id, id_cliente)
     balance = int(account.saldo) if account is not None else 0
     historical = int(account.acumulado_historico) if account is not None else 0
     account_level = nivel_puntos(historical)
     points_cap = max(0, int((after_coupon * Decimal("0.50") / POINT_VALUE).to_integral_value(rounding=ROUND_DOWN)))
     max_points = min(balance, points_cap)
-    requested_points = max(0, int(puntos or 0)) if canal == "online" else 0
+    requested_points = max(0, int(puntos or 0)) if canal == "online" and loyalty_enabled else 0
     points_used = min(requested_points, balance, max_points)
     if requested_points > points_used:
         notices.append("Los puntos solicitados superan el saldo o el límite de canje")
@@ -300,7 +304,7 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
     for line, price in zip(lines, final_prices):
         line["precio_unitario"] = float(price)
         line.pop("_product", None)
-    points_earned = puntos_por_venta(total, historical) if id_cliente is not None else 0
+    points_earned = puntos_por_venta(total, historical) if id_cliente is not None and loyalty_enabled else 0
     return {
         "lineas": lines,
         "subtotal": float(subtotal),
@@ -312,12 +316,15 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
         "puntos_canjeados": points_used,
         "puntos_a_ganar": points_earned,
         "avisos": notices,
-        "cuenta": {"saldo": balance, "nivel": account_level["nivel"], "puntos_max_canjeables": max_points} if id_cliente is not None else None,
+        "cuenta": {"saldo": balance, "nivel": account_level["nivel"], "puntos_max_canjeables": max_points}
+        if id_cliente is not None and loyalty_enabled else None,
     }
 
 
 async def registrar_uso_cupon(session, quote: dict, tenant_id: int, id_cliente: int | None,
                               id_venta: int, fecha: datetime) -> None:
+    if "promociones" not in await get_plan_features(session, tenant_id):
+        return
     coupon_id = quote.get("idCupon")
     if coupon_id is None:
         return
@@ -357,6 +364,8 @@ async def registrar_uso_cupon(session, quote: dict, tenant_id: int, id_cliente: 
 
 async def registrar_puntos_venta(session, quote: dict, tenant_id: int, id_cliente: int | None,
                                  id_venta: int, fecha: datetime) -> None:
+    if "fidelizacion" not in await get_plan_features(session, tenant_id):
+        return
     if id_cliente is None:
         return
     account = await cuenta_bloqueada(session, tenant_id, id_cliente, crear=True)

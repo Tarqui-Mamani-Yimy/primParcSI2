@@ -18,7 +18,7 @@ from app.schemas.products import (
 from app.schemas.size_chart import SizeChartOut, SizeChartReplaceIn
 from app.schemas.visual_search import VisualReindexOut, VisualSearchOut
 from app.services.size_chart import get_size_chart as get_product_size_chart
-from app.security import check_limit, get_tenant, require_permiso
+from app.security import check_limit, get_plan_features, get_tenant, require_feature, require_permiso
 from app.services.visual_search import (
     InvalidImageError,
     embed_image,
@@ -54,10 +54,15 @@ async def get_size_chart(
     tenant_id: int = Depends(get_tenant),
 ):
     await _require_tenant_product(session, idProducto, tenant_id)
+    if "tallas" not in await get_plan_features(session, tenant_id):
+        from app.services.size_chart import generic_size_chart
+
+        return generic_size_chart().model_copy(update={"idProducto": idProducto})
     return await get_product_size_chart(session, idProducto, tenant_id)
 
 
-@router.put("/{idProducto}/size-chart", response_model=SizeChartOut)
+@router.put("/{idProducto}/size-chart", response_model=SizeChartOut,
+            dependencies=[Depends(require_feature("tallas"))])
 async def replace_size_chart(
     idProducto: int,
     payload: SizeChartReplaceIn,
@@ -200,7 +205,8 @@ async def _index_image_after_product_save(
         logger.exception("No se pudo indexar la imagen del producto %s", product_id)
 
 
-@router.post("/visual-search", response_model=VisualSearchOut)
+@router.post("/visual-search", response_model=VisualSearchOut,
+             dependencies=[Depends(require_feature("ia"))])
 async def visual_search(
     imagen: UploadFile = File(...),
     limit: int = Query(8, ge=1, le=24),
@@ -220,7 +226,8 @@ async def visual_search(
     return result
 
 
-@router.post("/visual-search/reindex", response_model=VisualReindexOut)
+@router.post("/visual-search/reindex", response_model=VisualReindexOut,
+             dependencies=[Depends(require_feature("ia"))])
 async def reindex_visual_search(
     session: AsyncSession = Depends(get_tenant_db),
     tenant_id: int = Depends(get_tenant),

@@ -1,7 +1,7 @@
 """CU37/CU43 shared pricing and points rules."""
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -24,9 +24,11 @@ from app.models import (
     Empresa,
     MovimientoPuntos,
     MetodoPago,
+    Plan,
     Producto,
     Promocion,
     Proveedor,
+    Suscripcion,
     Temporada,
 )
 from app.services.pricing import (
@@ -89,6 +91,18 @@ def pricing_session():
     Base.metadata.create_all(engine)
     with Session(engine) as session:
         session.add(Empresa(idEmpresa=1, nombre="Tienda", slug="tienda", estado="Activa"))
+        session.add_all([
+            Plan(idPlan=1, codigo="basico", nombre="Básico", precioMensual=0,
+                 precioAnual=0, features=["pos", "inventario", "ventas", "reportes"], limites={}),
+            Plan(idPlan=2, codigo="avanzado", nombre="Profesional", precioMensual=0,
+                 precioAnual=0, features=["pos", "inventario", "ventas", "reportes", "despachos",
+                                          "reservas", "pagos_online", "app_movil", "reportes_avanzados",
+                                          "reportes_export", "ia", "probador", "promociones",
+                                          "fidelizacion", "tallas"], limites={}),
+        ])
+        session.add(Suscripcion(
+            idSuscripcion=1, idEmpresa=1, idPlan=2, estado="activa", fechaInicio=date.today(),
+        ))
         session.add(Proveedor(idProveedor=1, idEmpresa=1, nombre="Proveedor"))
         session.add(Temporada(
             idTemporada=1,
@@ -200,6 +214,42 @@ def test_quote_uses_best_per_line_coupon_points_cap_and_exact_line_invariant(pri
     assert quote["puntos_canjeados"] == 450
     assert quote["total"] == 45.0
     assert round(sum(line["precio_unitario"] * line["cantidad"] for line in quote["lineas"]), 2) == quote["total"]
+
+
+def test_basic_plan_quotes_at_list_price_without_discounts_or_loyalty(pricing_session):
+    pricing_session.add(Promocion(
+        idPromocion=30, idEmpresa=1, nombre="10%", tipo="porcentaje", valor=10,
+        alcance="todos", activa=True,
+        fecha_inicio=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        fecha_fin=datetime(2027, 1, 1, tzinfo=timezone.utc),
+    ))
+    pricing_session.add(Cupon(
+        idCupon=30, idEmpresa=1, codigo="MITAD", tipo="porcentaje", valor=50,
+        minimo_compra=0, fecha_inicio=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        fecha_fin=datetime(2027, 1, 1, tzinfo=timezone.utc), activo=True,
+        un_uso_por_cliente=True,
+    ))
+    subscription = pricing_session.session.get(Suscripcion, 1)
+    subscription.idPlan = 1
+    pricing_session.session.commit()
+
+    quote = _run_quote(pricing_session, [{"idProducto": 1, "cantidad": 2}], coupon="MITAD", points=1000)
+
+    assert quote["total"] == 200
+    assert quote["descuento_promociones"] == 0
+    assert quote["descuento_cupon"] == 0
+    assert quote["descuento_puntos"] == 0
+    assert quote["lineas"][0]["idPromocion"] is None
+    assert quote["idCupon"] is None
+    assert quote["puntos_canjeados"] == 0
+    assert quote["puntos_a_ganar"] == 0
+    assert quote["cuenta"] is None
+
+    asyncio.run(registrar_puntos_venta(
+        pricing_session, quote, 1, 101, 77, datetime(2026, 11, 7, tzinfo=timezone.utc),
+    ))
+    account = pricing_session.session.get(CuentaPuntos, 101)
+    assert (account.saldo, account.acumulado_historico) == (1000, 5000)
 
 
 def test_quote_rounds_money_to_cents_and_returns_invalid_coupon_as_notice(pricing_session):

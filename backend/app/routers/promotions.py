@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_tenant_db
 from app.models import Cliente, Colecciones, Cupon, Producto, Promocion
 from app.schemas.promotions import CuponIn, PromocionIn
-from app.security import get_current_payload, require_permiso
+from app.security import get_current_payload, get_plan_features, require_feature, require_permiso
 
 router = APIRouter(tags=["promotions"])
 
@@ -30,6 +30,8 @@ async def active_promotions(
     session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(get_current_payload),
 ):
+    if "promociones" not in await get_plan_features(session, _tenant(auth)):
+        return []
     now = datetime.now(timezone.utc)
     result = await session.execute(
         select(Promocion)
@@ -72,7 +74,7 @@ async def active_promotions(
     return serialized
 
 
-@router.get("/api/promotions")
+@router.get("/api/promotions", dependencies=[Depends(require_feature("promociones"))])
 async def list_promotions(
     session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("promocion.gestionar")),
@@ -83,7 +85,7 @@ async def list_promotions(
     return result.scalars().all()
 
 
-@router.post("/api/promotions", status_code=201)
+@router.post("/api/promotions", status_code=201, dependencies=[Depends(require_feature("promociones"))])
 async def create_promotion(
     payload: PromocionIn,
     session: AsyncSession = Depends(get_tenant_db),
@@ -96,7 +98,7 @@ async def create_promotion(
     return promotion
 
 
-@router.put("/api/promotions/{promotion_id}")
+@router.put("/api/promotions/{promotion_id}", dependencies=[Depends(require_feature("promociones"))])
 async def update_promotion(
     promotion_id: int,
     payload: PromocionIn,
@@ -119,7 +121,7 @@ async def update_promotion(
     return promotion
 
 
-@router.delete("/api/promotions/{promotion_id}")
+@router.delete("/api/promotions/{promotion_id}", dependencies=[Depends(require_feature("promociones"))])
 async def deactivate_promotion(
     promotion_id: int,
     session: AsyncSession = Depends(get_tenant_db),
@@ -139,7 +141,7 @@ async def deactivate_promotion(
     return {"ok": True}
 
 
-@router.get("/api/coupons")
+@router.get("/api/coupons", dependencies=[Depends(require_feature("promociones"))])
 async def list_coupons(
     session: AsyncSession = Depends(get_tenant_db),
     auth: dict = Depends(require_permiso("promocion.gestionar")),
@@ -150,7 +152,7 @@ async def list_coupons(
     return result.scalars().all()
 
 
-@router.post("/api/coupons", status_code=201)
+@router.post("/api/coupons", status_code=201, dependencies=[Depends(require_feature("promociones"))])
 async def create_coupon(
     payload: CuponIn,
     session: AsyncSession = Depends(get_tenant_db),
@@ -183,7 +185,7 @@ async def create_coupon(
     return coupon
 
 
-@router.put("/api/coupons/{coupon_id}")
+@router.put("/api/coupons/{coupon_id}", dependencies=[Depends(require_feature("promociones"))])
 async def update_coupon(
     coupon_id: int,
     payload: CuponIn,
@@ -212,7 +214,7 @@ async def update_coupon(
     return coupon
 
 
-@router.delete("/api/coupons/{coupon_id}")
+@router.delete("/api/coupons/{coupon_id}", dependencies=[Depends(require_feature("promociones"))])
 async def deactivate_coupon(
     coupon_id: int,
     session: AsyncSession = Depends(get_tenant_db),

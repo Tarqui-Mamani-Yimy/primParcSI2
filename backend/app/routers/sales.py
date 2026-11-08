@@ -18,7 +18,7 @@ from app.models import (
 )
 from app.schemas.fase2 import DetalleVentaOut, VentaIn, VentaOut, ResolveDiscrepancyIn
 from app.schemas.promotions import CotizacionIn
-from app.security import require_feature, get_current_payload, require_permiso
+from app.security import require_feature, get_current_payload, get_plan_features, require_permiso
 from app.services.disponibilidad import resolver_inventario
 from app.services.recomendaciones_gemini import generar_recomendaciones_post_venta
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
@@ -215,9 +215,10 @@ async def create_sale(
                               payload.codigoCupon, payload.puntos, datetime.now(timezone.utc), "online")
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    if payload.codigoCupon and quote["idCupon"] is None:
+    features = await get_plan_features(session, int(auth["empresa"]))
+    if payload.codigoCupon and quote["idCupon"] is None and "promociones" in features:
         raise HTTPException(status_code=400, detail=quote["avisos"][-1] if quote["avisos"] else "Cupón inválido o vencido")
-    if payload.puntos and quote["puntos_canjeados"] != payload.puntos:
+    if payload.puntos and quote["puntos_canjeados"] != payload.puntos and "fidelizacion" in features:
         raise HTTPException(status_code=400, detail="Los puntos solicitados superan el saldo o el límite de canje")
 
     metodo_pago = await session.get(MetodoPago, payload.idMetPago)

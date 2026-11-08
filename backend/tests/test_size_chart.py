@@ -62,6 +62,9 @@ def size_chart_env(monkeypatch):
     )
     Base.metadata.create_all(engine)
     with Session(engine) as session:
+        from tests.plan_fixtures import seed_advanced_plan
+
+        seed_advanced_plan(session, tenant_ids=(1, 2))
         session.add_all([
             Producto(
                 idProducto=1, idEmpresa=1, nombre="Camisa propia", costo=10, venta=20,

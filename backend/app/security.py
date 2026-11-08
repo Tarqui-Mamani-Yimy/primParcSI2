@@ -158,20 +158,25 @@ def require_platform_admin(payload: dict = Depends(get_current_payload)) -> dict
     return payload
 
 
+async def get_plan_features(session, empresa_id: int) -> list[str]:
+    """Return the feature keys from the tenant's current database-backed plan."""
+    from sqlalchemy import select
+    from app.models import Plan, Suscripcion
+
+    result = await session.execute(
+        select(Plan.features).join(Suscripcion, Suscripcion.idPlan == Plan.idPlan)
+        .where(Suscripcion.idEmpresa == empresa_id)
+    )
+    return result.scalar_one_or_none() or []
+
+
 def require_feature(feature: str):
     """Require a feature from the tenant's current database-backed plan."""
     from fastapi import Depends
-    from sqlalchemy import select
     from app.database import get_tenant_db
-    from app.models import Plan, Suscripcion
 
     async def dependency(payload: dict = Depends(get_current_payload), session=Depends(get_tenant_db)):
-        empresa_id = payload.get("empresa")
-        result = await session.execute(
-            select(Plan.features).join(Suscripcion, Suscripcion.idPlan == Plan.idPlan)
-            .where(Suscripcion.idEmpresa == empresa_id)
-        )
-        features = result.scalar_one_or_none() or []
+        features = await get_plan_features(session, payload.get("empresa"))
         if feature not in features:
             raise HTTPException(status_code=403, detail={"code": "feature_not_in_plan", "feature": feature})
         return payload

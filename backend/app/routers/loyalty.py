@@ -4,10 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_tenant_db
 from app.models import Cliente, CuentaPuntos, MovimientoPuntos
-from app.security import get_current_payload, require_permiso
+from app.security import get_current_payload, require_feature, require_permiso
 from app.services.pricing import nivel_puntos
 
-router = APIRouter(prefix="/api/loyalty", tags=["loyalty"])
+router = APIRouter(
+    prefix="/api/loyalty",
+    tags=["loyalty"],
+    dependencies=[Depends(require_feature("fidelizacion"))],
+)
 
 
 async def _loyalty_summary(session, tenant_id: int, customer_id: int, *, history: bool) -> dict:

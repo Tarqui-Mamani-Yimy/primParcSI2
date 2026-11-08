@@ -8,10 +8,14 @@ from app.schemas.dashboard_ml import (
     SalesForecastOut,
     StockoutRiskOut,
 )
-from app.security import require_permiso
+from app.security import require_feature, require_permiso
 from app.services import ml_proyecciones
 
-router = APIRouter(prefix="/api/dashboard/ml", tags=["dashboard-ml"])
+router = APIRouter(
+    prefix="/api/dashboard/ml",
+    tags=["dashboard-ml"],
+    dependencies=[Depends(require_feature("ia"))],
+)
 
 
 def _tenant_id_for_admin(auth: dict) -> int:

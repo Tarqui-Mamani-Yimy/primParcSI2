@@ -23,7 +23,12 @@ from app.schemas.fase2 import (
     ReservaOut,
     VentaOut,
 )
-from app.security import require_feature, get_current_payload, require_permiso
+from app.security import (
+    get_plan_features,
+    get_current_payload,
+    require_feature,
+    require_permiso,
+)
 from app.services.metodo_pago_guard import exigir_metodo_pago_consumible
 from app.services.pricing import cotizar, registrar_puntos_venta, puntos_por_venta, cuenta_bloqueada
 from app.services.idempotency import replay_if_present, save_result
@@ -261,8 +266,15 @@ async def confirm_reservation(
     quote["total"] = round(total_confirmacion, 2)
     quote["lineas"][0]["precio_unitario"] = round(float(producto.venta), 2)
     quote["subtotal"] = round(total_confirmacion, 2)
-    quote["puntos_a_ganar"] = puntos_por_venta(total_confirmacion,
-                                              account.acumulado_historico if account else 0)
+    features = await get_plan_features(session, int(auth["empresa"]))
+    quote["puntos_a_ganar"] = (
+        puntos_por_venta(
+            total_confirmacion,
+            account.acumulado_historico if account else 0,
+        )
+        if "fidelizacion" in features
+        else 0
+    )
     venta = Venta(total=quote["total"], subtotal=quote["subtotal"],
                   descuento_promociones=0, descuento_cupon=0, descuento_puntos=0,
                   puntos_ganados=quote["puntos_a_ganar"], idCliente=reserva.idCliente,
