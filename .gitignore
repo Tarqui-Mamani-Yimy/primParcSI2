@@ -52,3 +52,4 @@ scripts.txt
 scripts_casos_uso.txt
 /backend/database/seeds/
 landing
+.playwright-mcp/

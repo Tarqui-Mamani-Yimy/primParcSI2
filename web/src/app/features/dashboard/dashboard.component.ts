@@ -94,7 +94,10 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
       </div>
 
       <!-- Métricas clave de rendimiento -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"
+        [ngClass]="canViewDispatches ? 'lg:grid-cols-4' : 'lg:grid-cols-3'"
+      >
 
         <div class="bg-white p-5 rounded-xl border border-[#E8E2DA] shadow-2xs">
           <div class="flex items-center justify-between text-[#5A5561] mb-2">
@@ -129,7 +132,7 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-xl border border-[#E8E2DA] shadow-2xs">
+        <div *ngIf="canViewDispatches" class="bg-white p-5 rounded-xl border border-[#E8E2DA] shadow-2xs">
           <div class="flex items-center justify-between text-[#5A5561] mb-2">
             <span class="text-xs font-bold uppercase tracking-wider text-[#9B94A3]">Despachos Activos</span>
             <div class="w-8 h-8 rounded-lg bg-[#F5EBF7] text-[#38133E] flex items-center justify-center">
@@ -162,10 +165,10 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
       </div>
 
       <!-- Sección principal: Matrix de boutiques y despachos -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div [ngClass]="canViewDispatches ? 'grid grid-cols-1 lg:grid-cols-3 gap-6' : 'w-full'">
 
         <!-- Izquierda: Red global de boutiques -->
-        <div class="lg:col-span-2 bg-white rounded-xl border border-[#E8E2DA] p-6 shadow-2xs">
+        <div [ngClass]="canViewDispatches ? 'lg:col-span-2' : 'w-full'" class="bg-white rounded-xl border border-[#E8E2DA] p-6 shadow-2xs">
           <div class="flex items-center justify-between pb-4 border-b border-[#E8E2DA]">
             <div>
               <h2 class="text-base font-bold text-[#17141A]">Nodos Globales de Boutique</h2>
@@ -205,7 +208,7 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
         </div>
 
         <!-- Derecha: Despachos recientes -->
-        <div class="bg-white rounded-xl border border-[#E8E2DA] p-6 shadow-2xs flex flex-col justify-between">
+        <div *ngIf="canViewDispatches" class="bg-white rounded-xl border border-[#E8E2DA] p-6 shadow-2xs flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between pb-4 border-b border-[#E8E2DA]">
               <h2 class="text-base font-bold text-[#17141A]">Despachos en Vivo</h2>
@@ -336,10 +339,16 @@ export class DashboardComponent implements OnInit {
     return this.isAdmin() && this.authService.hasFeature('ia');
   }
 
+  get canViewDispatches(): boolean {
+    return this.authService.hasFeature('despachos');
+  }
+
   ngOnInit() {
     this.inventoryService.loadLocations();
     this.inventoryService.loadStock();
-    this.dispatchService.loadDispatches();
+    if (this.canViewDispatches) {
+      this.dispatchService.loadDispatches();
+    }
     this.archiveService.loadProducts();
   }
 
