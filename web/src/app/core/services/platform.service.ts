@@ -2,11 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  BackupDownloadResponse,
   ChangeEstadoIn,
   ChangePlanIn,
   CreateEmpresaIn,
   PlatformEmpresa,
   PlatformPlan,
+  TenantBackup,
   UpdateEmpresaIn
 } from '../models';
 import { environment } from '../../../environments/environment';
@@ -43,5 +45,19 @@ export class PlatformService {
   changeEstado(id: number, estado: 'activa' | 'suspendida'): Observable<unknown> {
     const payload: ChangeEstadoIn = { estado };
     return this.http.patch(`${API_URL}/api/platform/empresas/${id}/estado`, payload);
+  }
+
+  getBackups(idEmpresa: number): Observable<TenantBackup[]> {
+    return this.http.get<TenantBackup[]>(`${API_URL}/api/platform/empresas/${idEmpresa}/backups`);
+  }
+
+  generateBackup(idEmpresa: number): Observable<TenantBackup> {
+    return this.http.post<TenantBackup>(`${API_URL}/api/platform/empresas/${idEmpresa}/backups`, {});
+  }
+
+  downloadBackup(idEmpresa: number, nombre: string): Observable<BackupDownloadResponse> {
+    return this.http.get<BackupDownloadResponse>(
+      `${API_URL}/api/platform/empresas/${idEmpresa}/backups/${encodeURIComponent(nombre)}/download`
+    );
   }
 }
