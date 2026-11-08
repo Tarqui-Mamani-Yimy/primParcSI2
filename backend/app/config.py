@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str | None = None
     SUPABASE_STORAGE_BUCKET: str = "primSI2"
 
+    # Private bucket dedicated to database backups; never reuse the public image bucket.
+    SUPABASE_BACKUP_BUCKET: str = "backups"
+    BACKUP_RETENTION_DAYS: int = 30
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

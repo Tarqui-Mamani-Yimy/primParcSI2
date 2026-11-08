@@ -8,6 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_platform_db, get_tenant_db
 from app.models import Empresa, Plan, Producto, Rol, Sucursal, Suscripcion, Usuario
 from app.security import get_current_payload, hash_password, validate_password_strength
+from app.services import storage_supabase
+from app.services.tenant_backups import (
+    create_backup_export,
+    parse_backup_name,
+)
 
 router = APIRouter(tags=["tenant-platform"])
 platform = APIRouter(prefix="/api/platform", tags=["platform"])
@@ -133,6 +138,118 @@ async def list_empresas(session: AsyncSession = Depends(get_platform_db)):
                              "ciclo": subscription.ciclo},
              "uso": await _usage(session, company.idEmpresa)}
             for company, subscription, plan in rows]
+
+
+def _backup_prefix(empresa_id: int) -> str:
+    return f"empresa-{empresa_id}/"
+
+
+def _backup_storage_unavailable() -> None:
+    if not storage_supabase.supabase_configurado():
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase Storage no está configurado",
+        )
+
+
+def _backup_info(item: dict) -> dict | None:
+    name = item.get("name", "")
+    basename = name.rsplit("/", 1)[-1]
+    parsed = parse_backup_name(basename)
+    if parsed is None:
+        return None
+    match, generated_at = parsed
+    metadata = item.get("metadata") or {}
+    size = metadata.get("size", item.get("size", 0))
+    return {
+        "nombre": basename,
+        "fecha": generated_at.isoformat(),
+        "tamanoBytes": int(size or 0),
+        "tipo": match.group("tipo"),
+    }
+
+
+@platform.post("/empresas/{idEmpresa}/backups", status_code=201)
+async def generate_empresa_backup(
+    idEmpresa: int,
+    session: AsyncSession = Depends(get_platform_db),
+):
+    company = await session.get(Empresa, idEmpresa)
+    if company is None:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    _backup_storage_unavailable()
+    try:
+        artifact = await create_backup_export(session, idEmpresa, "manual")
+        await storage_supabase.subir_backup(
+            _backup_prefix(idEmpresa) + artifact.nombre,
+            artifact.content,
+        )
+    except storage_supabase.SupabaseNoConfigurado:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase Storage no está configurado",
+        )
+    except storage_supabase.SupabaseStorageError:
+        raise HTTPException(status_code=502, detail="Error al acceder a Supabase Storage")
+    return {
+        "nombre": artifact.nombre,
+        "fecha": artifact.generated_at.isoformat(),
+        "tamanoBytes": artifact.tamano_bytes,
+        "tipo": "manual",
+    }
+
+
+@platform.get("/empresas/{idEmpresa}/backups")
+async def list_empresa_backups(
+    idEmpresa: int,
+    session: AsyncSession = Depends(get_platform_db),
+):
+    if await session.get(Empresa, idEmpresa) is None:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    _backup_storage_unavailable()
+    try:
+        objects = await storage_supabase.listar_objetos_backup(_backup_prefix(idEmpresa))
+    except storage_supabase.SupabaseNoConfigurado:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase Storage no está configurado",
+        )
+    except storage_supabase.SupabaseStorageError:
+        raise HTTPException(status_code=502, detail="Error al acceder a Supabase Storage")
+    backups = [
+        info
+        for item in objects
+        if (info := _backup_info(item)) is not None
+        and item.get("name", "").startswith(_backup_prefix(idEmpresa))
+    ]
+    return sorted(backups, key=lambda item: item["fecha"], reverse=True)
+
+
+@platform.get("/empresas/{idEmpresa}/backups/{nombre}/download")
+async def download_empresa_backup(
+    idEmpresa: int,
+    nombre: str,
+    session: AsyncSession = Depends(get_platform_db),
+):
+    if await session.get(Empresa, idEmpresa) is None:
+        raise HTTPException(status_code=404, detail="Empresa no encontrada")
+    if parse_backup_name(nombre) is None:
+        raise HTTPException(status_code=404, detail="Backup no encontrado")
+    _backup_storage_unavailable()
+    path = _backup_prefix(idEmpresa) + nombre
+    try:
+        objects = await storage_supabase.listar_objetos_backup(_backup_prefix(idEmpresa))
+        if not any(item.get("name") == path for item in objects):
+            raise HTTPException(status_code=404, detail="Backup no encontrado")
+        url = await storage_supabase.crear_url_firmada_backup(path, expires_in=300)
+    except storage_supabase.SupabaseNoConfigurado:
+        raise HTTPException(
+            status_code=503,
+            detail="Supabase Storage no está configurado",
+        )
+    except storage_supabase.SupabaseStorageError:
+        raise HTTPException(status_code=502, detail="Error al acceder a Supabase Storage")
+    return {"url": url, "expiraEnSegundos": 300}
 
 
 @platform.post("/empresas", status_code=201)
