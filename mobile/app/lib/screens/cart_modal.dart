@@ -64,6 +64,10 @@ class _CartModalState extends State<CartModal> {
   }
 
   Future<void> _cargarPromocionesOffline() async {
+    if (context.read<AppState>().currentUser?.hasFeature('promociones') !=
+        true) {
+      return;
+    }
     final database = OfflineDatabaseRegistry.activeDatabase;
     if (database == null) return;
     try {
@@ -102,7 +106,9 @@ class _CartModalState extends State<CartModal> {
                   tipo: item.product.category,
                 ))
             .toList(),
-        _cachedPromotions,
+        appState.currentUser?.hasFeature('promociones') == true
+            ? _cachedPromotions
+            : const <OfflinePromotion>[],
         now: DateTime.now(),
       );
 
@@ -313,6 +319,9 @@ class _CartModalState extends State<CartModal> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final hasPromotions =
+        appState.currentUser?.hasFeature('promociones') == true;
+    final hasLoyalty = appState.currentUser?.hasFeature('fidelizacion') == true;
     final cobrando = _status == _CheckoutStatus.cobrando;
     final cobradoSinVenta = _status == _CheckoutStatus.cobradoSinVenta;
     final offlineQuote = !appState.isOnline ? _quoteOffline(appState) : null;
@@ -452,19 +461,21 @@ class _CartModalState extends State<CartModal> {
                           'El pago con tarjeta no está disponible sin conexión.'),
                     ),
                   if (appState.isOnline) ...[
-                    TextField(
-                      controller: _couponController,
-                      decoration: const InputDecoration(
-                          labelText: 'Código de cupón', isDense: true),
-                      onChanged: (_) => setState(() => _quote = null),
-                    ),
-                    TextField(
-                      controller: _pointsController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                          labelText: 'Puntos a canjear', isDense: true),
-                      onChanged: (_) => setState(() => _quote = null),
-                    ),
+                    if (hasPromotions)
+                      TextField(
+                        controller: _couponController,
+                        decoration: const InputDecoration(
+                            labelText: 'Código de cupón', isDense: true),
+                        onChanged: (_) => setState(() => _quote = null),
+                      ),
+                    if (hasLoyalty)
+                      TextField(
+                        controller: _pointsController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                            labelText: 'Puntos a canjear', isDense: true),
+                        onChanged: (_) => setState(() => _quote = null),
+                      ),
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
@@ -476,7 +487,7 @@ class _CartModalState extends State<CartModal> {
                             : 'Aplicar y ver total'),
                       ),
                     ),
-                  ] else
+                  ] else if (hasPromotions || hasLoyalty)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 10),
                       child: Text(
@@ -484,18 +495,21 @@ class _CartModalState extends State<CartModal> {
                     ),
                   if (_quote != null && appState.isOnline) ...[
                     _QuoteSubtotalRow(value: _quote!.subtotal),
-                    if (_quote!.cuenta != null)
+                    if (hasLoyalty && _quote!.cuenta != null)
                       Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                               'Saldo disponible: ${_quote!.cuenta!.saldo} puntos (${_quote!.cuenta!.nivel})')),
-                    _QuoteDiscountRow(
-                        label: 'Promociones',
-                        value: _quote!.descuentoPromociones),
-                    _QuoteDiscountRow(
-                        label: 'Cupón', value: _quote!.descuentoCupon),
-                    _QuoteDiscountRow(
-                        label: 'Puntos', value: _quote!.descuentoPuntos),
+                    if (hasPromotions)
+                      _QuoteDiscountRow(
+                          label: 'Promociones',
+                          value: _quote!.descuentoPromociones),
+                    if (hasPromotions)
+                      _QuoteDiscountRow(
+                          label: 'Cupón', value: _quote!.descuentoCupon),
+                    if (hasLoyalty)
+                      _QuoteDiscountRow(
+                          label: 'Puntos', value: _quote!.descuentoPuntos),
                     for (final aviso in _quote!.avisos)
                       Align(
                           alignment: Alignment.centerLeft,
@@ -503,7 +517,8 @@ class _CartModalState extends State<CartModal> {
                               style: GoogleFonts.outfit(
                                   fontSize: 10, color: AetherTheme.muted))),
                   ],
-                  if (offlineQuote != null &&
+                  if (hasPromotions &&
+                      offlineQuote != null &&
                       offlineQuote.descuentoPromociones > 0) ...[
                     _QuoteSubtotalRow(value: offlineQuote.subtotal),
                     _QuoteDiscountRow(

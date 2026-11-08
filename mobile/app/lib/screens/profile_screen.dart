@@ -40,7 +40,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _cargarPerfil();
-    _cargarPuntos();
+    if (context.read<AppState>().currentUser?.hasFeature('fidelizacion') ==
+        true) {
+      _cargarPuntos();
+    } else {
+      _puntosLoading = false;
+    }
   }
 
   Future<void> _cargarPuntos() async {
@@ -436,23 +441,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 16),
 
-          Card(
-            color: AetherTheme.surface,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Mis puntos',
-                      style: GoogleFonts.outfit(
-                          fontSize: 18, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 10),
-                  _seccionPuntos(appState.isOnline),
-                ],
+          if (appState.currentUser?.hasFeature('fidelizacion') == true) ...[
+            Card(
+              color: AetherTheme.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Mis puntos',
+                        style: GoogleFonts.outfit(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 10),
+                    _seccionPuntos(appState.isOnline),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
 
           // Mobile Fase 3: acceso a reservas reales (CU12). Estrictamente
           // aditivo — no toca las secciones mock de abajo (medidas, estilo

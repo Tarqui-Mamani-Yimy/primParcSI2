@@ -20,16 +20,71 @@ import 'chat_widget.dart';
 class MainNavigationShell extends StatelessWidget {
   const MainNavigationShell({super.key});
 
-  static const List<Widget> _screens = [
-    HomeScreen(),
-    CollectionScreen(),
-    TryOnScreen(),
-    ProfileScreen(),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final user = appState.currentUser;
+    if (user?.hasFeature('app_movil') != true) {
+      return Scaffold(
+        backgroundColor: AetherTheme.sandLight,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_outline, size: 40),
+                const SizedBox(height: 16),
+                const Text(
+                  'El plan de tu tienda no incluye el acceso a la aplicación móvil.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Contactá al administrador de la tienda para consultar las opciones disponibles.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: appState.logout,
+                  child: const Text('Cerrar sesión'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    const screens = [
+      HomeScreen(),
+      CollectionScreen(),
+      TryOnScreen(),
+      ProfileScreen(),
+    ];
+    const navigationItems = [
+      BottomNavigationBarItem(
+        icon: Icon(Icons.home_outlined),
+        activeIcon: Icon(Icons.home),
+        label: 'Inicio',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.grid_view_outlined),
+        activeIcon: Icon(Icons.grid_view),
+        label: 'Colección',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.auto_awesome_outlined),
+        activeIcon: Icon(Icons.auto_awesome),
+        label: 'Try-On',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.person_outline),
+        activeIcon: Icon(Icons.person),
+        label: 'Perfil',
+      ),
+    ];
+    final selectedIndex = appState.currentTabIndex;
 
     return Scaffold(
       backgroundColor: AetherTheme.sandLight,
@@ -48,44 +103,46 @@ class MainNavigationShell extends StatelessWidget {
         elevation: 0,
         actions: [
           if (appState.isOnline)
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_bag_outlined, color: AetherTheme.charcoalDark, size: 22),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => const CartModal(),
-                  );
-                },
-              ),
-              if (appState.totalCartCount > 0)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AetherTheme.charcoalDark,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${appState.totalCartCount}',
-                      style: GoogleFonts.outfit(
-                        color: AetherTheme.sandLight,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.shopping_bag_outlined,
+                      color: AetherTheme.charcoalDark, size: 22),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const CartModal(),
+                    );
+                  },
+                ),
+                if (appState.totalCartCount > 0)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: AetherTheme.charcoalDark,
+                        shape: BoxShape.circle,
                       ),
-                      textAlign: TextAlign.center,
+                      constraints:
+                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      child: Text(
+                        '${appState.totalCartCount}',
+                        style: GoogleFonts.outfit(
+                          color: AetherTheme.sandLight,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          ),
+              ],
+            ),
           if (appState.isOnline) const SizedBox(width: 6),
         ],
       ),
@@ -99,13 +156,14 @@ class MainNavigationShell extends StatelessWidget {
               child: Text(
                 'Sin conexión — mostrando datos guardados',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 12),
+                style: GoogleFonts.outfit(
+                    color: AetherTheme.sandLight, fontSize: 12),
               ),
             ),
           Expanded(
             child: IndexedStack(
-              index: appState.currentTabIndex,
-              children: _screens,
+              index: selectedIndex,
+              children: screens,
             ),
           ),
         ],
@@ -130,40 +188,22 @@ class MainNavigationShell extends StatelessWidget {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AetherTheme.sandLight,
-          border: Border(top: BorderSide(color: AetherTheme.border, width: 0.5)),
+          border:
+              Border(top: BorderSide(color: AetherTheme.border, width: 0.5)),
         ),
         child: BottomNavigationBar(
-          currentIndex: appState.currentTabIndex,
-          onTap: (index) => appState.setTabIndex(index),
+          currentIndex: selectedIndex,
+          onTap: appState.setTabIndex,
           type: BottomNavigationBarType.fixed,
           backgroundColor: AetherTheme.sandLight,
           selectedItemColor: AetherTheme.charcoalDark,
           unselectedItemColor: AetherTheme.muted,
-          selectedLabelStyle: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
-          unselectedLabelStyle: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w500),
+          selectedLabelStyle: GoogleFonts.outfit(
+              fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+          unselectedLabelStyle:
+              GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w500),
           elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Inicio',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view),
-              label: 'Colección',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.auto_awesome_outlined),
-              activeIcon: Icon(Icons.auto_awesome),
-              label: 'Try-On',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Perfil',
-            ),
-          ],
+          items: navigationItems,
         ),
       ),
     );

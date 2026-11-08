@@ -66,7 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // 1. Editorial Hero Banner
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(2),
               child: Stack(
@@ -74,9 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   AspectRatio(
                     aspectRatio: 16 / 10,
                     child: CachedNetworkImage(
-                      imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDWVEjDuUQ_X1l6JvlGJvjXr68r55cZvMqHoC2dCPjlzv-t0nbhrhq4Qt_M_rHaKnhnkmFT9VkhJw7xmdGauzKUYocKh5oT8KKBmmKVpNPtmgqEAlTXR8sVFtg1gPM6FDbsWDApruzAx205g6Z7njnP5tC_1lM3Jy_74UDWgFyxNjMIdyZ6nN-Hvr22utV3vMdZESNVnP_ZSU4cLhu9Ca4obAm09F1M04b9BiLkQp8f03j57smqHSsmVg',
+                      imageUrl:
+                          'https://lh3.googleusercontent.com/aida-public/AB6AXuDWVEjDuUQ_X1l6JvlGJvjXr68r55cZvMqHoC2dCPjlzv-t0nbhrhq4Qt_M_rHaKnhnkmFT9VkhJw7xmdGauzKUYocKh5oT8KKBmmKVpNPtmgqEAlTXR8sVFtg1gPM6FDbsWDApruzAx205g6Z7njnP5tC_1lM3Jy_74UDWgFyxNjMIdyZ6nN-Hvr22utV3vMdZESNVnP_ZSU4cLhu9Ca4obAm09F1M04b9BiLkQp8f03j57smqHSsmVg',
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(color: AetherTheme.surface),
+                      placeholder: (_, __) =>
+                          Container(color: AetherTheme.surface),
                     ),
                   ),
                   Positioned.fill(
@@ -111,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                            'Siluetas Minimalistas y Sastrería Fluida',
+                          'Siluetas Minimalistas y Sastrería Fluida',
                           style: GoogleFonts.outfit(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
@@ -124,13 +127,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AetherTheme.sandLight,
                             foregroundColor: AetherTheme.charcoalDark,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero),
                             elevation: 0,
                           ),
                           child: Text(
                             'VER COLECCIÓN',
-                            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                            style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5),
                           ),
                         ),
                       ],
@@ -151,7 +159,10 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
                 'Recomendado para vos',
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark),
+                style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: AetherTheme.charcoalDark),
               ),
             ),
             const SizedBox(height: 8),
@@ -166,7 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   final reco = _recomendaciones[index];
                   return Container(
                     width: 190,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       border: Border.all(color: AetherTheme.outline),
@@ -180,12 +192,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           reco.productoNombre ?? reco.nombre,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.sourceSerif4(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           'Importancia: ${reco.importancia}',
-                          style: GoogleFonts.outfit(fontSize: 9.5, fontWeight: FontWeight.w600, color: _colorImportancia(reco.importancia)),
+                          style: GoogleFonts.outfit(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: _colorImportancia(reco.importancia)),
                         ),
                       ],
                     ),
@@ -204,13 +220,19 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   'Piezas Destacadas',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark),
+                  style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AetherTheme.charcoalDark),
                 ),
                 TextButton(
                   onPressed: () => appState.setTabIndex(1),
                   child: Text(
                     'Ver Todo',
-                    style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.bronze, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        color: AetherTheme.bronze,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -221,7 +243,9 @@ class _HomeScreenState extends State<HomeScreen> {
           if (appState.productsLoading && appState.products.isEmpty)
             const SizedBox(
               height: 250,
-              child: Center(child: CircularProgressIndicator(color: AetherTheme.bronze, strokeWidth: 2)),
+              child: Center(
+                  child: CircularProgressIndicator(
+                      color: AetherTheme.bronze, strokeWidth: 2)),
             )
           else if (appState.productsError != null && appState.products.isEmpty)
             SizedBox(
@@ -235,12 +259,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         appState.productsError!,
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
+                        style: GoogleFonts.sourceSerif4(
+                            fontSize: 12, color: AetherTheme.muted),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () => appState.loadProducts(),
-                        child: Text('Reintentar', style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.bronze, fontWeight: FontWeight.w600)),
+                        child: Text('Reintentar',
+                            style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                color: AetherTheme.bronze,
+                                fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
@@ -258,84 +287,106 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemBuilder: (context, index) {
                   final product = appState.products[index];
                   return SizedBox(
-                  width: 150,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: CachedNetworkImage(
-                            imageUrl: product.imageUrl,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        product.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.sourceSerif4(fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                      Text(
-                        '\$${product.price.toInt()}',
-                        style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.muted),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 4. Try-On Feature Card
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AetherTheme.charcoalDark,
-                borderRadius: BorderRadius.circular(2),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.auto_awesome, color: AetherTheme.mutedGold, size: 28),
-                  const SizedBox(width: 14),
-                  Expanded(
+                    width: 150,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Probador Virtual con IA',
-                          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: AetherTheme.sandLight),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: AspectRatio(
+                            aspectRatio: 3 / 4,
+                            child: CachedNetworkImage(
+                              imageUrl: product.imageUrl,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 6),
                         Text(
-                          'Prueba prendas en tiempo real con modelos 3D.',
-                          style: GoogleFonts.sourceSerif4(fontSize: 11, color: AetherTheme.sandDark),
+                          product.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          '\$${product.price.toInt()}',
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 12, color: AetherTheme.muted),
                         ),
                       ],
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => appState.setTabIndex(2),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AetherTheme.mutedGold,
-                      foregroundColor: AetherTheme.charcoalDark,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  );
+                },
+              ),
+            ),
+
+          const SizedBox(height: 24),
+
+          TryOnFeatureCard(onPressed: () => appState.setTabIndex(2)),
+        ],
+      ),
+    );
+  }
+}
+
+class TryOnFeatureCard extends StatelessWidget {
+  const TryOnFeatureCard({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AetherTheme.charcoalDark,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.auto_awesome,
+                color: AetherTheme.mutedGold, size: 28),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Probador Virtual con IA',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AetherTheme.sandLight,
                     ),
-                    child: Text('PROBAR', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Prueba prendas en tiempo real con modelos 3D.',
+                    style: GoogleFonts.sourceSerif4(
+                        fontSize: 11, color: AetherTheme.sandDark),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AetherTheme.mutedGold,
+                foregroundColor: AetherTheme.charcoalDark,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
+              ),
+              child: Text('PROBAR',
+                  style: GoogleFonts.outfit(
+                      fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -30,22 +30,31 @@ class TryOnScreen extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Icon(Icons.auto_awesome, size: 16, color: AetherTheme.bronze),
+              const Icon(Icons.auto_awesome,
+                  size: 16, color: AetherTheme.bronze),
               const SizedBox(width: 6),
               Text(
                 'AI NEURAL FITTING ENGINE',
-                style: GoogleFonts.outfit(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.8, color: AetherTheme.bronze),
+                style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.8,
+                    color: AetherTheme.bronze),
               ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             'Virtual Try-On',
-            style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w500, color: AetherTheme.charcoalDark),
+            style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w500,
+                color: AetherTheme.charcoalDark),
           ),
           Text(
             'Simulación biomecánica de caída y drapeado en tiempo real.',
-            style: GoogleFonts.sourceSerif4(fontSize: 12, color: AetherTheme.textMain),
+            style: GoogleFonts.sourceSerif4(
+                fontSize: 12, color: AetherTheme.textMain),
           ),
           const SizedBox(height: 12),
 
@@ -55,12 +64,19 @@ class TryOnScreen extends StatelessWidget {
             isSimulatingTryOn: appState.isSimulatingTryOn,
             selectedSize: appState.selectedSize,
             fitMode: appState.fitMode,
+            enableSizeFeatures:
+                appState.currentUser?.hasFeature('tallas') == true,
           ),
 
           const SizedBox(height: 14),
 
           // 3. Catalog Horizontal Strip
-          Text('ELEGIR PRENDA DEL CATÁLOGO', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
+          Text('ELEGIR PRENDA DEL CATÁLOGO',
+              style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: AetherTheme.muted)),
           const SizedBox(height: 8),
           SizedBox(
             height: 110,
@@ -77,8 +93,14 @@ class TryOnScreen extends StatelessWidget {
                     width: 85,
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.4),
-                      border: Border.all(color: isSelected ? AetherTheme.charcoalDark : AetherTheme.border, width: isSelected ? 1.5 : 1),
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      border: Border.all(
+                          color: isSelected
+                              ? AetherTheme.charcoalDark
+                              : AetherTheme.border,
+                          width: isSelected ? 1.5 : 1),
                       borderRadius: BorderRadius.circular(2),
                     ),
                     child: Column(
@@ -92,8 +114,13 @@ class TryOnScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 9)),
-                        Text('\$${p.price.toInt()}', style: GoogleFonts.sourceSerif4(fontSize: 9, color: AetherTheme.muted)),
+                        Text(p.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.outfit(fontSize: 9)),
+                        Text('\$${p.price.toInt()}',
+                            style: GoogleFonts.sourceSerif4(
+                                fontSize: 9, color: AetherTheme.muted)),
                       ],
                     ),
                   ),
@@ -105,10 +132,15 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 4. Fit Mode
-          Text('SILUETA Y CAÍDA (FIT)', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
+          Text('SILUETA Y CAÍDA (FIT)',
+              style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: AetherTheme.muted)),
           const SizedBox(height: 8),
           Row(
-              children: ['Relajado', 'Talla Real', 'Oversized'].map((mode) {
+            children: ['Relajado', 'Talla Real', 'Oversized'].map((mode) {
               final isSel = appState.fitMode == mode;
               return Expanded(
                 child: Padding(
@@ -119,8 +151,13 @@ class TryOnScreen extends StatelessWidget {
                       height: 38,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
-                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : AetherTheme.border),
+                        color: isSel
+                            ? AetherTheme.charcoalDark
+                            : Colors.white.withValues(alpha: 0.6),
+                        border: Border.all(
+                            color: isSel
+                                ? AetherTheme.charcoalDark
+                                : AetherTheme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(
@@ -128,7 +165,9 @@ class TryOnScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isSel ? AetherTheme.sandLight : AetherTheme.charcoalDark,
+                          color: isSel
+                              ? AetherTheme.sandLight
+                              : AetherTheme.charcoalDark,
                         ),
                       ),
                     ),
@@ -141,7 +180,12 @@ class TryOnScreen extends StatelessWidget {
           const SizedBox(height: 14),
 
           // 5. Size Selection
-          Text('TALLAS DISPONIBLES', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: AetherTheme.muted)),
+          Text('TALLAS DISPONIBLES',
+              style: GoogleFonts.outfit(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: AetherTheme.muted)),
           const SizedBox(height: 8),
           Row(
             children: product.sizes.map((sz) {
@@ -155,8 +199,13 @@ class TryOnScreen extends StatelessWidget {
                       height: 38,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: isSel ? AetherTheme.charcoalDark : Colors.white.withValues(alpha: 0.6),
-                        border: Border.all(color: isSel ? AetherTheme.charcoalDark : AetherTheme.border),
+                        color: isSel
+                            ? AetherTheme.charcoalDark
+                            : Colors.white.withValues(alpha: 0.6),
+                        border: Border.all(
+                            color: isSel
+                                ? AetherTheme.charcoalDark
+                                : AetherTheme.border),
                         borderRadius: BorderRadius.circular(2),
                       ),
                       child: Text(
@@ -164,7 +213,9 @@ class TryOnScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isSel ? AetherTheme.sandLight : AetherTheme.charcoalDark,
+                          color: isSel
+                              ? AetherTheme.sandLight
+                              : AetherTheme.charcoalDark,
                         ),
                       ),
                     ),
@@ -182,16 +233,22 @@ class TryOnScreen extends StatelessWidget {
             height: 48,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.shopping_bag_outlined, size: 16),
-              label: Text('ANADIR A LA BOLSA (\$${product.price.toInt()})', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              label: Text('ANADIR A LA BOLSA (\$${product.price.toInt()})',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AetherTheme.charcoalDark,
                 foregroundColor: AetherTheme.sandLight,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
               ),
               onPressed: () {
                 appState.addToCart(product, appState.selectedSize);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${product.name} anadida a la bolsa.')),
+                  SnackBar(
+                      content: Text('${product.name} anadida a la bolsa.')),
                 );
               },
             ),
@@ -202,16 +259,22 @@ class TryOnScreen extends StatelessWidget {
             height: 44,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.bookmark_border, size: 16),
-              label: Text('GUARDAR LOOK EN PERFIL', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              label: Text('GUARDAR LOOK EN PERFIL',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AetherTheme.charcoalDark,
                 side: const BorderSide(color: AetherTheme.charcoalDark),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
               ),
               onPressed: () {
                 appState.saveLookToProfile();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Look guardado en tu perfil de estilo.')),
+                  const SnackBar(
+                      content: Text('Look guardado en tu perfil de estilo.')),
                 );
               },
             ),
@@ -225,15 +288,21 @@ class TryOnScreen extends StatelessWidget {
             height: 44,
             child: OutlinedButton.icon(
               icon: const Icon(Icons.event_available, size: 16),
-              label: Text('RESERVAR EN SUCURSAL', style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              label: Text('RESERVAR EN SUCURSAL',
+                  style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AetherTheme.charcoalDark,
                 side: const BorderSide(color: AetherTheme.charcoalDark),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero),
               ),
               onPressed: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ReservationFormScreen(product: product)),
+                  MaterialPageRoute(
+                      builder: (_) => ReservationFormScreen(product: product)),
                 );
               },
             ),
@@ -255,12 +324,14 @@ class _MirrorCanvas extends StatefulWidget {
   final bool isSimulatingTryOn;
   final String selectedSize;
   final String fitMode;
+  final bool enableSizeFeatures;
 
   const _MirrorCanvas({
     required this.product,
     required this.isSimulatingTryOn,
     required this.selectedSize,
     required this.fitMode,
+    required this.enableSizeFeatures,
   });
 
   @override
@@ -280,6 +351,10 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
   @override
   void initState() {
     super.initState();
+    if (!widget.enableSizeFeatures) {
+      _loadingRecommendation = false;
+      return;
+    }
     _loadRecommendation();
     // CU11 — determinar ajuste real: se piden las medidas del cliente una
     // sola vez al entrar al probador. Si falla (ej. sin conexion), el HUD
@@ -302,6 +377,13 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
   }
 
   Future<void> _loadRecommendation() async {
+    if (!widget.enableSizeFeatures) {
+      setState(() {
+        _recommendation = null;
+        _loadingRecommendation = false;
+      });
+      return;
+    }
     final productId = int.tryParse(widget.product.id);
     setState(() {
       _recommendation = null;
@@ -371,9 +453,12 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
               ArTryOnScreen(
                 product: widget.product,
                 fitMode: widget.fitMode,
-                recommendation: _recommendation,
-                recommendationLoading: _loadingRecommendation,
-                fallbackFitMessage: _offlineFitMessage,
+                recommendation:
+                    widget.enableSizeFeatures ? _recommendation : null,
+                recommendationLoading:
+                    widget.enableSizeFeatures && _loadingRecommendation,
+                fallbackFitMessage:
+                    widget.enableSizeFeatures ? _offlineFitMessage : null,
               )
             else ...[
               // Escala visual segun "Silueta y Caida" — puramente estetico,
@@ -395,12 +480,16 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                         const SizedBox(
                           width: 28,
                           height: 28,
-                          child: CircularProgressIndicator(color: AetherTheme.sandLight, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: AetherTheme.sandLight, strokeWidth: 2),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           'Ajustando drapeado IA...',
-                          style: GoogleFonts.outfit(color: AetherTheme.sandLight, fontSize: 11, letterSpacing: 1.2),
+                          style: GoogleFonts.outfit(
+                              color: AetherTheme.sandLight,
+                              fontSize: 11,
+                              letterSpacing: 1.2),
                         ),
                       ],
                     ),
@@ -408,61 +497,69 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                 ),
               // The backend recommendation is authoritative; the local size
               // chart is only used if the recommendation request is offline.
-              Positioned(
-                bottom: 10,
-                left: 10,
-                right: 10,
-                child: Builder(builder: (context) {
-                  final recommendation = _recommendation;
-                  final fit = recommendation?.fitFor(widget.selectedSize);
-                  final color = _loadingRecommendation
-                      ? Colors.white70
-                      : switch (fit) {
-                          'justa' => AetherTheme.mutedGold,
-                          'ajustada' || 'holgada' => Colors.orangeAccent,
-                          _ => Colors.white70,
-                        };
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _loadingRecommendation
-                                    ? 'Consultando recomendación de talla…'
-                                    : _recommendationMessage,
-                                style: GoogleFonts.outfit(color: color, fontSize: 9.5, fontWeight: FontWeight.w600),
+              if (widget.enableSizeFeatures)
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  right: 10,
+                  child: Builder(builder: (context) {
+                    final recommendation = _recommendation;
+                    final fit = recommendation?.fitFor(widget.selectedSize);
+                    final color = _loadingRecommendation
+                        ? Colors.white70
+                        : switch (fit) {
+                            'justa' => AetherTheme.mutedGold,
+                            'ajustada' || 'holgada' => Colors.orangeAccent,
+                            _ => Colors.white70,
+                          };
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(2),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _loadingRecommendation
+                                      ? 'Consultando recomendación de talla…'
+                                      : _recommendationMessage,
+                                  style: GoogleFonts.outfit(
+                                      color: color,
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w600),
+                                ),
                               ),
-                            ),
+                              Text(
+                                'Talla: ${widget.selectedSize}',
+                                style: GoogleFonts.outfit(
+                                    color: Colors.white, fontSize: 9.5),
+                              ),
+                            ],
+                          ),
+                          if (_recommendationDetail != null) ...[
+                            const SizedBox(height: 3),
                             Text(
-                              'Talla: ${widget.selectedSize}',
-                              style: GoogleFonts.outfit(color: Colors.white, fontSize: 9.5),
+                              _recommendationDetail!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                  color: Colors.amber.shade100, fontSize: 9),
                             ),
                           ],
-                        ),
-                        if (_recommendationDetail != null) ...[
-                          const SizedBox(height: 3),
-                          Text(
-                            _recommendationDetail!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(color: Colors.amber.shade100, fontSize: 9),
-                          ),
                         ],
-                      ],
-                    ),
-                  );
-                }),
-              ),
+                      ),
+                    );
+                  }),
+                ),
             ],
 
             // Boton toggle camara RA (CU11) — arriba a la derecha, siempre visible.
@@ -479,10 +576,14 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                     // sentido para pantalones (el ancla quedaria en el
                     // lugar equivocado del cuerpo). Se avisa en vez de
                     // mostrar algo roto o enganoso.
-                    if (!_arActivo && widget.product.category.toLowerCase().contains('pantal')) {
+                    if (!_arActivo &&
+                        widget.product.category
+                            .toLowerCase()
+                            .contains('pantal')) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('El probador RA se ancla a los hombros — no está pensado para pantalones.'),
+                          content: Text(
+                              'El probador RA se ancla a los hombros — no está pensado para pantalones.'),
                         ),
                       );
                       return;
@@ -492,7 +593,9 @@ class _MirrorCanvasState extends State<_MirrorCanvas> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Icon(
-                      _arActivo ? Icons.photo_camera_back_outlined : Icons.camera_alt_outlined,
+                      _arActivo
+                          ? Icons.photo_camera_back_outlined
+                          : Icons.camera_alt_outlined,
                       color: AetherTheme.sandLight,
                       size: 18,
                     ),

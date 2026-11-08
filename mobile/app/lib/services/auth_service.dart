@@ -15,6 +15,8 @@ class AuthUser {
   final String rol;
   final List<String> permisos;
   final int? idEmpresa;
+  final String? planCode;
+  final List<String> planFeatures;
 
   AuthUser({
     required this.idUser,
@@ -23,19 +25,31 @@ class AuthUser {
     required this.rol,
     required this.permisos,
     this.idEmpresa,
+    this.planCode,
+    this.planFeatures = const [],
   });
 
-  factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-        idUser: json['idUser'] as int,
-        nombre: json['nombre'] as String,
-        correo: json['correo'] as String,
-        rol: json['rol'] as String,
-        permisos: (json['permisos'] as List).map((p) => p.toString()).toList(),
-        idEmpresa:
-            ((json['empresa'] as Map<String, dynamic>?)?['idEmpresa'] as num?)
-                    ?.toInt() ??
-                (json['idEmpresa'] as num?)?.toInt(),
-      );
+  factory AuthUser.fromJson(Map<String, dynamic> json) {
+    final plan = json['plan'] as Map<String, dynamic>?;
+    return AuthUser(
+      idUser: (json['idUser'] as num).toInt(),
+      nombre: json['nombre'] as String,
+      correo: json['correo'] as String,
+      rol: json['rol'] as String,
+      permisos: (json['permisos'] as List).map((p) => p.toString()).toList(),
+      idEmpresa:
+          ((json['empresa'] as Map<String, dynamic>?)?['idEmpresa'] as num?)
+                  ?.toInt() ??
+              (json['idEmpresa'] as num?)?.toInt(),
+      planCode: plan?['codigo'] as String?,
+      planFeatures: (plan?['features'] as List? ?? const [])
+          .map((feature) => feature.toString())
+          .toList(growable: false),
+    );
+  }
+
+  bool hasFeature(String feature) =>
+      rol == 'SuperAdmin' || planCode == null || planFeatures.contains(feature);
 
   Map<String, dynamic> toJson() => {
         'idUser': idUser,
@@ -44,6 +58,9 @@ class AuthUser {
         'rol': rol,
         'permisos': permisos,
         'idEmpresa': idEmpresa,
+        'plan': planCode == null
+            ? null
+            : {'codigo': planCode, 'features': planFeatures},
       };
 }
 
@@ -65,6 +82,7 @@ class AuthService {
         value: tokenResponse['refresh_token'] as String);
     final user = Map<String, dynamic>.from(tokenResponse['user'] as Map);
     user['empresa'] = tokenResponse['empresa'];
+    user['plan'] = tokenResponse['plan'];
     await _storage.write(
         key: ApiConfig.userStorageKey, value: jsonEncode(user));
   }
@@ -83,6 +101,7 @@ class AuthService {
     return AuthUser.fromJson({
       ...data['user'] as Map<String, dynamic>,
       'empresa': data['empresa'],
+      'plan': data['plan'],
     });
   }
 
@@ -102,6 +121,7 @@ class AuthService {
     return AuthUser.fromJson({
       ...data['user'] as Map<String, dynamic>,
       'empresa': data['empresa'],
+      'plan': data['plan'],
     });
   }
 

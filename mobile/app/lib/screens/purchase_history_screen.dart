@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../models/purchase_history_model.dart';
+import '../providers/app_state.dart';
 import '../services/api_client.dart';
 import '../services/purchase_history_service.dart';
 import '../services/size_recommendation_service.dart';
@@ -22,7 +24,8 @@ class PurchaseHistoryScreen extends StatefulWidget {
 
 class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
   final ApiClient _api = ApiClient();
-  late final PurchaseHistoryService _purchaseHistoryService = PurchaseHistoryService(_api);
+  late final PurchaseHistoryService _purchaseHistoryService =
+      PurchaseHistoryService(_api);
   late final SizeRecommendationService _sizeRecommendationService =
       SizeRecommendationService(_api);
 
@@ -50,6 +53,9 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
         _items = items;
         _loading = false;
       });
+      if (context.read<AppState>().currentUser?.hasFeature('tallas') == false) {
+        return;
+      }
       try {
         final feedback = await _sizeRecommendationService.getMyFeedback();
         if (!mounted) return;
@@ -79,6 +85,9 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
   }
 
   Future<void> _guardarRetroalimentacion(int productId, String result) async {
+    if (context.read<AppState>().currentUser?.hasFeature('tallas') == false) {
+      return;
+    }
     if (_savingFeedback.contains(productId)) return;
     setState(() => _savingFeedback.add(productId));
     try {
@@ -119,7 +128,9 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('¿Cómo te quedó?', style: GoogleFonts.outfit(fontSize: 10, color: AetherTheme.muted)),
+          Text('¿Cómo te quedó?',
+              style:
+                  GoogleFonts.outfit(fontSize: 10, color: AetherTheme.muted)),
           const SizedBox(height: 3),
           Wrap(
             spacing: 5,
@@ -131,7 +142,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                 selected: isSelected,
                 onSelected: saving
                     ? null
-                    : (_) => _guardarRetroalimentacion(item.idProducto, choice.$1),
+                    : (_) =>
+                        _guardarRetroalimentacion(item.idProducto, choice.$1),
                 selectedColor: AetherTheme.mutedGold.withValues(alpha: 0.35),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -150,7 +162,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
 
   /// Agrupa por `idVenta` preservando el orden de llegada — el backend ya
   /// ordena por `fecha.desc()`, asi que no hace falta re-ordenar aca.
-  Map<int, List<PurchaseHistoryItem>> _agruparPorVenta(List<PurchaseHistoryItem> items) {
+  Map<int, List<PurchaseHistoryItem>> _agruparPorVenta(
+      List<PurchaseHistoryItem> items) {
     final grupos = <int, List<PurchaseHistoryItem>>{};
     for (final item in items) {
       grupos.putIfAbsent(item.idVenta, () => []).add(item);
@@ -166,6 +179,8 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasSizeFeature =
+        context.watch<AppState>().currentUser?.hasFeature('tallas') ?? true;
     final grupos = _agruparPorVenta(_items);
     final ventaIds = grupos.keys.toList();
 
@@ -175,10 +190,13 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: AetherTheme.charcoalDark),
-        title: Text('Historial de Compras', style: GoogleFonts.outfit(color: AetherTheme.charcoalDark, fontWeight: FontWeight.w600)),
+        title: Text('Historial de Compras',
+            style: GoogleFonts.outfit(
+                color: AetherTheme.charcoalDark, fontWeight: FontWeight.w600)),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AetherTheme.charcoalDark))
+          ? const Center(
+              child: CircularProgressIndicator(color: AetherTheme.charcoalDark))
           : _error != null
               ? Center(
                   child: Padding(
@@ -186,16 +204,23 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 12, color: Colors.red.shade700)),
+                        Text(_error!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.outfit(
+                                fontSize: 12, color: Colors.red.shade700)),
                         const SizedBox(height: 12),
-                        OutlinedButton(onPressed: _cargar, child: const Text('Reintentar')),
+                        OutlinedButton(
+                            onPressed: _cargar,
+                            child: const Text('Reintentar')),
                       ],
                     ),
                   ),
                 )
               : ventaIds.isEmpty
                   ? Center(
-                      child: Text('Todavia no tenes compras.', style: GoogleFonts.sourceSerif4(fontSize: 14, color: AetherTheme.muted)),
+                      child: Text('Todavia no tenes compras.',
+                          style: GoogleFonts.sourceSerif4(
+                              fontSize: 14, color: AetherTheme.muted)),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),
@@ -209,7 +234,9 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.7),
-                            border: Border.all(color: AetherTheme.border.withValues(alpha: 0.6)),
+                            border: Border.all(
+                                color:
+                                    AetherTheme.border.withValues(alpha: 0.6)),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Column(
@@ -218,42 +245,57 @@ class _PurchaseHistoryScreenState extends State<PurchaseHistoryScreen> {
                               // Encabezado: datos de LA VENTA (fecha/total unicos por
                               // grupo, tomados de la primera linea).
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Venta #$idVenta', style: GoogleFonts.sourceSerif4(fontSize: 14, fontWeight: FontWeight.w600)),
+                                  Text('Venta #$idVenta',
+                                      style: GoogleFonts.sourceSerif4(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600)),
                                   Text(
                                     'Total: \$${primera.total.toStringAsFixed(2)}',
-                                    style: GoogleFonts.sourceSerif4(fontSize: 14, fontWeight: FontWeight.bold),
+                                    style: GoogleFonts.sourceSerif4(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(_formatearFecha(primera.fecha), style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted)),
-                              const Divider(height: 18, color: AetherTheme.border),
+                              Text(_formatearFecha(primera.fecha),
+                                  style: GoogleFonts.outfit(
+                                      fontSize: 11, color: AetherTheme.muted)),
+                              const Divider(
+                                  height: 18, color: AetherTheme.border),
                               // Items de linea: cada uno con SU PROPIO subtotal,
                               // distinto del total de la venta de arriba.
                               ...lineas.map(
                                 (item) => Padding(
                                   padding: const EdgeInsets.only(bottom: 8),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
                                             child: Text(
                                               '${item.productoNombre ?? 'Producto #${item.idProducto}'}  x${item.cantidad}',
-                                              style: GoogleFonts.outfit(fontSize: 12),
+                                              style: GoogleFonts.outfit(
+                                                  fontSize: 12),
                                             ),
                                           ),
                                           Text(
                                             'Subtotal: \$${item.subtotalLinea.toStringAsFixed(2)}',
-                                            style: GoogleFonts.outfit(fontSize: 11, color: AetherTheme.muted),
+                                            style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                color: AetherTheme.muted),
                                           ),
                                         ],
                                       ),
-                                      _feedbackButtons(item),
+                                      if (hasSizeFeature)
+                                        _feedbackButtons(item),
                                     ],
                                   ),
                                 ),

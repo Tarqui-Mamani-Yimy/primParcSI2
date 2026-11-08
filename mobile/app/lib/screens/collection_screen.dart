@@ -109,31 +109,33 @@ class _CollectionScreenState extends State<CollectionScreen> {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-          child: SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: _searchingByPhoto ? null : _openPhotoSearch,
-              icon: _searchingByPhoto
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.image_search_outlined, size: 18),
-              label: Text(
-                  _searchingByPhoto ? 'Buscando prendas…' : 'Buscar por foto'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AetherTheme.charcoalDark,
-                side: const BorderSide(color: AetherTheme.border),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
+        if (appState.currentUser?.hasFeature('ia') == true)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _searchingByPhoto ? null : _openPhotoSearch,
+                icon: _searchingByPhoto
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.image_search_outlined, size: 18),
+                label: Text(_searchingByPhoto
+                    ? 'Buscando prendas…'
+                    : 'Buscar por foto'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AetherTheme.charcoalDark,
+                  side: const BorderSide(color: AetherTheme.border),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         // Filter Chips Bar
         Container(
           height: 48,
