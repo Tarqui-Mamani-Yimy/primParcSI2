@@ -241,8 +241,9 @@ import { AuthService } from '../../core/services/auth.service';
               </p>
             </div>
 
-            <!-- Botón Exportar CSV -->
+            <!-- Botón Exportar CSV (Gated por reportes_export) -->
             <button
+              *ngIf="canExportCsv"
               type="button"
               (click)="descargarCsv()"
               [disabled]="downloadingCsv()"
@@ -334,6 +335,10 @@ export class AiReportsComponent implements OnInit, OnDestroy {
   isAdmin(): boolean {
     const rol = this.authService.currentUser()?.rol;
     return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
+
+  get canExportCsv(): boolean {
+    return this.authService.hasFeature('reportes_export');
   }
 
   getVoiceButtonTitle(): string {

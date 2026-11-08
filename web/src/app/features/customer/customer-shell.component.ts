@@ -48,6 +48,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
               Catálogo
             </button>
             <button
+              *ngIf="authService.hasFeature('reservas')"
               (click)="currentView.set('reservations')"
               [class.bg-ys-primary-soft]="currentView() === 'reservations'"
               [class.text-ys-primary]="currentView() === 'reservations'"
@@ -88,6 +89,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
           </button>
 
           <button
+            *ngIf="authService.hasFeature('pagos_online')"
             (click)="onAbrirCarrito()"
             class="relative p-2 rounded-lg hover:bg-[#F5EBF7] text-[#5A5561] hover:text-[#38133E] transition-colors cursor-pointer"
             aria-label="Ver carrito"
@@ -130,6 +132,7 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
           Catálogo
         </button>
         <button
+          *ngIf="authService.hasFeature('reservas')"
           (click)="currentView.set('reservations')"
           [class.text-ys-primary]="currentView() === 'reservations'"
           [class.text-ys-subtle]="currentView() !== 'reservations'"
@@ -191,12 +194,12 @@ export type CustomerView = 'catalog' | 'reservations' | 'profile';
           (irAPerfil)="currentView.set('profile')"
         ></app-customer-catalog>
 
-        <app-customer-reservations *ngIf="currentView() === 'reservations'"></app-customer-reservations>
+        <app-customer-reservations *ngIf="currentView() === 'reservations' && authService.hasFeature('reservas')"></app-customer-reservations>
 
         <app-customer-profile *ngIf="currentView() === 'profile'"></app-customer-profile>
       </main>
 
-      <app-chat-widget></app-chat-widget>
+      <app-chat-widget *ngIf="authService.hasFeature('ia')"></app-chat-widget>
 
       <!-- Modal de operaciones pendientes (OX5) -->
       <app-pending-ops-modal

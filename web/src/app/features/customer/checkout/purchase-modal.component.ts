@@ -7,6 +7,7 @@ import { SalesService } from '../../../core/services/sales.service';
 import { SyncService } from '../../../core/services/sync.service';
 import { NotificationService } from '../../../core/services/notification.service';
 import { PromotionsService } from '../../../core/services/promotions.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CardPaymentComponent } from '../../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../../shared/components/receipt-modal.component';
 
@@ -73,8 +74,8 @@ type EstadoCompra = 'resumen' | 'iniciando' | 'cobrando' | 'cobrado_sin_venta' |
               </div>
             </div>
 
-            <!-- Entrada de Cupón de Descuento (CU37, S9) -->
-            <div class="space-y-1.5 p-3 rounded-xl border border-[#E8E2DA] bg-white">
+            <!-- Entrada de Cupón de Descuento (CU37, S9, gated por promociones) -->
+            <div *ngIf="canPromotions" class="space-y-1.5 p-3 rounded-xl border border-[#E8E2DA] bg-white">
               <label class="block text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">
                 Cupón de descuento
               </label>
@@ -97,8 +98,8 @@ type EstadoCompra = 'resumen' | 'iniciando' | 'cobrando' | 'cobrado_sin_venta' |
               </div>
             </div>
 
-            <!-- Canje de Puntos de Fidelización (CU43, S9) -->
-            <div *ngIf="cuentaPuntos() as cuenta" class="space-y-2 p-3 rounded-xl border border-[#E8E2DA] bg-white">
+            <!-- Canje de Puntos de Fidelización (CU43, S9, gated por fidelizacion) -->
+            <div *ngIf="canLoyalty && cuentaPuntos() as cuenta" class="space-y-2 p-3 rounded-xl border border-[#E8E2DA] bg-white">
               <div class="flex items-center justify-between">
                 <label class="text-[10px] font-bold uppercase tracking-wider text-[#5A5561]">
                   Puntos de fidelización
@@ -167,7 +168,7 @@ type EstadoCompra = 'resumen' | 'iniciando' | 'cobrando' | 'cobrado_sin_venta' |
                 <span class="text-lg font-bold text-[#38133E]">Bs {{ q.total.toFixed(2) }}</span>
               </div>
 
-              <div *ngIf="q.puntos_a_ganar > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
+              <div *ngIf="canLoyalty && q.puntos_a_ganar > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
                 <span>Puntos a ganar con esta compra:</span>
                 <span>+{{ q.puntos_a_ganar }} pts</span>
               </div>
@@ -274,7 +275,16 @@ export class PurchaseModalComponent implements OnInit {
     private promotionsService: PromotionsService,
     private notificationService: NotificationService,
     public syncService: SyncService,
+    public authService: AuthService,
   ) {}
+
+  get canPromotions(): boolean {
+    return this.authService.hasFeature('promociones');
+  }
+
+  get canLoyalty(): boolean {
+    return this.authService.hasFeature('fidelizacion');
+  }
 
   ngOnInit(): void {
     void this.actualizarCotizacion();
@@ -285,16 +295,19 @@ export class PurchaseModalComponent implements OnInit {
   }
 
   aplicarCupon(): void {
+    if (!this.canPromotions) return;
     this.codigoCupon.set(this.codigoCuponInput.toUpperCase().trim());
     void this.actualizarCotizacion();
   }
 
   onPuntosChange(val: number): void {
+    if (!this.canLoyalty) return;
     this.puntosACanjear.set(Math.max(0, Number(val) || 0));
     void this.actualizarCotizacion();
   }
 
   canjearMaximosPuntos(): void {
+    if (!this.canLoyalty) return;
     const max = this.cuentaPuntos()?.puntos_max_canjeables ?? 0;
     this.puntosInput = max;
     this.puntosACanjear.set(max);
@@ -314,8 +327,8 @@ export class PurchaseModalComponent implements OnInit {
     try {
       const res = await this.promotionsService.quote({
         items: this.itemsDeLineas(),
-        codigoCupon: this.codigoCupon() || undefined,
-        puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
+        codigoCupon: (this.canPromotions && this.codigoCupon()) ? this.codigoCupon() : undefined,
+        puntos: (this.canLoyalty && this.puntosACanjear() > 0) ? this.puntosACanjear() : undefined,
       });
       this.quoteResult.set(res);
       this.avisos.set(res.avisos || []);
@@ -370,8 +383,8 @@ export class PurchaseModalComponent implements OnInit {
       items: this.itemsDeLineas(),
       claveIntento: crypto.randomUUID(),
       concepto: `Compra en línea — ${this.tituloCompra()}`,
-      codigoCupon: this.codigoCupon() || undefined,
-      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
+      codigoCupon: (this.canPromotions && this.codigoCupon()) ? this.codigoCupon() : undefined,
+      puntos: (this.canLoyalty && this.puntosACanjear() > 0) ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
     if (!intent) {
@@ -427,8 +440,8 @@ export class PurchaseModalComponent implements OnInit {
     const venta = await this.salesService.crearVenta({
       idMetPago,
       items: this.itemsDeLineas(),
-      codigoCupon: this.codigoCupon() || undefined,
-      puntos: this.puntosACanjear() > 0 ? this.puntosACanjear() : undefined,
+      codigoCupon: (this.canPromotions && this.codigoCupon()) ? this.codigoCupon() : undefined,
+      puntos: (this.canLoyalty && this.puntosACanjear() > 0) ? this.puntosACanjear() : undefined,
     });
     this.enviando.set(false);
 

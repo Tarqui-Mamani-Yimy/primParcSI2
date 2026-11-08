@@ -6,6 +6,7 @@ import { ProductOut, SizeRecommendationOut } from '../../../core/models';
 import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { SyncService } from '../../../core/services/sync.service';
 import { SizeChartService } from '../../../core/services/size-chart.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../../environments/environment';
 import { CANTIDAD_MAXIMA_LINEA } from '../../../core/services/cart.service';
 import { classifyProductDetailError, ProductDetailError } from './product-detail-error';
@@ -67,8 +68,8 @@ const API_URL = environment.apiUrl;
                 <p class="text-lg font-bold text-[#38133E] mt-0.5">{{ p.venta.toLocaleString() }} Bs</p>
               </div>
 
-              <!-- Caja: Tu talla recomendada (CU35, S8) -->
-              <div class="my-3 p-3.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-xl space-y-2.5">
+              <!-- Caja: Tu talla recomendada (CU35, S8, gated por tallas) -->
+              <div *ngIf="canSizeRecommendation" class="my-3 p-3.5 bg-[#FAF8F5] border border-[#E8E2DA] rounded-xl space-y-2.5">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-[18px] text-[#38133E]">straighten</span>
@@ -187,6 +188,7 @@ const API_URL = environment.apiUrl;
 
               <div class="flex flex-wrap gap-2">
                 <button
+                  *ngIf="canReserve"
                   (click)="reservar.emit(p)"
                   class="flex-1 py-2.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors shadow-xs cursor-pointer"
                 >
@@ -211,7 +213,7 @@ const API_URL = environment.apiUrl;
                   Agregar al carrito
                 </button>
                 <p
-                  *ngIf="!stripeDisponible"
+                  *ngIf="canOnlinePayments && !hasStripeKey"
                   class="flex-1 py-2.5 text-center text-[11px] font-semibold text-[#9B94A3] border border-[#E8E2DA] rounded-lg"
                   title="El cobro con tarjeta no está disponible en este servidor"
                 >
@@ -275,20 +277,41 @@ export class ProductDetailComponent implements OnChanges {
   // /api/payments/intents) y antes de vender (POST /api/sales).
   cantidadMaxima = CANTIDAD_MAXIMA_LINEA;
 
-  stripeDisponible = !!environment.stripePublishableKey;
-
   constructor(
     private http: HttpClient,
     private offlineDbService: OfflineDbService,
     public syncService: SyncService,
     private sizeChartService: SizeChartService,
+    public authService: AuthService,
   ) {}
+
+  get canReserve(): boolean {
+    return this.authService.hasFeature('reservas');
+  }
+
+  get canSizeRecommendation(): boolean {
+    return this.authService.hasFeature('tallas');
+  }
+
+  get canOnlinePayments(): boolean {
+    return this.authService.hasFeature('pagos_online');
+  }
+
+  get hasStripeKey(): boolean {
+    return !!environment.stripePublishableKey;
+  }
+
+  get stripeDisponible(): boolean {
+    return this.hasStripeKey && this.canOnlinePayments;
+  }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['idProducto']) {
       this.cantidad.set(1);
       this.fetchProducto();
-      this.fetchRecomendacion();
+      if (this.canSizeRecommendation) {
+        this.fetchRecomendacion();
+      }
     }
   }
 

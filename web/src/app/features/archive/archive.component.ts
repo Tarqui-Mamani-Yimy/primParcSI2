@@ -27,7 +27,7 @@ import { FitIndicatorsModalComponent } from './fit-indicators-modal.component';
 
         <div class="flex flex-wrap items-center gap-3">
           <button
-            *ngIf="canEditProduct()"
+            *ngIf="canEditProduct() && canVisualSearch"
             type="button"
             (click)="reindexVisualSearch()"
             [disabled]="isReindexing() || !syncService.isOnline()"
@@ -41,7 +41,7 @@ import { FitIndicatorsModalComponent } from './fit-indicators-modal.component';
           </button>
 
           <button
-            *ngIf="canEditProduct()"
+            *ngIf="canEditProduct() && canManageSizes"
             (click)="showFitIndicatorsModal.set(true)"
             [disabled]="!syncService.isOnline()"
             [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
@@ -261,7 +261,7 @@ import { FitIndicatorsModalComponent } from './fit-indicators-modal.component';
 
         <div class="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-2">
           <button
-            *ngIf="canEditProduct() && inspectingItem() as p"
+            *ngIf="canEditProduct() && canManageSizes && inspectingItem() as p"
             (click)="openSizeChart(p)"
             class="px-3 py-1.5 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors cursor-pointer flex items-center gap-1.5"
           >
@@ -398,6 +398,14 @@ export class ArchiveComponent implements OnInit {
   reindexSummary = signal<VisualReindexResponse | null>(null);
 
   canEditProduct = computed(() => this.authService.hasPermission('producto.editar'));
+
+  get canVisualSearch(): boolean {
+    return this.authService.hasFeature('ia');
+  }
+
+  get canManageSizes(): boolean {
+    return this.authService.hasFeature('tallas');
+  }
 
   searchQuery = '';
   filterTipo = '';

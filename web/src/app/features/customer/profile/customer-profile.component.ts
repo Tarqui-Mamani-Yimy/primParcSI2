@@ -203,8 +203,8 @@ import type { CachedCliente, ClientFitFeedbackItem, FitResultado, LoyaltyMeRespo
         </form>
       </div>
 
-      <!-- Sección: ¿Cómo te quedó? (CU36 / S8) -->
-      <div class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
+      <!-- Sección: ¿Cómo te quedó? (CU36 / S8, gated por tallas) -->
+      <div *ngIf="canFitFeedback" class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
         <div>
           <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">Mis Compras • Ajuste</span>
           <h2 class="text-xl font-bold text-[#17141A] mt-1">¿Cómo te quedó?</h2>
@@ -300,8 +300,8 @@ import type { CachedCliente, ClientFitFeedbackItem, FitResultado, LoyaltyMeRespo
         </div>
       </div>
 
-      <!-- Sección: Mis Puntos de Fidelización (CU43 / S9) -->
-      <div class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
+      <!-- Sección: Mis Puntos de Fidelización (CU43 / S9, gated por fidelizacion) -->
+      <div *ngIf="canLoyalty" class="mt-8 bg-white rounded-2xl border border-[#E8E2DA] shadow-xs p-6 space-y-6">
         <div class="flex items-center justify-between">
           <div>
             <span class="text-[10px] font-bold tracking-wider text-[#38133E] uppercase">Programa de Fidelización</span>
@@ -443,11 +443,23 @@ export class CustomerProfileComponent implements OnInit {
   loyaltyData = signal<LoyaltyMeResponse | null>(null);
   loadingLoyalty = signal<boolean>(false);
 
+  get canFitFeedback(): boolean {
+    return this.authService.hasFeature('tallas');
+  }
+
+  get canLoyalty(): boolean {
+    return this.authService.hasFeature('fidelizacion');
+  }
+
   async ngOnInit(): Promise<void> {
     await this.loadProfileData();
     await this.checkPendingProfileOp();
-    void this.loadMyFeedback();
-    void this.loadLoyalty();
+    if (this.canFitFeedback) {
+      void this.loadMyFeedback();
+    }
+    if (this.canLoyalty) {
+      void this.loadLoyalty();
+    }
   }
 
   async loadLoyalty(): Promise<void> {

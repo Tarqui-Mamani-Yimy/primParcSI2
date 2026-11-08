@@ -333,7 +333,7 @@ import { PromotionsComponent } from './features/promotions/promotions.component'
             ></app-archive>
 
             <app-inventory
-              *ngIf="activeView() === 'inventory'"
+              *ngIf="activeView() === 'inventory' && authService.hasFeature('inventario')"
             ></app-inventory>
 
             <app-discrepancies
@@ -341,7 +341,7 @@ import { PromotionsComponent } from './features/promotions/promotions.component'
             ></app-discrepancies>
 
             <app-logistics
-              *ngIf="activeView() === 'logistics'"
+              *ngIf="activeView() === 'logistics' && authService.hasFeature('despachos')"
             ></app-logistics>
 
             <app-suppliers
@@ -357,11 +357,11 @@ import { PromotionsComponent } from './features/promotions/promotions.component'
             ></app-team>
 
             <app-staff-reservations
-              *ngIf="activeView() === 'reservations'"
+              *ngIf="activeView() === 'reservations' && authService.hasFeature('reservas')"
             ></app-staff-reservations>
 
             <app-pos
-              *ngIf="activeView() === 'pos'"
+              *ngIf="activeView() === 'pos' && authService.hasFeature('pos')"
               (openSyncQueue)="onViewChange('sync-queue')"
             ></app-pos>
 
@@ -379,15 +379,15 @@ import { PromotionsComponent } from './features/promotions/promotions.component'
             ></app-locations>
 
             <app-reports
-              *ngIf="activeView() === 'reports'"
+              *ngIf="activeView() === 'reports' && authService.hasFeature('reportes')"
             ></app-reports>
 
             <app-ai-reports
-              *ngIf="activeView() === 'ai-reports'"
+              *ngIf="activeView() === 'ai-reports' && authService.hasFeature('ia')"
             ></app-ai-reports>
 
             <app-indicadores
-              *ngIf="activeView() === 'indicadores'"
+              *ngIf="activeView() === 'indicadores' && authService.hasFeature('reportes_avanzados')"
             ></app-indicadores>
 
             <app-subscription
@@ -399,7 +399,7 @@ import { PromotionsComponent } from './features/promotions/promotions.component'
             ></app-platform>
 
             <app-promotions
-              *ngIf="activeView() === 'promotions'"
+              *ngIf="activeView() === 'promotions' && authService.hasFeature('promociones')"
             ></app-promotions>
           </main>
         </div>
@@ -545,7 +545,34 @@ export class AppComponent implements OnInit {
     this.publicScreen.set('login');
   }
 
+  canAccessView(view: AppView): boolean {
+    switch (view) {
+      case 'promotions':
+        return this.authService.hasFeature('promociones');
+      case 'ai-reports':
+        return this.authService.hasFeature('ia');
+      case 'indicadores':
+        return this.authService.hasFeature('reportes_avanzados');
+      case 'logistics':
+        return this.authService.hasFeature('despachos');
+      case 'reservations':
+        return this.authService.hasFeature('reservas');
+      case 'inventory':
+        return this.authService.hasFeature('inventario');
+      case 'pos':
+        return this.authService.hasFeature('pos');
+      case 'reports':
+        return this.authService.hasFeature('reportes');
+      default:
+        return true;
+    }
+  }
+
   onViewChange(view: AppView) {
+    if (!this.canAccessView(view)) {
+      this.activeView.set('dashboard');
+      return;
+    }
     this.activeView.set(view);
     this.showAuthScreen.set(false);
   }

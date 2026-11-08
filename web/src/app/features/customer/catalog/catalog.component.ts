@@ -7,6 +7,7 @@ import { CartService } from '../../../core/services/cart.service';
 import { OfflineDbService } from '../../../core/services/offline-db.service';
 import { RecommendationsService } from '../../../core/services/recommendations.service';
 import { SyncService } from '../../../core/services/sync.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { CartLine, ProductOut, RecomendacionOut } from '../../../core/models';
 import { ProductDetailComponent } from './product-detail.component';
 import { ReservationFormComponent } from '../reservations/reservation-form.component';
@@ -39,7 +40,7 @@ const PAGE_SIZE = 12;
           <p class="text-xs text-[#5A5561] mt-1">Encuentre la prenda que busca y resérvela en su sucursal.</p>
         </div>
 
-        <div>
+        <div *ngIf="canVisualSearch">
           <button
             type="button"
             (click)="openVisualSearch()"
@@ -52,7 +53,7 @@ const PAGE_SIZE = 12;
       </div>
 
       <!-- Recomendado para vos (CU22, IA) -->
-      <div *ngIf="recomendaciones().length > 0" class="bg-[#F5EBF7]/60 border border-[#E8E2DA] rounded-xl p-4">
+      <div *ngIf="canRecommendations && recomendaciones().length > 0" class="bg-[#F5EBF7]/60 border border-[#E8E2DA] rounded-xl p-4">
         <div class="flex items-center gap-1.5 mb-3">
           <span class="material-symbols-outlined text-[16px] text-[#38133E]">auto_awesome</span>
           <span class="text-xs font-bold uppercase tracking-wider text-[#38133E]">Recomendado para vos</span>
@@ -287,7 +288,16 @@ export class CatalogComponent implements OnInit, OnDestroy {
     private recommendationsService: RecommendationsService,
     private offlineDbService: OfflineDbService,
     private syncService: SyncService,
+    public authService: AuthService,
   ) {}
+
+  get canVisualSearch(): boolean {
+    return this.authService.hasFeature('ia');
+  }
+
+  get canRecommendations(): boolean {
+    return this.authService.hasFeature('ia');
+  }
 
   ngOnInit() {
     this.syncSubscription = new Subscription();
@@ -300,7 +310,9 @@ export class CatalogComponent implements OnInit, OnDestroy {
     this.archiveService.loadColecciones();
     this.archiveService.loadProveedores();
     this.fetchProducts(true);
-    this.recommendationsService.getMisRecomendaciones().then(list => this.recomendaciones.set(list));
+    if (this.canRecommendations) {
+      this.recommendationsService.getMisRecomendaciones().then(list => this.recomendaciones.set(list));
+    }
   }
 
   ngOnDestroy() {

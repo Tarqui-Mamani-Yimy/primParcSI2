@@ -18,6 +18,9 @@ const FEATURE_NAMES: Record<string, string> = {
   reportes_export: 'Exportación de Reportes',
   ia: 'Inteligencia Artificial',
   probador: 'Probador Virtual',
+  promociones: 'Promociones y Cupones',
+  fidelizacion: 'Puntos de Fidelización',
+  tallas: 'Recomendación de Tallas',
 };
 
 const RECURSO_NAMES: Record<string, string> = {

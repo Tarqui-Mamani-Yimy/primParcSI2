@@ -61,7 +61,7 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
         </button>
 
         <button
-          *ngIf="isAdmin"
+          *ngIf="isAdmin && canViewAi"
           (click)="activeTab.set('ia')"
           [class.text-ys-primary]="activeTab() === 'ia'"
           [class.border-ys-primary]="activeTab() === 'ia'"
@@ -113,6 +113,7 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
             {{ loadingSales() ? 'Cargando...' : 'Ver' }}
           </button>
           <button
+            *ngIf="canExport"
             (click)="descargarVentasCsv()"
             [disabled]="downloadingSalesCsv() || !syncService.isOnline()"
             [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
@@ -121,6 +122,7 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
             {{ downloadingSalesCsv() ? 'Descargando...' : 'Descargar CSV' }}
           </button>
           <button
+            *ngIf="canExport"
             (click)="descargarVentasPdf()"
             [disabled]="downloadingSalesPdf() || !syncService.isOnline()"
             [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
@@ -197,6 +199,7 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
             {{ loadingInventory() ? 'Cargando...' : 'Ver' }}
           </button>
           <button
+            *ngIf="canExport"
             (click)="descargarInventarioCsv()"
             [disabled]="downloadingInventoryCsv() || !syncService.isOnline()"
             [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
@@ -205,6 +208,7 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
             {{ downloadingInventoryCsv() ? 'Descargando...' : 'Descargar CSV' }}
           </button>
           <button
+            *ngIf="canExport"
             (click)="descargarInventarioPdf()"
             [disabled]="downloadingInventoryPdf() || !syncService.isOnline()"
             [title]="!syncService.isOnline() ? 'Operación no disponible sin conexión a internet' : ''"
@@ -246,8 +250,8 @@ type ReportsTab = 'ventas' | 'inventario' | 'ia';
         </div>
       </div>
 
-      <!-- Sección: Reportes con IA (Solo Administrador) -->
-      <div *ngIf="activeTab() === 'ia' && isAdmin">
+      <!-- Sección: Reportes con IA (Solo Administrador con feature IA) -->
+      <div *ngIf="activeTab() === 'ia' && isAdmin && canViewAi">
         <app-ai-reports></app-ai-reports>
       </div>
 
@@ -283,6 +287,14 @@ export class ReportsComponent implements OnInit {
   get isAdmin(): boolean {
     const rol = this.authService.currentUser()?.rol;
     return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
+
+  get canViewAi(): boolean {
+    return this.authService.hasFeature('ia');
+  }
+
+  get canExport(): boolean {
+    return this.authService.hasFeature('reportes_export');
   }
 
   ngOnInit() {

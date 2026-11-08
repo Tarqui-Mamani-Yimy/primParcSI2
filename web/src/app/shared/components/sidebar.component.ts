@@ -639,11 +639,11 @@ export class SidebarComponent {
     const rol = this.authService.currentUser()?.rol;
     const isAdmin = rol === 'Administrador' || this.authService.isSuperAdmin();
     const hasPerm = this.authService.currentUser()?.permisos.includes('reporte.ver') ?? false;
-    return isAdmin && hasPerm && this.authService.hasFeature('reportes');
+    return isAdmin && hasPerm && this.authService.hasFeature('ia');
   }
 
   get canManagePromotions(): boolean {
-    return this.authService.hasPermission('promocion.gestionar');
+    return this.authService.hasPermission('promocion.gestionar') && this.authService.hasFeature('promociones');
   }
 
   get canViewIndicadores(): boolean {

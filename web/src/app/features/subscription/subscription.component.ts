@@ -683,7 +683,7 @@ export class SubscriptionComponent implements OnInit {
       descripcion: 'Para marcas en expansión con múltiples sucursales y canales online.',
       limites: { sucursales: 5, usuarios: 15, productos: 2000 },
       destacado: true,
-      features: ['Todo lo de Básico', 'Despachos y Logística', 'Reservas de Clientes', 'Pagos en Línea', 'Aplicación Móvil', 'Reportes Avanzados'],
+      features: ['Todo lo de Básico', 'Despachos y Logística', 'Reservas de Clientes', 'Pagos en Línea', 'Promociones y Cupones', 'Programa de Fidelización', 'Recomendación de Tallas', 'Aplicación Móvil', 'Reportes Avanzados'],
     },
     {
       codigo: 'avanzado',
@@ -712,6 +712,9 @@ export class SubscriptionComponent implements OnInit {
     { key: 'despachos', nombre: 'Despachos y Logística', descripcion: 'Traspasos entre sucursales y despachos de mercadería asegurados.', categoria: 'Ventas y Logística', icono: 'local_shipping' },
     { key: 'reservas', nombre: 'Reservas de Clientes', descripcion: 'Reserva anticipada de prendas con seña digital en boutiques.', categoria: 'Ventas y Logística', icono: 'event_available' },
     { key: 'pagos_online', nombre: 'Pagos en Línea', descripcion: 'Pasarelas de cobro digitales integradas para compras remotas.', categoria: 'Ventas y Logística', icono: 'credit_card' },
+    { key: 'promociones', nombre: 'Promociones y Cupones', descripcion: 'Descuentos por porcentaje, monto fijo o 2x1 y cupones promocionales.', categoria: 'Ventas y Logística', icono: 'sell' },
+    { key: 'fidelizacion', nombre: 'Puntos de Fidelización', descripcion: 'Programa de puntos por compras y niveles con multiplicadores de beneficio.', categoria: 'Ventas y Logística', icono: 'loyalty' },
+    { key: 'tallas', nombre: 'Recomendación de Tallas', descripcion: 'Guía de medidas corporales, ajuste recomendado y retroalimentación de clientes.', categoria: 'Ventas y Logística', icono: 'straighten' },
     { key: 'app_movil', nombre: 'Aplicación Móvil', descripcion: 'Sincronización de catálogo y reservas con la aplicación móvil.', categoria: 'Ventas y Logística', icono: 'smartphone' },
     { key: 'reportes_avanzados', nombre: 'Reportes Avanzados e Indicadores', descripcion: 'Dashboard analítico con KPIs estratégicos y análisis temporal.', categoria: 'Avanzado e IA', icono: 'insights' },
     { key: 'reportes_export', nombre: 'Exportación de Datos', descripcion: 'Descarga de datos de ventas e inventario en hojas de cálculo y PDF.', categoria: 'Avanzado e IA', icono: 'file_download' },

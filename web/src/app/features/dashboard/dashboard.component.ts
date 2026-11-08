@@ -30,6 +30,7 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
         </button>
 
         <button
+          *ngIf="canViewMl"
           type="button"
           (click)="activeTab.set('ml')"
           [class.text-ys-primary]="activeTab() === 'ml'"
@@ -45,7 +46,7 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
       </div>
 
       <!-- Tab 1: Operaciones Regulares -->
-      <ng-container *ngIf="activeTab() === 'operaciones' || !isAdmin()">
+      <ng-container *ngIf="activeTab() === 'operaciones' || !canViewMl">
 
       <!-- Banner de bienvenida -->
       <div class="bg-gradient-to-r from-[#17141A] to-[#260B2B] text-white rounded-2xl p-6 lg:p-8 relative overflow-hidden shadow-xs">
@@ -306,8 +307,8 @@ import { MlProjectionsComponent } from '../ml-projections/ml-projections.compone
 
       </ng-container>
 
-      <!-- Tab 2: Proyecciones ML (Solo Administrador) -->
-      <div *ngIf="activeTab() === 'ml' && isAdmin()">
+      <!-- Tab 2: Proyecciones ML (Solo Administrador con feature IA) -->
+      <div *ngIf="activeTab() === 'ml' && canViewMl">
         <app-ml-projections></app-ml-projections>
       </div>
 
@@ -329,6 +330,10 @@ export class DashboardComponent implements OnInit {
   isAdmin(): boolean {
     const rol = this.authService.currentUser()?.rol;
     return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
+
+  get canViewMl(): boolean {
+    return this.isAdmin() && this.authService.hasFeature('ia');
   }
 
   ngOnInit() {

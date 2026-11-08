@@ -61,7 +61,7 @@ interface VentaPunto extends VentaDiariaFila {
         </button>
 
         <button
-          *ngIf="isAdmin"
+          *ngIf="isAdmin && canViewMl"
           type="button"
           (click)="activeTab.set('ml')"
           [class.text-ys-primary]="activeTab() === 'ml'"
@@ -295,8 +295,8 @@ interface VentaPunto extends VentaDiariaFila {
 
       </ng-container>
 
-      <!-- Tab 2: Proyecciones ML (Solo Administrador) -->
-      <div *ngIf="activeTab() === 'ml' && isAdmin">
+      <!-- Tab 2: Proyecciones ML (Solo Administrador con feature IA) -->
+      <div *ngIf="activeTab() === 'ml' && isAdmin && canViewMl">
         <app-ml-projections></app-ml-projections>
       </div>
 
@@ -340,6 +340,10 @@ export class IndicadoresComponent implements OnInit {
   get isAdmin(): boolean {
     const rol = this.authService.currentUser()?.rol;
     return rol === 'Administrador' || this.authService.isSuperAdmin();
+  }
+
+  get canViewMl(): boolean {
+    return this.authService.hasFeature('ia');
   }
 
   ngOnInit() {

@@ -670,8 +670,8 @@ export class PlatformComponent implements OnInit {
         // Fallback para planes estándar de acuerdo al contrato
         this.plans.set([
           { idPlan: 1, codigo: 'basico', nombre: 'Básico', precioMensual: 290, precioAnual: 2784, features: ['pos', 'inventario', 'ventas', 'reportes'], limites: { sucursales: 2, usuarios: 3, productos: 200 } },
-          { idPlan: 2, codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados'], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
-          { idPlan: 3, codigo: 'avanzado', nombre: 'Profesional', precioMensual: 1490, precioAnual: 14304, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador'], limites: { sucursales: 10, usuarios: null, productos: null } }
+          { idPlan: 2, codigo: 'intermedio', nombre: 'Intermedio', precioMensual: 690, precioAnual: 6624, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'promociones', 'fidelizacion', 'tallas'], limites: { sucursales: 5, usuarios: 15, productos: 2000 } },
+          { idPlan: 3, codigo: 'avanzado', nombre: 'Profesional', precioMensual: 1490, precioAnual: 14304, features: ['pos', 'inventario', 'ventas', 'reportes', 'despachos', 'reservas', 'pagos_online', 'app_movil', 'reportes_avanzados', 'reportes_export', 'ia', 'probador', 'promociones', 'fidelizacion', 'tallas'], limites: { sucursales: 10, usuarios: null, productos: null } }
         ]);
       }
     });

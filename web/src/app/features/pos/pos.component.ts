@@ -21,6 +21,7 @@ import { PromotionsService } from '../../core/services/promotions.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { OfflineDbService } from '../../core/services/offline-db.service';
 import { SyncService } from '../../core/services/sync.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CardPaymentComponent } from '../../shared/components/card-payment.component';
 import { ReceiptModalComponent } from '../../shared/components/receipt-modal.component';
 import { environment } from '../../../environments/environment';
@@ -235,18 +236,18 @@ type Modalidad = 'efectivo' | 'tarjeta';
             <span class="text-base font-bold text-[#38133E]">Bs {{ totalAPagar().toFixed(2) }}</span>
           </div>
 
-          <div *ngIf="puntosAGanar() > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
+          <div *ngIf="canLoyalty && puntosAGanar() > 0" class="pt-1 flex items-center justify-between text-[11px] text-[#38133E] font-semibold">
             <span>Puntos a ganar con esta venta:</span>
             <span>+{{ puntosAGanar() }} pts</span>
           </div>
         </div>
       </div>
 
-      <!-- Cupones y Puntos de Fidelización (CU37 / CU43 / S9) -->
-      <div *ngIf="ticketLines().length > 0 && estado() === 'ticket'" class="bg-white rounded-xl border border-gray-200 shadow-xs p-4 space-y-3">
+      <!-- Cupones y Puntos de Fidelización (CU37 / CU43 / S9, gated) -->
+      <div *ngIf="ticketLines().length > 0 && estado() === 'ticket' && (canPromotions || canLoyalty)" class="bg-white rounded-xl border border-gray-200 shadow-xs p-4 space-y-3">
         <div class="flex flex-col sm:flex-row gap-4">
           <!-- Entrada de Cupón -->
-          <div class="flex-1 space-y-1">
+          <div *ngIf="canPromotions" class="flex-1 space-y-1">
             <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Cupón de descuento</label>
             <div class="flex gap-2">
               <input
@@ -272,7 +273,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
           </div>
 
           <!-- Canje de Puntos de Fidelización (CU43, B3) -->
-          <div *ngIf="quoteResult()?.cuenta as cuenta" class="flex-1 space-y-1">
+          <div *ngIf="canLoyalty && quoteResult()?.cuenta as cuenta" class="flex-1 space-y-1">
             <div class="flex items-center justify-between">
               <label class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Puntos de fidelización</label>
               <span class="text-[10px] font-bold text-[#38133E]">
@@ -338,6 +339,7 @@ type Modalidad = 'efectivo' | 'tarjeta';
             Efectivo
           </button>
           <button
+            *ngIf="canOnlinePayments"
             (click)="onElegirModalidad('tarjeta')"
             [disabled]="enviando() || !tarjetaDisponible()"
             [title]="!tarjetaDisponible() ? 'El cobro con tarjeta no está disponible en este servidor' : ''"
@@ -476,7 +478,19 @@ export class PosComponent implements OnInit {
   // líneas no.
   lineasBloqueadas = computed(() => this.estado() === 'cobrado_sin_venta' || this.enviando());
 
-  tarjetaDisponible = computed(() => !!environment.stripePublishableKey && !this.cardLatchedOff());
+  tarjetaDisponible = computed(() => !!environment.stripePublishableKey && !this.cardLatchedOff() && this.canOnlinePayments);
+
+  get canPromotions(): boolean {
+    return this.authService.hasFeature('promociones');
+  }
+
+  get canLoyalty(): boolean {
+    return this.authService.hasFeature('fidelizacion');
+  }
+
+  get canOnlinePayments(): boolean {
+    return this.authService.hasFeature('pagos_online');
+  }
 
   clienteSeleccionadoNombre = computed(() => {
     const id = this.selectedCliente();
@@ -493,6 +507,7 @@ export class PosComponent implements OnInit {
     private notificationService: NotificationService,
     private offlineDbService: OfflineDbService,
     public syncService: SyncService,
+    public authService: AuthService,
   ) {
     this.syncService.syncCompleted.subscribe(() => {
       this.cargarSucursales();
@@ -509,7 +524,9 @@ export class PosComponent implements OnInit {
     this.cargarSucursales();
     this.cargarClientes();
     void this.loadProductsCache();
-    void this.promotionsService.getActivePromotions();
+    if (this.canPromotions) {
+      void this.promotionsService.getActivePromotions();
+    }
   }
 
   private async loadProductsCache(): Promise<void> {
