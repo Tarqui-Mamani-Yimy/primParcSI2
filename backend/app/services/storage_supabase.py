@@ -86,3 +86,134 @@ async def subir_imagen_producto(nombre_archivo: str, contenido: bytes) -> str:
         raise SupabaseStorageError(str(exc)) from exc
 
     return _public_url(path)
+
+
+def _upload_backup_sync(bucket: str, path: str, contenido: bytes) -> None:
+    _private_backup_storage().upload(
+        path,
+        contenido,
+        {"content-type": "application/gzip", "upsert": "false"},
+    )
+
+
+def _list_backup_sync(bucket: str, prefix: str) -> list[dict]:
+    client = _private_backup_storage()
+    folder = prefix.rstrip("/")
+    offset = 0
+    page_size = 1000
+    objects = []
+    while True:
+        page = client.list(folder, {"limit": page_size, "offset": offset})
+        for item in page:
+            name = item.get("name") if isinstance(item, dict) else getattr(item, "name", None)
+            if not name:
+                continue
+            objects.append({
+                "name": f"{folder}/{name}",
+                "created_at": item.get("created_at") if isinstance(item, dict) else getattr(item, "created_at", None),
+                "metadata": item.get("metadata") if isinstance(item, dict) else getattr(item, "metadata", None),
+            })
+        if len(page) < page_size:
+            return objects
+        offset += page_size
+
+
+def _delete_backup_sync(bucket: str, paths: list[str]) -> None:
+    if paths:
+        _private_backup_storage().remove(paths)
+
+
+def _signed_backup_url_sync(bucket: str, path: str, expires_in: int) -> str:
+    result = _private_backup_storage().create_signed_url(path, expires_in)
+    if isinstance(result, dict):
+        return result.get("signedURL") or result.get("signedUrl") or result.get("signed_url")
+    return getattr(result, "signedURL", None) or getattr(result, "signedUrl", None)
+
+
+def _backup_bucket() -> str:
+    return get_settings().SUPABASE_BACKUP_BUCKET
+
+
+def _private_backup_storage():
+    bucket = _backup_bucket()
+    if bucket == get_settings().SUPABASE_STORAGE_BUCKET:
+        raise SupabaseStorageError(
+            "El bucket de backups no puede ser el bucket público de imágenes"
+        )
+    client = _get_client()
+    # list_buckets instead of get_bucket: get_bucket fails to parse newer
+    # Supabase responses (unknown 'versioning_status' field).
+    is_public = None
+    for bucket_info in client.storage.list_buckets():
+        name = (
+            bucket_info.get("name")
+            if isinstance(bucket_info, dict)
+            else getattr(bucket_info, "name", None)
+        )
+        if name == bucket:
+            is_public = (
+                bucket_info.get("public")
+                if isinstance(bucket_info, dict)
+                else getattr(bucket_info, "public", None)
+            )
+            break
+    if is_public is not False:
+        raise SupabaseStorageError(
+            "El bucket configurado para backups debe existir y ser privado"
+        )
+    return client.storage.from_(bucket)
+
+
+async def subir_backup(path: str, contenido: bytes) -> None:
+    if not supabase_configurado():
+        raise SupabaseNoConfigurado(
+            "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no configuradas o paquete supabase ausente"
+        )
+    try:
+        await anyio.to_thread.run_sync(_upload_backup_sync, _backup_bucket(), path, contenido)
+    except Exception as exc:
+        raise SupabaseStorageError(str(exc)) from exc
+
+
+async def listar_objetos_backup(prefix: str) -> list[dict]:
+    if not supabase_configurado():
+        raise SupabaseNoConfigurado(
+            "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no configuradas o paquete supabase ausente"
+        )
+    try:
+        return await anyio.to_thread.run_sync(_list_backup_sync, _backup_bucket(), prefix)
+    except Exception as exc:
+        raise SupabaseStorageError(str(exc)) from exc
+
+
+async def list_backup_objects(prefix: str) -> list[dict]:
+    """Expose backup listing for retention without coupling it to SDK calls."""
+    return await listar_objetos_backup(prefix)
+
+
+async def eliminar_objetos_backup(paths: list[str]) -> None:
+    if not supabase_configurado():
+        raise SupabaseNoConfigurado(
+            "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no configuradas o paquete supabase ausente"
+        )
+    try:
+        await anyio.to_thread.run_sync(_delete_backup_sync, _backup_bucket(), paths)
+    except Exception as exc:
+        raise SupabaseStorageError(str(exc)) from exc
+
+
+async def delete_backup_objects(paths: list[str]) -> None:
+    await eliminar_objetos_backup(paths)
+
+
+async def crear_url_firmada_backup(path: str, expires_in: int = 300) -> str:
+    if not supabase_configurado():
+        raise SupabaseNoConfigurado(
+            "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY no configuradas o paquete supabase ausente"
+        )
+    try:
+        return await anyio.to_thread.run_sync(
+            _signed_backup_url_sync, _backup_bucket(), path, expires_in
+        )
+    except Exception as exc:
+        raise SupabaseStorageError(str(exc)) from exc

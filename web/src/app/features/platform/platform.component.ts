@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PlatformService } from '../../core/services/platform.service';
 import { NotificationService } from '../../core/services/notification.service';
-import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/models';
+import { BackupTipo, CreateEmpresaIn, PlatformEmpresa, PlatformPlan, TenantBackup } from '../../core/models';
 
 @Component({
   selector: 'app-platform',
@@ -246,6 +246,15 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
                     >
                       <span class="material-symbols-outlined text-[15px] text-[#38133E]">upgrade</span>
                       <span>Plan</span>
+                    </button>
+
+                    <button
+                      (click)="openBackupsModal(emp)"
+                      title="Copias de Seguridad (Backups)"
+                      class="px-2.5 py-1.5 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#5A5561] rounded-lg text-xs font-semibold transition-colors flex items-center space-x-1 cursor-pointer shadow-2xs"
+                    >
+                      <span class="material-symbols-outlined text-[15px] text-[#38133E]">backup</span>
+                      <span>Backups</span>
                     </button>
 
                     <button
@@ -620,6 +629,156 @@ import { CreateEmpresaIn, PlatformEmpresa, PlatformPlan } from '../../core/model
         </div>
       </div>
     </div>
+
+    <!-- Modal: Copias de Seguridad (Backups) por Empresa -->
+    <div *ngIf="showBackupsModal()" class="fixed inset-0 z-50 flex items-center justify-center bg-[#17141A]/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div class="bg-white max-w-3xl w-full p-6 sm:p-8 rounded-2xl border border-[#E8E2DA] shadow-2xl relative max-h-[90vh] flex flex-col">
+        <button (click)="closeBackupsModal()" class="absolute top-4 right-4 text-[#9B94A3] hover:text-[#17141A] p-1 cursor-pointer">
+          <span class="material-symbols-outlined text-[20px]">close</span>
+        </button>
+
+        <!-- Cabecera -->
+        <div class="mb-5 pb-4 border-b border-[#E8E2DA]">
+          <div class="flex items-center space-x-2 text-[#38133E] text-xs font-bold uppercase tracking-wider mb-1">
+            <span class="material-symbols-outlined text-[16px]">cloud_sync</span>
+            <span>Copias de Seguridad Multitenant</span>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-xl font-bold text-[#17141A]">
+                Backups — {{ selectedEmpresaForBackups?.nombre }}
+              </h3>
+              <p class="text-xs text-[#5A5561] mt-0.5">
+                Almacenamiento privado en Supabase Storage · Slug:
+                <span class="font-mono text-[#17141A] font-semibold">{{ selectedEmpresaForBackups?.slug }}</span>
+                (ID #{{ selectedEmpresaForBackups?.idEmpresa }})
+              </p>
+            </div>
+
+            <!-- Botones de acción cabecera -->
+            <div class="flex items-center space-x-2 shrink-0">
+              <button
+                (click)="loadBackups(selectedEmpresaForBackups!.idEmpresa)"
+                [disabled]="isLoadingBackups() || isGeneratingBackup()"
+                title="Actualizar lista de backups"
+                class="px-3 py-2 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#5A5561] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                <span class="material-symbols-outlined text-[16px]" [class.animate-spin]="isLoadingBackups()">refresh</span>
+                <span class="hidden sm:inline">Refrescar</span>
+              </button>
+
+              <button
+                (click)="generateBackup()"
+                [disabled]="isGeneratingBackup() || isLoadingBackups()"
+                class="px-4 py-2 bg-[#38133E] hover:bg-[#260B2B] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center space-x-2 cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <span *ngIf="isGeneratingBackup()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                <span *ngIf="!isGeneratingBackup()" class="material-symbols-outlined text-[16px]">cloud_upload</span>
+                <span>{{ isGeneratingBackup() ? 'Generando backup…' : 'Generar backup' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner de Error 503 (Supabase no configurado) -->
+        <div *ngIf="storageError()" class="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start space-x-3">
+          <span class="material-symbols-outlined text-[20px] text-amber-700 shrink-0 mt-0.5">cloud_off</span>
+          <div class="space-y-1">
+            <p class="font-bold">Almacenamiento de backups no configurado</p>
+            <p class="text-[#5A5561]">{{ storageError() }}</p>
+            <p class="text-[11px] text-[#9B94A3]">
+              Para habilitar la generación y descarga de respaldos, configure las variables de entorno de Supabase Storage en el servidor (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY y SUPABASE_BACKUP_BUCKET).
+            </p>
+          </div>
+        </div>
+
+        <!-- Contenido principal: Tabla o estados -->
+        <div class="flex-1 overflow-y-auto min-h-[220px]">
+          <!-- Cargando -->
+          <div *ngIf="isLoadingBackups()" class="flex flex-col items-center justify-center py-16 text-[#5A5561] space-y-3">
+            <span class="material-symbols-outlined text-3xl text-[#38133E] animate-spin">progress_activity</span>
+            <p class="text-xs font-medium">Consultando copias de seguridad en Supabase Storage…</p>
+          </div>
+
+          <!-- Sin backups -->
+          <div *ngIf="!isLoadingBackups() && backups().length === 0 && !storageError()" class="flex flex-col items-center justify-center py-16 text-[#9B94A3] space-y-2 text-center px-4">
+            <span class="material-symbols-outlined text-4xl text-[#9B94A3]">history_toggle_off</span>
+            <p class="text-sm font-bold text-[#17141A]">No hay copias de seguridad registradas</p>
+            <p class="text-xs text-[#5A5561] max-w-md">
+              Aún no se han generado respaldos para esta empresa. Podés crear uno de forma manual usando el botón superior "Generar backup".
+            </p>
+          </div>
+
+          <!-- Tabla de Backups -->
+          <div *ngIf="!isLoadingBackups() && backups().length > 0" class="border border-[#E8E2DA] rounded-xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#FAF8F5] border-b border-[#E8E2DA] text-[10px] font-bold text-[#5A5561] uppercase tracking-wider">
+                  <th class="py-3 px-4">Fecha de Generación</th>
+                  <th class="py-3 px-4">Tipo</th>
+                  <th class="py-3 px-4">Tamaño</th>
+                  <th class="py-3 px-4">Archivo</th>
+                  <th class="py-3 px-4 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#E8E2DA]/60 text-xs">
+                <tr *ngFor="let b of backups()" class="hover:bg-[#FAF8F5]/60 transition-colors">
+                  <!-- Fecha -->
+                  <td class="py-3 px-4 font-medium text-[#17141A] whitespace-nowrap">
+                    {{ formatFecha(b.fecha) }}
+                  </td>
+
+                  <!-- Tipo -->
+                  <td class="py-3 px-4 whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-2xs"
+                      [ngClass]="getBackupTipoBadgeClass(b.tipo)"
+                    >
+                      {{ b.tipo === 'manual' ? 'Manual' : 'Automático' }}
+                    </span>
+                  </td>
+
+                  <!-- Tamaño -->
+                  <td class="py-3 px-4 font-mono text-[#5A5561] whitespace-nowrap">
+                    {{ formatBytes(b.tamanoBytes) }}
+                  </td>
+
+                  <!-- Archivo -->
+                  <td class="py-3 px-4 font-mono text-[11px] text-[#9B94A3] truncate max-w-[200px]" [title]="b.nombre">
+                    {{ b.nombre }}
+                  </td>
+
+                  <!-- Descargar -->
+                  <td class="py-3 px-4 text-right whitespace-nowrap">
+                    <button
+                      (click)="downloadBackup(b.nombre)"
+                      [disabled]="downloadingBackupName() === b.nombre"
+                      title="Descargar archivo de respaldo"
+                      class="px-2.5 py-1.5 bg-white hover:bg-[#F3EFEA] border border-[#E8E2DA] text-[#38133E] rounded-lg text-xs font-bold transition-colors inline-flex items-center space-x-1 cursor-pointer disabled:opacity-50 shadow-2xs"
+                    >
+                      <span *ngIf="downloadingBackupName() === b.nombre" class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>
+                      <span *ngIf="downloadingBackupName() !== b.nombre" class="material-symbols-outlined text-[15px]">download</span>
+                      <span>{{ downloadingBackupName() === b.nombre ? 'Preparando…' : 'Descargar' }}</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pie del Modal -->
+        <div class="pt-4 mt-4 border-t border-[#E8E2DA] flex items-center justify-between text-xs text-[#9B94A3]">
+          <span>Los enlaces de descarga son firmados y expiran tras 5 minutos.</span>
+          <button
+            (click)="closeBackupsModal()"
+            class="px-4 py-2 border border-[#E8E2DA] text-[#5A5561] hover:bg-[#F3EFEA] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class PlatformComponent implements OnInit {
@@ -635,6 +794,15 @@ export class PlatformComponent implements OnInit {
   showCreateModal = signal<boolean>(false);
   showPlanModal = signal<boolean>(false);
   showEditModal = signal<boolean>(false);
+  showBackupsModal = signal<boolean>(false);
+
+  // Backups
+  selectedEmpresaForBackups: PlatformEmpresa | null = null;
+  backups = signal<TenantBackup[]>([]);
+  isLoadingBackups = signal<boolean>(false);
+  isGeneratingBackup = signal<boolean>(false);
+  downloadingBackupName = signal<string | null>(null);
+  storageError = signal<string | null>(null);
 
   selectedEmpresa: PlatformEmpresa | null = null;
   selectedPlanCode = 'basico';
@@ -877,5 +1045,134 @@ export class PlatformComponent implements OnInit {
     if (e === 'suspendida') return 'Suspendida';
     if (e === 'vencida') return 'Vencida';
     return estado || 'Desconocido';
+  }
+
+  // Métodos de Copias de Seguridad (Backups)
+  openBackupsModal(emp: PlatformEmpresa) {
+    this.selectedEmpresaForBackups = emp;
+    this.storageError.set(null);
+    this.backups.set([]);
+    this.showBackupsModal.set(true);
+    this.loadBackups(emp.idEmpresa);
+  }
+
+  closeBackupsModal() {
+    this.showBackupsModal.set(false);
+    this.selectedEmpresaForBackups = null;
+    this.storageError.set(null);
+    this.backups.set([]);
+  }
+
+  loadBackups(idEmpresa: number) {
+    this.isLoadingBackups.set(true);
+    this.storageError.set(null);
+    this.platformService.getBackups(idEmpresa).subscribe({
+      next: (data) => {
+        this.backups.set(data || []);
+        this.isLoadingBackups.set(false);
+      },
+      error: (err) => {
+        this.isLoadingBackups.set(false);
+        this.handleBackupError(err, 'No se pudieron cargar las copias de seguridad.');
+      }
+    });
+  }
+
+  generateBackup() {
+    if (!this.selectedEmpresaForBackups) return;
+    const idEmpresa = this.selectedEmpresaForBackups.idEmpresa;
+    this.isGeneratingBackup.set(true);
+    this.storageError.set(null);
+
+    this.platformService.generateBackup(idEmpresa).subscribe({
+      next: (newBackup) => {
+        this.isGeneratingBackup.set(false);
+        this.notificationService.success('Copia de seguridad generada', 'El respaldo manual fue creado exitosamente.');
+        const current = this.backups();
+        this.backups.set([newBackup, ...current]);
+      },
+      error: (err) => {
+        this.isGeneratingBackup.set(false);
+        this.handleBackupError(err, 'No se pudo generar la copia de seguridad.');
+      }
+    });
+  }
+
+  downloadBackup(nombre: string) {
+    if (!this.selectedEmpresaForBackups) return;
+    const idEmpresa = this.selectedEmpresaForBackups.idEmpresa;
+    this.downloadingBackupName.set(nombre);
+
+    this.platformService.downloadBackup(idEmpresa, nombre).subscribe({
+      next: (res) => {
+        this.downloadingBackupName.set(null);
+        if (res?.url) {
+          window.open(res.url, '_blank');
+          this.notificationService.success('Enlace de descarga listo', 'Abriendo el archivo de respaldo…');
+        } else {
+          this.notificationService.error('Error de descarga', 'No se recibió la URL de descarga.');
+        }
+      },
+      error: (err) => {
+        this.downloadingBackupName.set(null);
+        this.handleBackupError(err, 'No se pudo obtener el enlace de descarga.');
+      }
+    });
+  }
+
+  private handleBackupError(err: unknown, defaultMsg: string) {
+    if (err && typeof err === 'object' && 'status' in err) {
+      const httpErr = err as { status: number; error?: { detail?: string } };
+      if (httpErr.status === 503) {
+        const detail = httpErr.error?.detail || 'Supabase Storage no está configurado en el servidor.';
+        this.storageError.set(detail);
+        this.notificationService.error('Almacenamiento no disponible', detail);
+        return;
+      }
+      if (httpErr.status === 404) {
+        const detail = httpErr.error?.detail || 'Recurso no encontrado.';
+        this.notificationService.error('No encontrado', detail);
+        return;
+      }
+      if (httpErr.error?.detail) {
+        this.notificationService.error('Error en backup', httpErr.error.detail);
+        return;
+      }
+    }
+    this.notificationService.error('Error', defaultMsg);
+  }
+
+  formatFecha(fechaIso: string): string {
+    if (!fechaIso) return '—';
+    try {
+      const d = new Date(fechaIso);
+      if (isNaN(d.getTime())) return fechaIso;
+      return d.toLocaleString('es-BO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return fechaIso;
+    }
+  }
+
+  formatBytes(bytes: number): string {
+    if (bytes === undefined || bytes === null || isNaN(bytes)) return '0 B';
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    const val = parseFloat((bytes / Math.pow(k, i)).toFixed(1));
+    return `${val} ${sizes[i]}`;
+  }
+
+  getBackupTipoBadgeClass(tipo: BackupTipo): string {
+    if (tipo === 'manual') {
+      return 'bg-[#F5EBF7] text-[#38133E] border-[#E8E2DA]';
+    }
+    return 'bg-[#DCFCE7] text-[#16A34A] border-[#16A34A]/30';
   }
 }

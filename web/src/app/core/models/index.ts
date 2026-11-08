@@ -1202,6 +1202,25 @@ export interface LoyaltyCustomerResponse {
   puntos_para_siguiente: number;
 }
 
+// ─────────────────────────────────────────────
+// COPIAS DE SEGURIDAD (TENANT BACKUPS)
+// ─────────────────────────────────────────────
+
+export type BackupTipo = 'manual' | 'automatico';
+
+export interface TenantBackup {
+  nombre: string;
+  fecha: string;
+  tamanoBytes: number;
+  tipo: BackupTipo;
+}
+
+export interface BackupDownloadResponse {
+  url: string;
+  expiraEnSegundos: number;
+}
+
+
 
 
 

@@ -102,3 +102,38 @@ docker exec ropaDocker psql -U yimysito -d ropaDB -c \
 # Columna idUserPago en metodo_pago (migracion 008):
 docker exec ropaDocker psql -U yimysito -d ropaDB -c '\d "metodo_pago"'
 ```
+
+## Backups por empresa
+
+El workflow `.github/workflows/tenant-backups.yml` crea backups diarios y también
+se puede iniciar manualmente desde **Actions → Tenant database backups → Run
+workflow**. Exporta todas las empresas, sin filtrar por estado de suscripción,
+y el catálogo global en un archivo separado. Si falla una empresa, procesa las
+demás y el job termina con error enumerando los IDs fallidos.
+
+Crear en Supabase Storage un bucket privado dedicado (por defecto `backups`);
+no reutilizar `SUPABASE_STORAGE_BUCKET`, que es el bucket público de imágenes.
+Configurar como GitHub Actions secrets `DATABASE_URL` (PostgreSQL con driver
+`postgresql+asyncpg`), `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `SECRET_KEY` (requerido por la configuración del backend al iniciar; el script no firma tokens). El secret
+`SUPABASE_BACKUP_BUCKET` permite cambiar el bucket. La variable opcional
+`BACKUP_RETENTION_DAYS` controla la retención de backups automáticos (30 días
+por defecto); los manuales nunca se eliminan automáticamente.
+
+Para ejecutar localmente, definir esas variables en `backend/.env` y correr
+desde `backend/`:
+
+```bash
+.venv/bin/python -m scripts.backup_tenants
+```
+
+Un SuperAdmin con `plataforma.admin` puede crear el backup manual con
+`POST /api/platform/empresas/{idEmpresa}/backups`, consultar la lista mediante
+`GET /api/platform/empresas/{idEmpresa}/backups` y solicitar una URL firmada
+de descarga con `GET /api/platform/empresas/{idEmpresa}/backups/{nombre}/download`
+(vigencia de 300 segundos). No se ofrece restauración.
+
+El exportador descubre dinámicamente las tablas públicas: filtra las que tienen
+`idEmpresa` al tenant correspondiente e incluye las tablas globales sin esa
+columna en `_global`. Fechas, decimales y UUID se serializan como texto; los
+bytes se codifican con prefijo `base64:` y las columnas vectoriales se exportan
+como texto e identifican en `metadata.vectorColumns`.
