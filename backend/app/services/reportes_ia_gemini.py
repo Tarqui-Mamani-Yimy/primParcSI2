@@ -3,11 +3,14 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import String, cast, func, literal, or_, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.models import Devolucion, DevolucionDetalle
+from app.models import (
+    Devolucion, DevolucionDetalle, DetalleVenta, Inventario, Movimiento,
+    Producto, Reserva, Sucursal, Venta,
+)
 from app.routers.dashboard import UMBRAL_STOCK_BAJO, top_productos
 from app.routers.reports import _consultar_inventario, _consultar_ventas
 from app.schemas.reports_ai import AIReportOut
@@ -97,6 +100,19 @@ def _declaraciones_herramientas():
                 },
             },
         ),
+        types.FunctionDeclaration(
+            name="top_products_by_branch",
+            description="Top selling products ranked independently inside each branch, by sales amount. Choose this for requests asking for rankings or best-selling products per branch/sucursal.",
+            parameters_json_schema={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"},
+                    "branch_id": {"type": "integer", "minimum": 1},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 20},
+                },
+            },
+        ),
     ]
 
 
@@ -106,14 +122,15 @@ def _arguments(name: str, args: dict) -> dict:
         "low_stock": {"branch_id", "product_id"},
         "top_products": {"start_date", "end_date", "limit"},
         "returns": {"start_date", "end_date"},
+        "top_products_by_branch": {"start_date", "end_date", "branch_id", "limit"},
     }
     if name not in allowed:
         raise GeminiHerramientaInvalida(f"Unknown report tool: {name}")
     if not isinstance(args, dict) or set(args) - allowed[name]:
         raise GeminiHerramientaInvalida(f"Invalid arguments for report tool: {name}")
     normalized = dict(args)
-    if name == "top_products" and normalized.get("limit") is None:
-        normalized["limit"] = 5
+    if name in {"top_products", "top_products_by_branch"} and normalized.get("limit") is None:
+        normalized["limit"] = 10 if name == "top_products_by_branch" else 5
     for key in ("start_date", "end_date"):
         if key in normalized and normalized[key] is not None:
             try:
@@ -173,6 +190,9 @@ async def _execute_tool(session: AsyncSession, tenant_id: int, name: str, raw_ar
         )
         columns = ["Producto", "Monto", "Cantidad vendida"]
         values = [[row.producto_nombre, _number(row.monto), row.cantidad] for row in result.productos]
+    elif name == "top_products_by_branch":
+        values = await _top_products_by_branch(session, tenant_id, args)
+        columns = ["Sucursal", "Ranking", "Producto", "Cantidad vendida", "Monto"]
     else:
         statement = (
             select(
@@ -212,6 +232,83 @@ async def _execute_tool(session: AsyncSession, tenant_id: int, name: str, raw_ar
             for row in raw_rows
         ]
     return {"columns": columns, "rows": values, "period": period}
+
+
+async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: dict) -> list[list]:
+    """Rank products by amount within each branch using the sale's actual inventory movement."""
+    details = (
+        select(
+            DetalleVenta.codigoVenta.label("detail_id"),
+            DetalleVenta.idProducto.label("product_id"),
+            func.sum(DetalleVenta.cantidad).label("quantity"),
+            func.sum(DetalleVenta.cantidad * DetalleVenta.precio_unitario).label("amount"),
+            DetalleVenta.idVenta.label("sale_id"),
+            DetalleVenta.codigoReserva.label("reservation_id"),
+        )
+        .join(Venta, (Venta.idVenta == DetalleVenta.idVenta) & (Venta.idEmpresa == tenant_id))
+        .where(DetalleVenta.idEmpresa == tenant_id)
+        .group_by(
+            DetalleVenta.codigoVenta, DetalleVenta.idProducto, DetalleVenta.idVenta,
+            DetalleVenta.codigoReserva,
+        )
+    )
+    if args.get("start_date"):
+        details = details.where(Venta.fecha >= args["start_date"])
+    if args.get("end_date"):
+        details = details.where(Venta.fecha < date.fromordinal(args["end_date"].toordinal() + 1))
+    detail_rows = details.subquery()
+
+    sale_number = cast(detail_rows.c.sale_id, String)
+    movement_branch = (
+        select(detail_rows.c.detail_id, Inventario.codigoSucursal.label("branch_id"))
+        .join(Movimiento, (Movimiento.idEmpresa == tenant_id) & (Movimiento.tipo == "venta") & (
+            Movimiento.motivo == literal("Venta ") + sale_number
+        ) | (
+            (Movimiento.idEmpresa == tenant_id) & (Movimiento.tipo == "venta") &
+            (Movimiento.motivo == literal("Offline sale ") + sale_number)
+        ))
+        .join(Inventario, (Inventario.idInv == Movimiento.idInv) &
+              (Inventario.idEmpresa == tenant_id) & (Inventario.idProducto == detail_rows.c.product_id))
+        .where(detail_rows.c.reservation_id.is_(None))
+        .distinct()
+    )
+    reservation_branch = (
+        select(detail_rows.c.detail_id, Reserva.codigoSucursal.label("branch_id"))
+        .join(Reserva, (Reserva.codigoReserva == detail_rows.c.reservation_id) &
+              (Reserva.idEmpresa == tenant_id))
+        .where(detail_rows.c.reservation_id.is_not(None))
+    )
+    attribution = union_all(movement_branch, reservation_branch).subquery()
+    branch_sales = (
+        select(
+            Sucursal.nombre.label("branch_name"), Sucursal.codigoSucursal.label("branch_id"),
+            Producto.nombre.label("product_name"), detail_rows.c.product_id,
+            func.sum(detail_rows.c.quantity).label("quantity"),
+            func.sum(detail_rows.c.amount).label("amount"),
+        )
+        .select_from(attribution)
+        .join(detail_rows, detail_rows.c.detail_id == attribution.c.detail_id)
+        .join(Sucursal, (Sucursal.codigoSucursal == attribution.c.branch_id) & (Sucursal.idEmpresa == tenant_id))
+        .join(Producto, (Producto.idProducto == detail_rows.c.product_id) & (Producto.idEmpresa == tenant_id))
+        .group_by(Sucursal.nombre, Sucursal.codigoSucursal, Producto.nombre, detail_rows.c.product_id)
+    )
+    if args.get("branch_id"):
+        branch_sales = branch_sales.where(Sucursal.codigoSucursal == args["branch_id"])
+    aggregated = branch_sales.subquery()
+    ranked = select(
+        aggregated,
+        func.row_number().over(
+            partition_by=aggregated.c.branch_id,
+            order_by=(aggregated.c.amount.desc(), aggregated.c.product_id),
+        ).label("ranking"),
+    ).subquery()
+    statement = (
+        select(ranked)
+        .where(ranked.c.ranking <= args.get("limit", 10))
+        .order_by(ranked.c.branch_name, ranked.c.ranking)
+    )
+    rows = (await session.execute(statement)).all()
+    return [[row.branch_name, row.ranking, row.product_name, int(row.quantity), _number(row.amount)] for row in rows]
 
 
 async def generar_reporte(session: AsyncSession, tenant_id: int, prompt: str) -> AIReportOut:
