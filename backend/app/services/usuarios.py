@@ -21,6 +21,8 @@ async def get_rol_nombre(session: AsyncSession, codigoRol: int) -> str:
     return rol or "Desconocido"
 
 
+# [TENANTS] Arma el contenido del JWT al hacer login: rol, permisos, empresa y plan
+# (features, límites y estado de la suscripción).
 async def build_user_claims(session: AsyncSession, usuario: Usuario) -> dict:
     permisos = await get_permisos_de_usuario(session, usuario.idUser)
     rol = await get_rol_nombre(session, usuario.codigoRol)

@@ -1,3 +1,4 @@
+-- [TENANTS] Row Level Security: cada fila solo es visible si idEmpresa = app.empresa_id.
 -- Tenant isolation for every table that carries the business discriminator.
 -- The narrowly authorized platform session is transaction-local and is only
 -- installed by app.database.get_platform_db after signed SuperAdmin permission.

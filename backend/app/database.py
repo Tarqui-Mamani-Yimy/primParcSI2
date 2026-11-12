@@ -38,6 +38,7 @@ engine = create_async_engine(
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
+# [TENANTS] Fija app.empresa_id en la transacción; esto activa la RLS de Postgres (015_rls.sql).
 def _set_local_tenant_context(connection, tenant_id: int) -> None:
     """Bind a tenant to the current PostgreSQL transaction (never the connection)."""
     connection.execute(
@@ -59,6 +60,7 @@ class Base(DeclarativeBase):
     pass
 
 
+# [TENANTS] En cada transacción nueva vuelve a fijar la empresa (set_config es por transacción).
 @event.listens_for(Session, "after_begin")
 def _set_rls_tenant_for_transaction(session, transaction, connection):
     # `SET LOCAL`/set_config(..., true) is transaction-scoped. SQLAlchemy emits
@@ -87,6 +89,7 @@ async def get_auth_db() -> AsyncSession:
         yield session
 
 
+# [TENANTS] Única sesión sin filtro de empresa: solo para el SuperAdmin de la plataforma.
 async def get_platform_db(_payload=Depends(require_platform_admin)) -> AsyncSession:
     """Yield an unscoped session only for a signed platform administrator."""
     async with AsyncSessionLocal() as session:
@@ -103,6 +106,7 @@ async def get_billing_webhook_db() -> AsyncSession:
         yield session
 
 
+# [TENANTS] Asocia una empresa conocida a una sesión ya abierta.
 async def bind_session_tenant(session: AsyncSession, tenant_id: int) -> None:
     """Bind a known tenant for the current and all later session transactions."""
     if tenant_id is None or tenant_id <= 0:
@@ -117,6 +121,7 @@ async def bind_session_tenant(session: AsyncSession, tenant_id: int) -> None:
     )
 
 
+# [TENANTS] Agrega automáticamente idEmpresa == tenant a todo SELECT/UPDATE/DELETE del ORM.
 @event.listens_for(Session, "do_orm_execute")
 def _scope_tenant_orm_statements(execute_state):
     tenant_id = execute_state.session.info.get("tenant_id")
@@ -144,6 +149,7 @@ def _scope_tenant_orm_statements(execute_state):
             execute_state.statement = statement.where(entity.idEmpresa == tenant_id)
 
 
+# [TENANTS] Antes de guardar: asigna idEmpresa a registros nuevos y bloquea escrituras sobre otra empresa.
 @event.listens_for(Session, "before_flush")
 def _scope_tenant_writes(session, _flush_context, _instances):
     if not session.info.get("tenant_scoped"):
@@ -162,6 +168,8 @@ def _scope_tenant_writes(session, _flush_context, _instances):
             raise PermissionError("Cannot modify a business record for another tenant")
 
 
+# [TENANTS] Sesión por empresa que usan los endpoints. Sin empresa -> 403;
+# con suscripción inactiva solo permite lecturas (GET).
 async def get_tenant_db(request: Request, tenant_id: int | None = Depends(get_tenant)) -> AsyncSession:
     """Yield a fail-closed session whose ORM operations are tenant-scoped."""
     if tenant_id is None:

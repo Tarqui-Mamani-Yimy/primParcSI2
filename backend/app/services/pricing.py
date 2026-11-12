@@ -88,6 +88,7 @@ def _same_date(start: datetime, end: datetime, instant: datetime) -> bool:
     return start <= instant <= end
 
 
+# [DESCUENTOS] Promociones vigentes de la empresa para la fecha/canal. Las reservas no reciben promociones.
 async def _promotions(session, tenant_id: int, fecha: datetime, canal: str):
     if canal == "reserva":
         return []
@@ -99,6 +100,8 @@ async def _promotions(session, tenant_id: int, fecha: datetime, canal: str):
     return [promotion for promotion in result.scalars().all() if _same_date(promotion.fecha_inicio, promotion.fecha_fin, fecha)]
 
 
+# [DESCUENTOS] Decide si una promoción aplica al producto según su alcance:
+# todos | producto | coleccion | tipo | temporada.
 async def _promo_matches(session, promo: Promocion, product: Producto) -> bool:
     if promo.alcance == "todos":
         return True
@@ -121,6 +124,7 @@ async def _promo_matches(session, promo: Promocion, product: Producto) -> bool:
     return False
 
 
+# [DESCUENTOS] Monto que descuenta una promoción: porcentaje, monto_fijo o NxM (ej. 3x2).
 def _promotion_discount(promo: Promocion, price: Decimal, quantity: int) -> Decimal:
     if promo.tipo == "porcentaje":
         amount = price * quantity * Decimal(str(promo.valor)) / Decimal(100)
@@ -132,6 +136,7 @@ def _promotion_discount(promo: Promocion, price: Decimal, quantity: int) -> Deci
     return min(price * quantity, amount.quantize(CENT, rounding=ROUND_HALF_UP))
 
 
+# [DESCUENTOS] Reparte un descuento total (cupón/puntos) entre las líneas, proporcional a su monto.
 def _allocate(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
     total = max(ZERO, _money(total))
     weight_sum = sum(weights, ZERO)
@@ -148,6 +153,7 @@ def _allocate(total: Decimal, weights: list[Decimal]) -> list[Decimal]:
     return allocated
 
 
+# [DESCUENTOS] Convierte montos por línea en precio unitario (redondeo hacia arriba).
 def _price_lines(target_amounts: list[Decimal], quantities: list[int]) -> list[Decimal]:
     if not target_amounts:
         return []
@@ -162,6 +168,8 @@ def _price_lines(target_amounts: list[Decimal], quantities: list[int]) -> list[D
     ]
 
 
+# [CUPONES] Valida el cupón al cotizar: existe en la empresa, activo, vigente, del cliente,
+# mínimo de compra, un uso por cliente y usos máximos. Si falla agrega un aviso y devuelve None.
 async def _cupon_valido(session, tenant_id: int, codigo: str | None, id_cliente: int | None,
                         fecha: datetime, subtotal: Decimal, avisos: list[str]):
     if not codigo:
@@ -206,6 +214,7 @@ async def _cupon_valido(session, tenant_id: int, codigo: str | None, id_cliente:
     return coupon
 
 
+# [CUPONES] Monto que descuenta el cupón: porcentaje o monto fijo, nunca mayor al subtotal.
 def _coupon_discount(coupon: Cupon, subtotal: Decimal) -> Decimal:
     if coupon.tipo == "porcentaje":
         value = subtotal * Decimal(str(coupon.valor)) / Decimal(100)
@@ -214,6 +223,8 @@ def _coupon_discount(coupon: Cupon, subtotal: Decimal) -> Decimal:
     return min(subtotal, value.quantize(CENT, rounding=ROUND_HALF_UP))
 
 
+# [DESCUENTOS] [CUPONES] Cálculo central del precio de cualquier compra.
+# Orden: precio de lista -> promociones -> cupón -> puntos -> total.
 async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
                   codigo_cupon: str | None, puntos: int | None,
                   fecha: datetime, canal: str) -> dict:
@@ -244,6 +255,8 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
         for promotion in promotions:
             if await _promo_matches(session, promotion, product):
                 candidates.append((_promotion_discount(promotion, price, quantity), promotion))
+        # [DESCUENTOS] Si varias promociones aplican, gana la de mayor descuento (no se acumulan);
+        # en empate gana la más antigua.
         discount, chosen = max(candidates, key=lambda pair: (pair[0], -pair[1].idPromocion)) if candidates else (ZERO, None)
         quantities.append(quantity)
         line_amounts.append(amount - discount)
@@ -268,6 +281,7 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
 
     notices: list[str] = []
     coupon = None
+    # [CUPONES] El cupón solo se aplica en el canal online y si el plan incluye 'promociones'.
     if canal == "online" and promotions_enabled:
         coupon = await _cupon_valido(session, tenant_id, codigo_cupon, id_cliente, instant,
                                      after_promotions, notices)
@@ -286,6 +300,7 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
     balance = int(account.saldo) if account is not None else 0
     historical = int(account.acumulado_historico) if account is not None else 0
     account_level = nivel_puntos(historical)
+    # [DESCUENTOS] Puntos: se canjea como máximo el 50% del total y nunca más que el saldo.
     points_cap = max(0, int((after_coupon * Decimal("0.50") / POINT_VALUE).to_integral_value(rounding=ROUND_DOWN)))
     max_points = min(balance, points_cap)
     requested_points = max(0, int(puntos or 0)) if canal == "online" and loyalty_enabled else 0
@@ -321,6 +336,8 @@ async def cotizar(session, tenant_id: int, items, id_cliente: int | None,
     }
 
 
+# [CUPONES] Registra el uso del cupón al confirmar la venta. Revalida todo con
+# with_for_update() para que dos compras simultáneas no superen el límite de usos.
 async def registrar_uso_cupon(session, quote: dict, tenant_id: int, id_cliente: int | None,
                               id_venta: int, fecha: datetime) -> None:
     if "promociones" not in await get_plan_features(session, tenant_id):

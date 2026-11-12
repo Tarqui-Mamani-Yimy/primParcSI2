@@ -15,6 +15,8 @@ from app.services.tenant_backups import (
 )
 
 router = APIRouter(tags=["tenant-platform"])
+# [TENANTS] /api/platform: el SuperAdmin administra empresas, planes, suscripciones y backups.
+# /api/tenant: cada empresa consulta su propio plan y estado.
 platform = APIRouter(prefix="/api/platform", tags=["platform"])
 tenant = APIRouter(prefix="/api/tenant", tags=["tenant"])
 

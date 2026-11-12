@@ -114,6 +114,7 @@ def get_current_payload(
     return decode_token(credentials.credentials)
 
 
+# [TENANTS] Obtiene la empresa (idEmpresa) desde el JWT.
 def get_tenant(payload: dict = Depends(get_current_payload)) -> int | None:
     """Return the tenant bound to the signed JWT; never inspect request data."""
     if "empresa" not in payload:
@@ -138,6 +139,7 @@ def get_tenant(payload: dict = Depends(get_current_payload)) -> int | None:
     return empresa_id
 
 
+# [TENANTS] Filtro de PERMISOS (RBAC): revisa que el permiso esté en la lista 'permisos' del JWT.
 def require_permiso(permiso: str):
     def dependency(payload: dict = Depends(get_current_payload)):
         permisos = payload.get("permisos", [])
@@ -151,6 +153,7 @@ def require_permiso(permiso: str):
     return dependency
 
 
+# [TENANTS] Exige rol SuperAdmin + permiso plataforma.admin para el panel de plataforma.
 def require_platform_admin(payload: dict = Depends(get_current_payload)) -> dict:
     """Authorize platform access from signed SuperAdmin claims only."""
     if payload.get("rol") != "SuperAdmin" or "plataforma.admin" not in payload.get("permisos", []):
@@ -158,6 +161,7 @@ def require_platform_admin(payload: dict = Depends(get_current_payload)) -> dict
     return payload
 
 
+# [TENANTS] Funcionalidades del plan de la empresa, leídas de la BD (no del token).
 async def get_plan_features(session, empresa_id: int) -> list[str]:
     """Return the feature keys from the tenant's current database-backed plan."""
     from sqlalchemy import select
@@ -170,6 +174,7 @@ async def get_plan_features(session, empresa_id: int) -> list[str]:
     return result.scalar_one_or_none() or []
 
 
+# [TENANTS] Bloquea un endpoint con 403 feature_not_in_plan si el plan no lo incluye.
 def require_feature(feature: str):
     """Require a feature from the tenant's current database-backed plan."""
     from fastapi import Depends
@@ -184,6 +189,8 @@ def require_feature(feature: str):
     return dependency
 
 
+# [TENANTS] Filtro de LÍMITES del plan: cuenta sucursales/usuarios/productos de la empresa
+# y responde 403 plan_limit_reached si ya llegó al máximo de Plan.limites.
 def check_limit(resource: str, *, public_signup: bool = False):
     """Require remaining capacity according to the current plan's JSON limits."""
     from fastapi import Depends
@@ -218,6 +225,7 @@ def check_limit(resource: str, *, public_signup: bool = False):
     return dependency
 
 
+# [TENANTS] Filtro de SUSCRIPCIÓN: si está vencida/inactiva solo permite lecturas (GET).
 def require_active_subscription():
     """Block mutating requests on inactive subscriptions while preserving reads."""
     from fastapi import Depends, Request
