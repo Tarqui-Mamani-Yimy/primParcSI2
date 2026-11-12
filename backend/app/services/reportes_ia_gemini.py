@@ -3,17 +3,20 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import String, cast, func, literal, or_, select, union_all
+from sqlalchemy import String, and_, case, cast, func, literal, or_, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import (
-    Devolucion, DevolucionDetalle, DetalleVenta, Inventario, Movimiento,
-    Producto, Reserva, Sucursal, Venta,
+    Cliente, Colecciones, CuentaPuntos, Devolucion, DevolucionDetalle,
+    DetalleVenta, Inventario, Movimiento, Producto, Reserva, Sucursal,
+    Temporada, Venta,
 )
 from app.routers.dashboard import UMBRAL_STOCK_BAJO, top_productos
 from app.routers.reports import _consultar_inventario, _consultar_ventas
+from app.security import get_plan_features
 from app.schemas.reports_ai import AIReportOut
+from app.services.pricing import nivel_puntos
 
 try:
     from google import genai
@@ -113,6 +116,44 @@ def _declaraciones_herramientas():
                 },
             },
         ),
+        types.FunctionDeclaration(
+            name="sales_period_comparison",
+            description="Compares total sales amount between two explicit date ranges, grouped by branch. Select this when asked to compare a current and previous period or calculate branch growth percentages.",
+            parameters_json_schema={
+                "type": "object",
+                "properties": {
+                    "current_start": {"type": "string", "format": "date"},
+                    "current_end": {"type": "string", "format": "date"},
+                    "previous_start": {"type": "string", "format": "date"},
+                    "previous_end": {"type": "string", "format": "date"},
+                    "branch_id": {"type": "integer", "minimum": 1},
+                },
+            },
+        ),
+        types.FunctionDeclaration(
+            name="sales_by_collection",
+            description="Aggregates sold quantity and amount by collection or season, including each group's percentage of total sales. Choose this for best-selling collections or seasons.",
+            parameters_json_schema={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"},
+                    "group_by": {"type": "string", "enum": ["coleccion", "temporada"]},
+                },
+            },
+        ),
+        types.FunctionDeclaration(
+            name="top_customers",
+            description="Ranks customers by total sale value and reports purchase count and loyalty tier/available points. Choose this when asked for best or top customers.",
+            parameters_json_schema={
+                "type": "object",
+                "properties": {
+                    "start_date": {"type": "string", "format": "date"},
+                    "end_date": {"type": "string", "format": "date"},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 20},
+                },
+            },
+        ),
     ]
 
 
@@ -123,15 +164,23 @@ def _arguments(name: str, args: dict) -> dict:
         "top_products": {"start_date", "end_date", "limit"},
         "returns": {"start_date", "end_date"},
         "top_products_by_branch": {"start_date", "end_date", "branch_id", "limit"},
+        "sales_period_comparison": {
+            "current_start", "current_end", "previous_start", "previous_end", "branch_id",
+        },
+        "sales_by_collection": {"start_date", "end_date", "group_by"},
+        "top_customers": {"start_date", "end_date", "limit"},
     }
     if name not in allowed:
         raise GeminiHerramientaInvalida(f"Unknown report tool: {name}")
     if not isinstance(args, dict) or set(args) - allowed[name]:
         raise GeminiHerramientaInvalida(f"Invalid arguments for report tool: {name}")
     normalized = dict(args)
-    if name in {"top_products", "top_products_by_branch"} and normalized.get("limit") is None:
-        normalized["limit"] = 10 if name == "top_products_by_branch" else 5
-    for key in ("start_date", "end_date"):
+    if name in {"top_products", "top_products_by_branch", "top_customers"} and normalized.get("limit") is None:
+        normalized["limit"] = 10 if name in {"top_products_by_branch", "top_customers"} else 5
+    date_keys = (
+        "start_date", "end_date", "current_start", "current_end", "previous_start", "previous_end",
+    )
+    for key in date_keys:
         if key in normalized and normalized[key] is not None:
             try:
                 normalized[key] = date.fromisoformat(normalized[key])
@@ -143,6 +192,18 @@ def _arguments(name: str, args: dict) -> dict:
             raise GeminiHerramientaInvalida(f"Invalid {key} for report tool: {name}")
     if normalized.get("limit", 5) > 20:
         raise GeminiHerramientaInvalida("The top-products limit cannot exceed 20")
+    if name == "sales_period_comparison":
+        required_dates = ("current_start", "current_end", "previous_start", "previous_end")
+        if any(normalized.get(key) is None for key in required_dates):
+            raise GeminiHerramientaInvalida("All comparison dates are required")
+        if normalized["current_start"] > normalized["current_end"]:
+            raise GeminiHerramientaInvalida("Current period start cannot be after end")
+        if normalized["previous_start"] > normalized["previous_end"]:
+            raise GeminiHerramientaInvalida("Previous period start cannot be after end")
+    if name == "sales_by_collection":
+        normalized["group_by"] = normalized.get("group_by") or "coleccion"
+        if normalized["group_by"] not in {"coleccion", "temporada"}:
+            raise GeminiHerramientaInvalida("Invalid group_by for report tool: sales_by_collection")
     if normalized.get("start_date") and normalized.get("end_date") and normalized["start_date"] > normalized["end_date"]:
         raise GeminiHerramientaInvalida("Report start_date cannot be after end_date")
     return normalized
@@ -193,6 +254,15 @@ async def _execute_tool(session: AsyncSession, tenant_id: int, name: str, raw_ar
     elif name == "top_products_by_branch":
         values = await _top_products_by_branch(session, tenant_id, args)
         columns = ["Sucursal", "Ranking", "Producto", "Cantidad vendida", "Monto"]
+    elif name == "sales_period_comparison":
+        values = await _sales_period_comparison(session, tenant_id, args)
+        columns = ["Sucursal", "Ventas periodo actual", "Ventas periodo anterior", "Diferencia", "Variacion %"]
+        period = {"from": args["current_start"].isoformat(), "to": args["current_end"].isoformat()}
+    elif name == "sales_by_collection":
+        columns, values = await _sales_by_collection(session, tenant_id, args)
+    elif name == "top_customers":
+        values = await _top_customers(session, tenant_id, args)
+        columns = ["Ranking", "Cliente", "Compras", "Total gastado", "Nivel", "Puntos disponibles"]
     else:
         statement = (
             select(
@@ -234,8 +304,14 @@ async def _execute_tool(session: AsyncSession, tenant_id: int, name: str, raw_ar
     return {"columns": columns, "rows": values, "period": period}
 
 
-async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: dict) -> list[list]:
-    """Rank products by amount within each branch using the sale's actual inventory movement."""
+def _sales_with_branch_attribution(
+    tenant_id: int,
+    *,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    date_filter=None,
+):
+    """Return tenant-scoped sale lines and their actual branch attribution."""
     details = (
         select(
             DetalleVenta.codigoVenta.label("detail_id"),
@@ -244,23 +320,27 @@ async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: d
             func.sum(DetalleVenta.cantidad * DetalleVenta.precio_unitario).label("amount"),
             DetalleVenta.idVenta.label("sale_id"),
             DetalleVenta.codigoReserva.label("reservation_id"),
+            Venta.fecha.label("sale_date"),
         )
         .join(Venta, (Venta.idVenta == DetalleVenta.idVenta) & (Venta.idEmpresa == tenant_id))
         .where(DetalleVenta.idEmpresa == tenant_id)
         .group_by(
             DetalleVenta.codigoVenta, DetalleVenta.idProducto, DetalleVenta.idVenta,
-            DetalleVenta.codigoReserva,
+            DetalleVenta.codigoReserva, Venta.fecha,
         )
     )
-    if args.get("start_date"):
-        details = details.where(Venta.fecha >= args["start_date"])
-    if args.get("end_date"):
-        details = details.where(Venta.fecha < date.fromordinal(args["end_date"].toordinal() + 1))
+    if start_date:
+        details = details.where(Venta.fecha >= start_date)
+    if end_date:
+        details = details.where(Venta.fecha < date.fromordinal(end_date.toordinal() + 1))
+    if date_filter is not None:
+        details = details.where(date_filter)
     detail_rows = details.subquery()
 
     sale_number = cast(detail_rows.c.sale_id, String)
     movement_branch = (
         select(detail_rows.c.detail_id, Inventario.codigoSucursal.label("branch_id"))
+        .select_from(detail_rows)
         .join(Movimiento, (Movimiento.idEmpresa == tenant_id) & (Movimiento.tipo == "venta") & (
             Movimiento.motivo == literal("Venta ") + sale_number
         ) | (
@@ -274,11 +354,20 @@ async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: d
     )
     reservation_branch = (
         select(detail_rows.c.detail_id, Reserva.codigoSucursal.label("branch_id"))
+        .select_from(detail_rows)
         .join(Reserva, (Reserva.codigoReserva == detail_rows.c.reservation_id) &
               (Reserva.idEmpresa == tenant_id))
         .where(detail_rows.c.reservation_id.is_not(None))
     )
     attribution = union_all(movement_branch, reservation_branch).subquery()
+    return detail_rows, attribution
+
+
+async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: dict) -> list[list]:
+    """Rank products by amount within each branch using the shared actual-branch mapping."""
+    detail_rows, attribution = _sales_with_branch_attribution(
+        tenant_id, start_date=args.get("start_date"), end_date=args.get("end_date")
+    )
     branch_sales = (
         select(
             Sucursal.nombre.label("branch_name"), Sucursal.codigoSucursal.label("branch_id"),
@@ -309,6 +398,141 @@ async def _top_products_by_branch(session: AsyncSession, tenant_id: int, args: d
     )
     rows = (await session.execute(statement)).all()
     return [[row.branch_name, row.ranking, row.product_name, int(row.quantity), _number(row.amount)] for row in rows]
+
+
+async def _sales_period_comparison(session: AsyncSession, tenant_id: int, args: dict) -> list[list]:
+    current_start = args["current_start"]
+    current_end = date.fromordinal(args["current_end"].toordinal() + 1)
+    previous_start = args["previous_start"]
+    previous_end = date.fromordinal(args["previous_end"].toordinal() + 1)
+    current_period = and_(Venta.fecha >= current_start, Venta.fecha < current_end)
+    previous_period = and_(Venta.fecha >= previous_start, Venta.fecha < previous_end)
+    detail_rows, attribution = _sales_with_branch_attribution(
+        tenant_id, date_filter=or_(current_period, previous_period)
+    )
+    current_amount = func.sum(case((
+        and_(detail_rows.c.sale_date >= current_start, detail_rows.c.sale_date < current_end),
+        detail_rows.c.amount,
+    ), else_=0)).label("current_amount")
+    previous_amount = func.sum(case((
+        and_(detail_rows.c.sale_date >= previous_start, detail_rows.c.sale_date < previous_end),
+        detail_rows.c.amount,
+    ), else_=0)).label("previous_amount")
+    statement = (
+        select(Sucursal.nombre.label("branch_name"), current_amount, previous_amount)
+        .select_from(attribution)
+        .join(detail_rows, detail_rows.c.detail_id == attribution.c.detail_id)
+        .join(Sucursal, (Sucursal.codigoSucursal == attribution.c.branch_id) & (Sucursal.idEmpresa == tenant_id))
+        .group_by(Sucursal.codigoSucursal, Sucursal.nombre)
+        .order_by(Sucursal.nombre, Sucursal.codigoSucursal)
+    )
+    if args.get("branch_id"):
+        statement = statement.where(Sucursal.codigoSucursal == args["branch_id"])
+    rows = (await session.execute(statement)).all()
+    values = []
+    for row in rows:
+        current = Decimal(str(row.current_amount or 0))
+        previous = Decimal(str(row.previous_amount or 0))
+        difference = current - previous
+        variation = round(float(difference * 100 / previous), 2) if previous else None
+        values.append([
+            row.branch_name, _number(current), _number(previous), _number(difference), variation,
+        ])
+    return values
+
+
+async def _sales_by_collection(session: AsyncSession, tenant_id: int, args: dict) -> tuple[list[str], list[list]]:
+    amount = func.sum(DetalleVenta.cantidad * DetalleVenta.precio_unitario).label("amount")
+    quantity = func.sum(DetalleVenta.cantidad).label("quantity")
+    if args["group_by"] == "coleccion":
+        columns = ["Temporada", "Coleccion", "Cantidad vendida", "Monto", "% del total"]
+        selected = [
+            Temporada.nombreTemporada.label("season_name"),
+            Colecciones.nombre_coleccion.label("collection_name"),
+            quantity, amount, Temporada.idTemporada, Colecciones.idColeccion,
+        ]
+        group_columns = [Temporada.nombreTemporada, Colecciones.nombre_coleccion,
+                         Temporada.idTemporada, Colecciones.idColeccion]
+    else:
+        columns = ["Temporada", "Cantidad vendida", "Monto", "% del total"]
+        selected = [Temporada.nombreTemporada.label("season_name"), quantity, amount, Temporada.idTemporada]
+        group_columns = [Temporada.nombreTemporada, Temporada.idTemporada]
+    statement = (
+        select(*selected)
+        .select_from(Venta)
+        .join(DetalleVenta, (DetalleVenta.idVenta == Venta.idVenta) & (DetalleVenta.idEmpresa == tenant_id))
+        .join(Producto, (Producto.idProducto == DetalleVenta.idProducto) & (Producto.idEmpresa == tenant_id))
+        .join(Colecciones, (Colecciones.idColeccion == Producto.idColeccion) & (Colecciones.idEmpresa == tenant_id))
+        .join(Temporada, (Temporada.idTemporada == Colecciones.idTemporada) & (Temporada.idEmpresa == tenant_id))
+        .where(Venta.idEmpresa == tenant_id)
+        .group_by(*group_columns)
+        .order_by(amount.desc(), Temporada.idTemporada)
+    )
+    if args.get("start_date"):
+        statement = statement.where(Venta.fecha >= args["start_date"])
+    if args.get("end_date"):
+        statement = statement.where(Venta.fecha < date.fromordinal(args["end_date"].toordinal() + 1))
+    rows = (await session.execute(statement)).all()
+    total = sum((Decimal(str(row.amount or 0)) for row in rows), Decimal("0"))
+    values = []
+    for row in rows:
+        row_amount = Decimal(str(row.amount or 0))
+        share = round(float(row_amount * 100 / total), 2) if total else 0.0
+        if args["group_by"] == "coleccion":
+            values.append([
+                row.season_name, row.collection_name, int(row.quantity), _number(row_amount), share,
+            ])
+        else:
+            values.append([row.season_name, int(row.quantity), _number(row_amount), share])
+    return columns, values
+
+
+async def _top_customers(session: AsyncSession, tenant_id: int, args: dict) -> list[list]:
+    customer_sales = (
+        select(
+            Cliente.idCliente.label("customer_id"),
+            Cliente.nombre.label("customer_name"),
+            func.count(Venta.idVenta).label("purchases"),
+            func.sum(Venta.total).label("total_spent"),
+        )
+        .select_from(Cliente)
+        .join(Venta, (Venta.idCliente == Cliente.idCliente) & (Venta.idEmpresa == tenant_id))
+        .where(Cliente.idEmpresa == tenant_id)
+        .group_by(Cliente.idCliente, Cliente.nombre)
+    )
+    if args.get("start_date"):
+        customer_sales = customer_sales.where(Venta.fecha >= args["start_date"])
+    if args.get("end_date"):
+        customer_sales = customer_sales.where(Venta.fecha < date.fromordinal(args["end_date"].toordinal() + 1))
+    customer_totals = customer_sales.subquery()
+    loyalty_enabled = "fidelizacion" in await get_plan_features(session, tenant_id)
+    statement = (
+        select(
+            customer_totals.c.customer_id,
+            customer_totals.c.customer_name,
+            customer_totals.c.purchases,
+            customer_totals.c.total_spent,
+            CuentaPuntos.saldo,
+            CuentaPuntos.acumulado_historico,
+        )
+        .select_from(customer_totals)
+        .outerjoin(CuentaPuntos, (CuentaPuntos.idCliente == customer_totals.c.customer_id) &
+                   (CuentaPuntos.idEmpresa == tenant_id))
+        .order_by(customer_totals.c.total_spent.desc(), customer_totals.c.customer_id)
+        .limit(args.get("limit", 10))
+    )
+    rows = (await session.execute(statement)).all()
+    values = []
+    for rank, row in enumerate(rows, start=1):
+        if loyalty_enabled:
+            level = nivel_puntos(row.acumulado_historico or 0)["nivel"]
+            points = int(row.saldo or 0)
+        else:
+            level, points = "No aplica", 0
+        values.append([
+            rank, row.customer_name, int(row.purchases), _number(row.total_spent), level, points,
+        ])
+    return values
 
 
 async def generar_reporte(session: AsyncSession, tenant_id: int, prompt: str) -> AIReportOut:

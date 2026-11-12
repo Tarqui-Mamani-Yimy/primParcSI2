@@ -241,18 +241,44 @@ import { AuthService } from '../../core/services/auth.service';
               </p>
             </div>
 
-            <!-- Botón Exportar CSV (Gated por reportes_export) -->
-            <button
-              *ngIf="canExportCsv"
-              type="button"
-              (click)="descargarCsv()"
-              [disabled]="downloadingCsv()"
-              class="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wide transition-colors flex items-center space-x-2 shadow-2xs cursor-pointer disabled:opacity-50"
-            >
-              <span *ngIf="downloadingCsv()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-              <span *ngIf="!downloadingCsv()" class="material-symbols-outlined text-[16px]">download</span>
-              <span>{{ downloadingCsv() ? 'Descargando…' : 'Exportar CSV' }}</span>
-            </button>
+            <!-- Botones de Exportación (Gated por reportes_export) -->
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                *ngIf="canExportCsv"
+                type="button"
+                (click)="descargarCsv()"
+                [disabled]="downloadingCsv()"
+                class="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wide transition-colors flex items-center space-x-2 shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <span *ngIf="downloadingCsv()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                <span *ngIf="!downloadingCsv()" class="material-symbols-outlined text-[16px]">download</span>
+                <span>{{ downloadingCsv() ? 'Descargando…' : 'Exportar CSV' }}</span>
+              </button>
+
+              <button
+                *ngIf="canExportCsv"
+                type="button"
+                (click)="descargarPdf()"
+                [disabled]="downloadingPdf()"
+                class="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wide transition-colors flex items-center space-x-2 shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <span *ngIf="downloadingPdf()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                <span *ngIf="!downloadingPdf()" class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                <span>{{ downloadingPdf() ? 'Descargando…' : 'Exportar PDF' }}</span>
+              </button>
+
+              <button
+                *ngIf="canExportCsv"
+                type="button"
+                (click)="descargarHtml()"
+                [disabled]="downloadingHtml()"
+                class="px-4 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold uppercase tracking-wide transition-colors flex items-center space-x-2 shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <span *ngIf="downloadingHtml()" class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                <span *ngIf="!downloadingHtml()" class="material-symbols-outlined text-[16px]">html</span>
+                <span>{{ downloadingHtml() ? 'Descargando…' : 'Exportar HTML' }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Tabla con columns y rows -->
@@ -291,6 +317,8 @@ export class AiReportsComponent implements OnInit, OnDestroy {
   promptText = signal<string>('');
   loading = signal<boolean>(false);
   downloadingCsv = signal<boolean>(false);
+  downloadingPdf = signal<boolean>(false);
+  downloadingHtml = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
   reportResult = signal<AIReportOut | null>(null);
   lastExecutedPrompt = signal<string>('');
@@ -739,6 +767,50 @@ export class AiReportsComponent implements OnInit, OnDestroy {
     }
   }
 
+  async descargarPdf(): Promise<void> {
+    const res = this.reportResult();
+    if (!res || this.downloadingPdf()) return;
+
+    this.downloadingPdf.set(true);
+    try {
+      const blob = await this.reportsAiService.downloadReportPdf(res);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'reporte_ia.pdf';
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.notificationService.success('Descarga iniciada', 'El archivo PDF fue descargado con éxito.');
+    } catch (err) {
+      const msg = parseAiReportError(err);
+      this.notificationService.error('Error al exportar PDF', msg);
+    } finally {
+      this.downloadingPdf.set(false);
+    }
+  }
+
+  async descargarHtml(): Promise<void> {
+    const res = this.reportResult();
+    if (!res || this.downloadingHtml()) return;
+
+    this.downloadingHtml.set(true);
+    try {
+      const blob = await this.reportsAiService.downloadReportHtml(res);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'reporte_ia.html';
+      link.click();
+      window.URL.revokeObjectURL(url);
+      this.notificationService.success('Descarga iniciada', 'El archivo HTML fue descargado con éxito.');
+    } catch (err) {
+      const msg = parseAiReportError(err);
+      this.notificationService.error('Error al exportar HTML', msg);
+    } finally {
+      this.downloadingHtml.set(false);
+    }
+  }
+
   // =========================================================================
   // HELPERS DE FORMATO (Sin regex inline en templates)
   // =========================================================================
@@ -789,6 +861,14 @@ export class AiReportsComponent implements OnInit, OnDestroy {
         return 'Top Productos';
       case 'returns':
         return 'Devoluciones y Cambios';
+      case 'top_products_by_branch':
+        return 'Top Productos por Sucursal';
+      case 'sales_period_comparison':
+        return 'Comparación de Períodos';
+      case 'sales_by_collection':
+        return 'Ventas por Colección/Temporada';
+      case 'top_customers':
+        return 'Mejores Clientes';
       default:
         return toolKey || 'Consulta Analítica';
     }

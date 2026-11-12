@@ -119,6 +119,44 @@ export class ReportsAiService {
   }
 
   /**
+   * Genera y descarga el archivo PDF correspondiente al resultado del reporte analítico mostrado.
+   */
+  async downloadReportPdf(result: AIReportOut): Promise<Blob> {
+    const payload = {
+      summary: result.summary,
+      columns: result.columns,
+      rows: result.rows,
+      tool_used: result.tool_used,
+      period: {
+        from: result.period?.from || null,
+        to: result.period?.to || null,
+      },
+    };
+    return firstValueFrom(
+      this.http.post(`${API_URL}/api/reports/ai/pdf`, payload, { responseType: 'blob' })
+    );
+  }
+
+  /**
+   * Genera y descarga el archivo HTML correspondiente al resultado del reporte analítico mostrado.
+   */
+  async downloadReportHtml(result: AIReportOut): Promise<Blob> {
+    const payload = {
+      summary: result.summary,
+      columns: result.columns,
+      rows: result.rows,
+      tool_used: result.tool_used,
+      period: {
+        from: result.period?.from || null,
+        to: result.period?.to || null,
+      },
+    };
+    return firstValueFrom(
+      this.http.post(`${API_URL}/api/reports/ai/html`, payload, { responseType: 'blob' })
+    );
+  }
+
+  /**
    * Envía un audio grabado en formato Blob (multipart/form-data con campo 'audio')
    * a /api/reports/ai/transcribe para obtener la transcripción a texto con Groq Whisper (S10).
    */
