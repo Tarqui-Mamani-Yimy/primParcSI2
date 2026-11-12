@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_tenant_db
@@ -10,7 +10,9 @@ from app.models import (
     Devolucion,
     DevolucionDetalle,
     DevolucionReemplazo,
+    Cliente,
     DetalleVenta,
+    SolicitudDevolucion,
     Inventario,
     MetodoPago,
     MovimientoCaja,
@@ -18,8 +20,11 @@ from app.models import (
     Producto,
     Venta,
 )
-from app.schemas.returns import CreateExchangeIn, CreateReturnIn, ReturnItemIn, ReturnOut, ReturnableItemOut
-from app.security import require_permiso
+from app.schemas.returns import (
+    CreateExchangeIn, CreateReturnIn, MobileReturnRequestIn, RefundMobileReturnIn,
+    RejectMobileReturnIn, ReturnItemIn, ReturnOut, ReturnableItemOut,
+)
+from app.security import get_current_payload, require_permiso
 from app.services.bitacora import registrar_bitacora
 from app.services.inventory_stock import adjust_inventory_and_record_movement
 from app.services.pricing import aplicar_puntos_devolucion
@@ -125,9 +130,181 @@ async def _already_returned(session: AsyncSession, sale_item_id: int, tenant_id:
             DevolucionDetalle.idEmpresa == tenant_id,
             Devolucion.idEmpresa == tenant_id,
             Devolucion.estado.in_(PENDING_STATES),
+            or_(SolicitudDevolucion.idDevolucion.is_(None), SolicitudDevolucion.estado != "rechazada"),
         )
+        .outerjoin(SolicitudDevolucion, SolicitudDevolucion.idDevolucion == Devolucion.idDevolucion)
     )
     return int(quantity.scalar_one())
+
+
+async def _mobile_request_output(session: AsyncSession, record: SolicitudDevolucion, customer_name=None) -> dict:
+    details = (await session.execute(
+        select(DevolucionDetalle).where(
+            DevolucionDetalle.return_id == record.idDevolucion,
+            DevolucionDetalle.idEmpresa == record.idEmpresa,
+        ).order_by(DevolucionDetalle.id)
+    )).scalars().all()
+    result = {
+        "idDevolucion": record.idDevolucion,
+        "idVenta": (await session.get(Devolucion, record.idDevolucion)).idVenta,
+        "estado": record.estado,
+        "montoReembolso": float(_money(record.montoReembolso)),
+        "motivo": record.motivo,
+        "motivoRechazo": record.motivoRechazo,
+        "comprobanteTransferencia": record.comprobanteTransferencia,
+        "fechaReembolso": record.fechaReembolso,
+        "items": [{"sale_item_id": item.sale_item_id, "quantity": item.quantity,
+                   "unit_price": float(_money(item.unit_price))} for item in details],
+    }
+    if customer_name is not None:
+        result.update({
+            "nombreCliente": customer_name,
+            "banco": record.banco,
+            "numeroCuenta": record.numeroCuenta,
+            "titularCuenta": record.titularCuenta,
+        })
+    return result
+
+
+@router.post("/requests", status_code=status.HTTP_201_CREATED)
+async def create_mobile_return_request(
+    payload: MobileReturnRequestIn,
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.solicitar")),
+):
+    tenant_id = int(auth["empresa"])
+    customer = (await session.execute(select(Cliente).where(
+        Cliente.idUser == int(auth["sub"]), Cliente.idEmpresa == tenant_id,
+    ))).scalar_one_or_none()
+    if customer is None:
+        raise HTTPException(status_code=403, detail="La cuenta no tiene un cliente asociado")
+    sale = await _get_sale(session, payload.idVenta, tenant_id)
+    if sale.idCliente != customer.idCliente:
+        raise HTTPException(status_code=404, detail={"code": "sale_not_found"})
+    validated, refund_amount = await _validate_return_items(session, sale, payload.items, tenant_id)
+    if refund_amount <= 0:
+        raise HTTPException(status_code=409, detail={"code": "refund_amount_invalid"})
+    record = await _new_return(
+        session, sale=sale, auth=auth, tenant_id=tenant_id, return_type="devolucion",
+        refund_amount=refund_amount, amount_due=Decimal("0.00"),
+        payment_method="transferencia_manual", status_value="payment_pending",
+    )
+    await _record_return_items(session, record, validated, tenant_id)
+    mobile_request = SolicitudDevolucion(
+        idDevolucion=record.idDevolucion, idEmpresa=tenant_id, idCliente=customer.idCliente,
+        estado="solicitada", motivo=payload.motivo.strip(), banco=payload.banco.strip(),
+        numeroCuenta=payload.numeroCuenta.strip(), titularCuenta=payload.titularCuenta.strip(),
+        montoReembolso=refund_amount,
+    )
+    session.add(mobile_request)
+    await session.commit()
+    await session.refresh(mobile_request)
+    return await _mobile_request_output(session, mobile_request)
+
+
+@router.get("/requests/mine")
+async def list_my_mobile_return_requests(
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.solicitar")),
+):
+    tenant_id = int(auth["empresa"])
+    customer = (await session.execute(select(Cliente).where(
+        Cliente.idUser == int(auth["sub"]), Cliente.idEmpresa == tenant_id,
+    ))).scalar_one_or_none()
+    if customer is None:
+        return []
+    records = (await session.execute(
+        select(SolicitudDevolucion).where(
+            SolicitudDevolucion.idEmpresa == tenant_id,
+            SolicitudDevolucion.idCliente == customer.idCliente,
+        ).order_by(SolicitudDevolucion.fechaSolicitud.desc(), SolicitudDevolucion.idDevolucion.desc())
+    )).scalars().all()
+    return [await _mobile_request_output(session, record) for record in records]
+
+
+@router.get("/requests")
+async def list_mobile_return_requests(
+    estado: str | None = Query(default=None),
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.ver")),
+):
+    tenant_id = int(auth["empresa"])
+    statement = select(SolicitudDevolucion, Cliente.nombre).join(
+        Cliente, Cliente.idCliente == SolicitudDevolucion.idCliente
+    ).where(SolicitudDevolucion.idEmpresa == tenant_id)
+    if estado:
+        statement = statement.where(SolicitudDevolucion.estado == estado)
+    rows = (await session.execute(statement.order_by(
+        SolicitudDevolucion.fechaSolicitud.desc(), SolicitudDevolucion.idDevolucion.desc()
+    ))).all()
+    return [await _mobile_request_output(session, record, name) for record, name in rows]
+
+
+@router.post("/requests/{return_id}/approve")
+async def approve_mobile_return_request(
+    return_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.gestionar")),
+):
+    tenant_id = int(auth["empresa"])
+    record = (await session.execute(select(SolicitudDevolucion).where(
+        SolicitudDevolucion.idDevolucion == return_id,
+        SolicitudDevolucion.idEmpresa == tenant_id,
+    ).with_for_update())).scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail={"code": "return_request_not_found"})
+    if record.estado != "solicitada":
+        raise HTTPException(status_code=409, detail={"code": "return_request_not_pending"})
+    record.estado = "aprobada"
+    return_record = await _get_return(session, return_id, tenant_id, lock=True)
+    await _finalize(session, return_record, auth, request, tenant_id)
+    return await _mobile_request_output(session, record)
+
+
+@router.post("/requests/{return_id}/reject")
+async def reject_mobile_return_request(
+    return_id: int,
+    payload: RejectMobileReturnIn,
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.gestionar")),
+):
+    tenant_id = int(auth["empresa"])
+    record = (await session.execute(select(SolicitudDevolucion).where(
+        SolicitudDevolucion.idDevolucion == return_id,
+        SolicitudDevolucion.idEmpresa == tenant_id,
+    ).with_for_update())).scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail={"code": "return_request_not_found"})
+    if record.estado != "solicitada":
+        raise HTTPException(status_code=409, detail={"code": "return_request_not_pending"})
+    record.estado = "rechazada"
+    record.motivoRechazo = payload.motivoRechazo.strip()
+    await session.commit()
+    return await _mobile_request_output(session, record)
+
+
+@router.post("/requests/{return_id}/refund")
+async def refund_mobile_return_request(
+    return_id: int,
+    payload: RefundMobileReturnIn,
+    session: AsyncSession = Depends(get_tenant_db),
+    auth: dict = Depends(require_permiso("devolucion.gestionar")),
+):
+    tenant_id = int(auth["empresa"])
+    record = (await session.execute(select(SolicitudDevolucion).where(
+        SolicitudDevolucion.idDevolucion == return_id,
+        SolicitudDevolucion.idEmpresa == tenant_id,
+    ).with_for_update())).scalar_one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail={"code": "return_request_not_found"})
+    if record.estado != "aprobada":
+        raise HTTPException(status_code=409, detail={"code": "return_request_not_approved"})
+    record.estado = "reembolsada"
+    record.comprobanteTransferencia = payload.comprobante.strip()
+    record.fechaReembolso = datetime.now(timezone.utc)
+    await session.commit()
+    return await _mobile_request_output(session, record)
 
 
 async def _sold_inventory(

@@ -492,6 +492,32 @@ class Venta(Base):
     discrepanciaNota: Mapped[str | None] = mapped_column(Text)
 
 
+class SolicitudDevolucion(Base):
+    __tablename__ = "solicitud_devolucion"
+    __table_args__ = (
+        Index("idx_solicitud_devolucion_empresa_estado", "idEmpresa", "estado"),
+        Index("idx_solicitud_devolucion_cliente", "idEmpresa", "idCliente"),
+    )
+
+    idDevolucion: Mapped[int] = mapped_column(
+        ForeignKey("devolucion.idDevolucion", ondelete="CASCADE"), primary_key=True
+    )
+    idEmpresa: Mapped[int] = mapped_column(Integer, nullable=False)
+    idCliente: Mapped[int] = mapped_column(ForeignKey("Cliente.idCliente"), nullable=False)
+    estado: Mapped[str] = mapped_column(String(20), default="solicitada", nullable=False)
+    motivo: Mapped[str] = mapped_column(Text, nullable=False)
+    motivoRechazo: Mapped[str | None] = mapped_column(Text)
+    banco: Mapped[str] = mapped_column(String(120), nullable=False)
+    numeroCuenta: Mapped[str] = mapped_column(String(120), nullable=False)
+    titularCuenta: Mapped[str] = mapped_column(String(160), nullable=False)
+    comprobanteTransferencia: Mapped[str | None] = mapped_column(String(160))
+    fechaReembolso: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    montoReembolso: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    fechaSolicitud: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), default=datetime.utcnow, nullable=False
+    )
+
+
 class OperacionIdempotente(Base):
     __tablename__ = "operacion_idempotente"
     __table_args__ = (UniqueConstraint("idEmpresa", "idUser", "clave", name="uq_operacion_idempotente_scope"),)

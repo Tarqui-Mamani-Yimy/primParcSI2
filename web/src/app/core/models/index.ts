@@ -1220,8 +1220,57 @@ export interface BackupDownloadResponse {
   expiraEnSegundos: number;
 }
 
+// ─────────────────────────────────────────────
+// SOLICITUDES DE DEVOLUCIÓN DE CLIENTES (S1-S3)
+// ─────────────────────────────────────────────
 
+export type CustomerReturnRequestStatus =
+  | 'solicitada'
+  | 'aprobada'
+  | 'rechazada'
+  | 'reembolsada'
+  | 'cancelada';
 
+export interface CustomerReturnRequestItem {
+  sale_item_id?: number;
+  idDetalleVenta?: number;
+  product_id?: number;
+  idProducto?: number;
+  product_name?: string;
+  producto_nombre?: string;
+  quantity: number;
+  cantidad?: number;
+  unit_price?: number | string;
+  precio_unitario?: number | string;
+}
 
+export interface CustomerReturnRequestOut {
+  idDevolucion?: number;
+  id?: number;
+  idVenta: number;
+  clienteNombre?: string;
+  cliente?: string;
+  nombreCliente?: string;
+  estado: CustomerReturnRequestStatus;
+  montoReembolso: number | string;
+  motivo: string;
+  motivoRechazo?: string | null;
+  banco: string;
+  numeroCuenta: string;
+  titularCuenta: string;
+  comprobanteTransferencia?: string | null;
+  fechaReembolso?: string | null;
+  fechaSolicitud?: string | null;
+  created_at?: string | null;
+  items: CustomerReturnRequestItem[];
+}
+
+export interface RejectReturnRequestIn {
+  motivoRechazo: string;
+}
+
+export interface RefundReturnRequestIn {
+  comprobante: string;
+}
 
 

@@ -2,6 +2,19 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import {
+  CustomerReturnRequestOut,
+  CustomerReturnRequestStatus,
+  RejectReturnRequestIn,
+  RefundReturnRequestIn,
+} from '../models';
+
+export type {
+  CustomerReturnRequestOut,
+  CustomerReturnRequestStatus,
+  RejectReturnRequestIn,
+  RefundReturnRequestIn,
+};
 
 const API_URL = environment.apiUrl;
 
@@ -233,5 +246,49 @@ export class ReturnsService {
       color: p.color,
       tipo: p.tipo,
     }));
+  }
+
+  /**
+   * Lista las solicitudes de devolución realizadas por clientes (staff).
+   * Admite filtro opcional por estado: 'solicitada', 'aprobada', 'rechazada', 'reembolsada', 'cancelada'.
+   */
+  async listCustomerRequests(estado?: string): Promise<CustomerReturnRequestOut[]> {
+    const params: Record<string, string> = {};
+    if (estado && estado !== 'todas' && estado !== 'all') {
+      params['estado'] = estado;
+    }
+    return firstValueFrom(
+      this.http.get<CustomerReturnRequestOut[]>(`${API_URL}/api/returns/requests`, { params })
+    );
+  }
+
+  /**
+   * Aprueba una solicitud de devolución de cliente (devolucion.gestionar).
+   * Pasa el estado a 'aprobada'.
+   */
+  async approveCustomerRequest(requestId: number): Promise<CustomerReturnRequestOut> {
+    return firstValueFrom(
+      this.http.post<CustomerReturnRequestOut>(`${API_URL}/api/returns/requests/${requestId}/approve`, {})
+    );
+  }
+
+  /**
+   * Rechaza una solicitud de devolución de cliente indicando el motivo (devolucion.gestionar).
+   * Pasa el estado a 'rechazada'.
+   */
+  async rejectCustomerRequest(requestId: number, motivoRechazo: string): Promise<CustomerReturnRequestOut> {
+    return firstValueFrom(
+      this.http.post<CustomerReturnRequestOut>(`${API_URL}/api/returns/requests/${requestId}/reject`, { motivoRechazo })
+    );
+  }
+
+  /**
+   * Registra el comprobante de transferencia y marca la solicitud aprobada como reembolsada (devolucion.gestionar).
+   * Pasa el estado a 'reembolsada'.
+   */
+  async refundCustomerRequest(requestId: number, comprobante: string): Promise<CustomerReturnRequestOut> {
+    return firstValueFrom(
+      this.http.post<CustomerReturnRequestOut>(`${API_URL}/api/returns/requests/${requestId}/refund`, { comprobante })
+    );
   }
 }
