@@ -12,7 +12,10 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
 
-  ApiException(this.statusCode, this.message);
+  /// Machine code when the backend answers `{"detail": {"code": "..."}}`.
+  final String? code;
+
+  ApiException(this.statusCode, this.message, {this.code});
 
   @override
   String toString() => message;
@@ -53,16 +56,21 @@ class ApiClient {
     }
 
     String message = 'Error del servidor (${response.statusCode}).';
+    String? code;
     try {
       final body = jsonDecode(utf8.decode(response.bodyBytes));
       if (body is Map && body['detail'] is String) {
         message = body['detail'] as String;
+      } else if (body is Map &&
+          body['detail'] is Map &&
+          (body['detail'] as Map)['code'] is String) {
+        code = (body['detail'] as Map)['code'] as String;
       }
     } catch (_) {
       // Respuesta no-JSON en un error: se mantiene el mensaje generico de
       // arriba en vez de propagar un fallo de parseo.
     }
-    throw ApiException(response.statusCode, message);
+    throw ApiException(response.statusCode, message, code: code);
   }
 
   Future<dynamic> get(String path,
@@ -76,6 +84,20 @@ class ApiClient {
     final response = await http.post(
       _uri(path),
       headers: await _headers(auth: auth),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _decode(response);
+  }
+
+  /// POST with an `Idempotency-Key` header, so a retried offline operation
+  /// is never applied twice by the backend.
+  Future<dynamic> postIdempotent(String path,
+      {required String idempotencyKey, Object? body}) async {
+    final headers = await _headers();
+    headers['Idempotency-Key'] = idempotencyKey;
+    final response = await http.post(
+      _uri(path),
+      headers: headers,
       body: body == null ? null : jsonEncode(body),
     );
     return _decode(response);

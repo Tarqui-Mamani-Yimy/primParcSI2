@@ -10,7 +10,10 @@ import '../theme/aether_theme.dart';
 import '../providers/app_state.dart';
 import '../data/offline_database.dart';
 import '../models/sales_quote.dart';
+import '../models/sucursal_model.dart';
 import '../services/api_client.dart';
+import '../services/locations_service.dart';
+import '../services/offline_purchases_service.dart';
 import '../services/payments_service.dart';
 import '../services/sales_service.dart';
 import '../services/sales_quote_service.dart';
@@ -35,6 +38,7 @@ class _CartModalState extends State<CartModal> {
   late final PaymentsService _paymentsService = PaymentsService(_api);
   late final SalesService _salesService = SalesService(_api);
   late final SalesQuoteService _quoteService = SalesQuoteService(_api);
+  late final LocationsService _locationsService = LocationsService(_api);
   final _couponController = TextEditingController();
   final _pointsController = TextEditingController();
   final _offlineCalculator = OfflinePromotionCalculator();
@@ -50,10 +54,125 @@ class _CartModalState extends State<CartModal> {
   String? _codigoCuponRetenido;
   int? _puntosRetenidos;
 
+  List<Sucursal> _sucursales = const [];
+  int? _codigoSucursalOffline;
+  bool _guardandoOffline = false;
+
   @override
   void initState() {
     super.initState();
     _cargarPromocionesOffline();
+    _cargarSucursales();
+  }
+
+  /// Branches for an offline purchase (read from the SQLite cache when there
+  /// is no connection). Defaults to the first branch with stock for the cart.
+  Future<void> _cargarSucursales() async {
+    final items = _itemsDesdeCarrito(context.read<AppState>());
+    try {
+      final sucursales = await _locationsService.getSucursales();
+      int? sugerida;
+      final database = OfflineDatabaseRegistry.activeDatabase;
+      if (database != null) {
+        final inventario = await database.readRows('inventario');
+        for (final sucursal in sucursales) {
+          final tieneTodo = items.every((item) => inventario.any((inv) =>
+              inv['codigoSucursal'] == sucursal.codigoSucursal &&
+              inv['idProducto'] == item['idProducto'] &&
+              ((inv['cantidad_actual'] as num? ?? 0) -
+                      (inv['cantidad_reservada'] as num? ?? 0)) >=
+                  (item['cantidad'] as int)));
+          if (tieneTodo) {
+            sugerida = sucursal.codigoSucursal;
+            break;
+          }
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _sucursales = sucursales;
+        _codigoSucursalOffline = sugerida ??
+            (sucursales.isNotEmpty ? sucursales.first.codigoSucursal : null);
+      });
+    } catch (_) {
+      // Without cached branches the offline purchase stays unavailable.
+    }
+  }
+
+  Future<void> _comprarOffline(AppState appState) async {
+    final database = OfflineDatabaseRegistry.activeDatabase;
+    final codigoSucursal = _codigoSucursalOffline;
+    if (database == null || codigoSucursal == null) return;
+    setState(() {
+      _guardandoOffline = true;
+      _errorMessage = null;
+    });
+    try {
+      final total = _quoteOffline(appState).total;
+      final compra = await OfflinePurchasesService.create(
+        database: database,
+        codigoSucursal: codigoSucursal,
+        items: _itemsDesdeCarrito(appState),
+        totalEstimado: total,
+      );
+      appState.clearCart();
+      if (!mounted) return;
+      final sucursal = _sucursales
+          .where((s) => s.codigoSucursal == codigoSucursal)
+          .map((s) => s.nombre)
+          .firstOrNull;
+      Navigator.of(context).pop();
+      _mostrarConfirmacionOffline(compra, sucursal);
+    } on StateError catch (e) {
+      if (mounted) setState(() => _errorMessage = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(
+            () => _errorMessage = 'No se pudo guardar la compra sin conexión.');
+      }
+    } finally {
+      if (mounted) setState(() => _guardandoOffline = false);
+    }
+  }
+
+  void _mostrarConfirmacionOffline(
+      Map<String, dynamic> compra, String? sucursal) {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    showDialog(
+      context: navigator.context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AetherTheme.sandLight,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        title: Text('Compra guardada sin conexión',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Comprobante ${compra['comprobanteLocal']}',
+                style: GoogleFonts.sourceSerif4(fontSize: 14)),
+            const SizedBox(height: 8),
+            Text(
+              'Total estimado: \$${(compra['totalEstimado'] as num).toStringAsFixed(2)}',
+              style: GoogleFonts.sourceSerif4(
+                  fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Se registrará automáticamente cuando vuelvas a tener conexión. '
+              'Pagás en efectivo al retirar${sucursal == null ? '' : ' en $sucursal'}.',
+              style: GoogleFonts.outfit(fontSize: 12, color: AetherTheme.muted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -454,12 +573,38 @@ class _CartModalState extends State<CartModal> {
                             fontSize: 11, color: Colors.red.shade700),
                       ),
                     ),
-                  if (!appState.isOnline)
+                  if (!appState.isOnline) ...[
                     const Padding(
-                      padding: EdgeInsets.only(bottom: 12),
+                      padding: EdgeInsets.only(bottom: 8),
                       child: Text(
-                          'El pago con tarjeta no está disponible sin conexión.'),
+                          'Sin conexión: tu compra se guarda en el teléfono y se registra al reconectarte. El pago es en efectivo al retirar en la sucursal.'),
                     ),
+                    if (_sucursales.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                            'Conectate una vez para descargar las sucursales.'),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: DropdownButtonFormField<int>(
+                          initialValue: _codigoSucursalOffline,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                              labelText: 'Sucursal de retiro', isDense: true),
+                          items: _sucursales
+                              .map((s) => DropdownMenuItem(
+                                    value: s.codigoSucursal,
+                                    child: Text(s.nombre,
+                                        overflow: TextOverflow.ellipsis),
+                                  ))
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _codigoSucursalOffline = value),
+                        ),
+                      ),
+                  ],
                   if (appState.isOnline) ...[
                     if (hasPromotions)
                       TextField(
@@ -550,12 +695,16 @@ class _CartModalState extends State<CartModal> {
                         shape: const RoundedRectangleBorder(
                             borderRadius: BorderRadius.zero),
                       ),
-                      onPressed: cobrando || !appState.isOnline
+                      onPressed: cobrando || _guardandoOffline
                           ? null
-                          : cobradoSinVenta
-                              ? () => _reintentarVenta(appState)
-                              : () => _iniciarCheckout(appState),
-                      child: cobrando
+                          : !appState.isOnline
+                              ? (_codigoSucursalOffline == null
+                                  ? null
+                                  : () => _comprarOffline(appState))
+                              : cobradoSinVenta
+                                  ? () => _reintentarVenta(appState)
+                                  : () => _iniciarCheckout(appState),
+                      child: cobrando || _guardandoOffline
                           ? const SizedBox(
                               width: 20,
                               height: 20,
@@ -563,9 +712,11 @@ class _CartModalState extends State<CartModal> {
                                   strokeWidth: 2, color: AetherTheme.sandLight),
                             )
                           : Text(
-                              cobradoSinVenta
-                                  ? 'REINTENTAR REGISTRO'
-                                  : 'FINALIZAR COMPRA',
+                              !appState.isOnline
+                                  ? 'COMPRAR SIN CONEXIÓN (EFECTIVO)'
+                                  : cobradoSinVenta
+                                      ? 'REINTENTAR REGISTRO'
+                                      : 'FINALIZAR COMPRA',
                               style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,

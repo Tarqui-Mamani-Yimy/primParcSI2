@@ -7,17 +7,27 @@ import 'package:flutter/foundation.dart';
 import '../data/offline_database.dart';
 import '../data/offline_cache.dart';
 import 'api_client.dart';
+import 'notification_service.dart';
+import 'offline_purchases_service.dart';
+import 'smart_notifications.dart';
 
 class OfflineSyncService extends ChangeNotifier {
   OfflineSyncService(this._api,
-      {Connectivity? connectivity, this.onUnauthorized})
-      : _connectivity = connectivity ?? Connectivity();
+      {Connectivity? connectivity,
+      this.onUnauthorized,
+      AppNotifier notifier = const NoopNotifier()})
+      : _connectivity = connectivity ?? Connectivity(),
+        notifications = SmartNotifications(notifier);
 
   OfflineSyncService.forDatabase(OfflineDatabase database)
       : _api = null,
         _connectivity = Connectivity(),
         onUnauthorized = null,
+        notifications = SmartNotifications(const NoopNotifier()),
         _database = database;
+
+  /// Local notifications derived from what each sync changes.
+  final SmartNotifications notifications;
 
   static const syncInterval = Duration(minutes: 3);
   static const _collections = [
@@ -87,6 +97,14 @@ class OfflineSyncService extends ChangeNotifier {
     notifyListeners();
     try {
       await _pushPendingReservations(api, database);
+      await notifications.purchaseResults(
+          await OfflinePurchasesService.pushPending(api, database));
+      final reservationsBefore =
+          await notifications.reservationStates(database);
+      final promotionsBefore =
+          await database.readMetadata('active_promotions') == null
+              ? null
+              : await notifications.promotionIds(database);
       if (generation != _sessionGeneration ||
           !identical(
               database, _database ?? OfflineDatabaseRegistry.activeDatabase)) {
@@ -103,6 +121,8 @@ class OfflineSyncService extends ChangeNotifier {
       }
       await applyPull(payload, database: database);
       await _cachePromotionsAndCollections(api, database, generation);
+      await _notifyChanges(
+          api, database, generation, reservationsBefore, promotionsBefore);
       try {
         final history = await api.get('/api/purchase-history') as List;
         if (generation != _sessionGeneration ||
@@ -147,6 +167,28 @@ class OfflineSyncService extends ChangeNotifier {
       _syncingGenerations.remove(generation);
       _isSyncing = _syncingGenerations.contains(_sessionGeneration);
       notifyListeners();
+    }
+  }
+
+  Future<void> _notifyChanges(
+      ApiClient api,
+      OfflineDatabase database,
+      int generation,
+      Map<int, String> reservationsBefore,
+      Set<int>? promotionsBefore) async {
+    try {
+      await notifications.reservationChanges(database, reservationsBefore);
+      await notifications.newPromotions(database, promotionsBefore);
+      await notifications.rescheduleFromCache(database);
+      if ((await database.readRows('cliente')).isNotEmpty) {
+        final summary = await api.get('/api/loyalty/me');
+        if (summary is Map<String, dynamic> &&
+            generation == _sessionGeneration) {
+          await notifications.loyalty(database, summary);
+        }
+      }
+    } catch (_) {
+      // Notifications are best effort; they never fail a sync.
     }
   }
 
@@ -228,6 +270,9 @@ class OfflineSyncService extends ChangeNotifier {
         if (local == null) continue;
 
         final status = result['status'];
+        if (status is String) {
+          await notifications.reservationSyncResult(local, status);
+        }
         if (status == 'synced') {
           final serverReservation = result['reserva'] is Map
               ? Map<String, dynamic>.from(result['reserva'] as Map)
@@ -349,6 +394,7 @@ class OfflineSyncService extends ChangeNotifier {
 
   Future<void> logoutAndWipe() async {
     _sessionGeneration++;
+    await notifications.cancelAll();
     _isSyncing = _syncingGenerations.contains(_sessionGeneration);
     _periodicTimer?.cancel();
     _periodicTimer = null;

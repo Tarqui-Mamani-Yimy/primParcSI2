@@ -5,6 +5,7 @@ import '../data/offline_database.dart';
 import '../models/product_model.dart';
 import '../services/api_client.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 import '../services/offline_sync_service.dart';
 import '../services/products_service.dart';
 
@@ -28,6 +29,7 @@ class AppState extends ChangeNotifier {
   late final OfflineSyncService _offlineSyncService = OfflineSyncService(
     _api,
     onUnauthorized: _handleSyncUnauthorized,
+    notifier: LocalNotificationService.instance,
   );
   bool _offlineListenerAttached = false;
 
@@ -137,6 +139,7 @@ class AppState extends ChangeNotifier {
       _offlineSyncService.addListener(_handleOfflineSyncChange);
       _offlineListenerAttached = true;
     }
+    unawaited(LocalNotificationService.instance.requestPermission());
     await _offlineSyncService.startForIdentity(
         idEmpresa: idEmpresa, idUser: user.idUser);
   }
@@ -222,12 +225,14 @@ class AppState extends ChangeNotifier {
     } else {
       _cart.add(CartItem(product: product, size: size, quantity: 1));
     }
+    _cartChanged();
     notifyListeners();
   }
 
   void removeFromCart(int index) {
     if (index >= 0 && index < _cart.length) {
       _cart.removeAt(index);
+      _cartChanged();
       notifyListeners();
     }
   }
@@ -240,13 +245,22 @@ class AppState extends ChangeNotifier {
       } else {
         _cart[index].quantity = newQty;
       }
+      _cartChanged();
       notifyListeners();
     }
   }
 
   void clearCart() {
     _cart.clear();
+    _cartChanged();
     notifyListeners();
+  }
+
+  /// Abandoned-cart reminder: rescheduled on every change, cancelled when
+  /// the bag is emptied. Only for signed-in users.
+  void _cartChanged() {
+    if (!_isAuthenticated) return;
+    unawaited(_offlineSyncService.notifications.cartChanged(totalCartCount));
   }
 
   void selectTryOnProduct(Product product) {

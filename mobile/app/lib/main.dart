@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'config/api_config.dart';
 import 'theme/aether_theme.dart';
 import 'providers/app_state.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -20,6 +21,8 @@ void main() async {
   // corrio primero.
   Stripe.publishableKey = ApiConfig.stripePublishableKey;
   await Stripe.instance.applySettings();
+  // Local notifications (reminders and sync news); failures are swallowed.
+  await LocalNotificationService.instance.init();
   runApp(
     MultiProvider(
       providers: [
