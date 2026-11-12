@@ -109,7 +109,7 @@ import { AuthService } from '../../core/services/auth.service';
             <span>Escuchando dictado en español… Hablá ahora y detené el micrófono al terminar.</span>
           </div>
 
-          <!-- Indicador visual cuando MediaRecorder está grabando (Firefox fallback) -->
+          <!-- Indicador visual cuando MediaRecorder está grabando (camino principal) -->
           <div *ngIf="isRecording()" class="flex items-center justify-between p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs animate-pulse">
             <div class="flex items-center space-x-2">
               <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
@@ -384,18 +384,29 @@ export class AiReportsComponent implements OnInit, OnDestroy {
       : 'Dictar consulta por voz';
   }
 
-  private checkSpeechSupport(): 'native' | 'recorder' | 'none' {
-    if (typeof window === 'undefined') return 'none';
-    if ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition) {
-      return 'native';
-    }
-    if (
+  private hasMediaRecorderSupport(): boolean {
+    return (
+      typeof window !== 'undefined' &&
       typeof navigator !== 'undefined' &&
-      navigator.mediaDevices &&
+      !!navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === 'function' &&
       typeof (window as any).MediaRecorder !== 'undefined'
-    ) {
+    );
+  }
+
+  private hasNativeSpeechSupport(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    );
+  }
+
+  private checkSpeechSupport(): 'native' | 'recorder' | 'none' {
+    if (this.hasMediaRecorderSupport()) {
       return 'recorder';
+    }
+    if (this.hasNativeSpeechSupport()) {
+      return 'native';
     }
     return 'none';
   }
@@ -459,12 +470,32 @@ export class AiReportsComponent implements OnInit, OnDestroy {
 
       this.recognitionInstance.onerror = (event: any) => {
         this.isListening.set(false);
-        if (event.error !== 'no-speech') {
-          this.notificationService.warning(
-            'Dictado interrumpido',
-            'No se pudo capturar el audio o se canceló el permiso del micrófono.'
+        const err = event?.error;
+
+        if (
+          (err === 'network' || err === 'service-not-allowed' || err === 'not-allowed') &&
+          this.hasMediaRecorderSupport()
+        ) {
+          this.speechMode.set('recorder');
+          this.notificationService.info(
+            'Grabación de audio',
+            'Usaremos la grabación de audio'
           );
+          return;
         }
+
+        if (err === 'no-speech') {
+          this.notificationService.warning(
+            'Sin voz detectada',
+            'No se detectó voz. Hablá más cerca del micrófono e intentá de nuevo.'
+          );
+          return;
+        }
+
+        this.notificationService.warning(
+          'Dictado interrumpido',
+          'No se pudo capturar el audio o se canceló el permiso del micrófono.'
+        );
       };
 
       this.recognitionInstance.onend = () => {
@@ -494,7 +525,7 @@ export class AiReportsComponent implements OnInit, OnDestroy {
   }
 
   // =========================================================================
-  // MEDIARECORDER API (Firefox Fallback -> POST /api/reports/ai/transcribe)
+  // MEDIARECORDER API (Camino principal -> POST /api/reports/ai/transcribe)
   // =========================================================================
 
   private getPreferredMimeType(): string {
@@ -662,6 +693,13 @@ export class AiReportsComponent implements OnInit, OnDestroy {
     }
   }
 
+  private isEmptyOrPunctuation(text: string | null | undefined): boolean {
+    if (!text || !text.trim()) {
+      return true;
+    }
+    return !/[\p{L}\p{N}]/u.test(text);
+  }
+
   private async enviarAudioATranscribir(audioBlob: Blob): Promise<void> {
     if (audioBlob.size < 100) {
       this.notificationService.warning(
@@ -682,17 +720,19 @@ export class AiReportsComponent implements OnInit, OnDestroy {
     this.isTranscribing.set(true);
     try {
       const res = await this.reportsAiService.transcribeAudio(audioBlob);
-      if (res && res.text && res.text.trim()) {
-        const current = this.promptText().trim();
-        const transcript = res.text.trim();
-        this.promptText.set(current ? `${current} ${transcript}` : transcript);
-        this.notificationService.success('Voz capturada', `"${transcript}"`);
-      } else {
+      const rawText = res?.text ?? '';
+      if (this.isEmptyOrPunctuation(rawText)) {
         this.notificationService.warning(
-          'Sin texto detectado',
-          'No se pudo transcribir texto del audio grabado. Intentá hablar más cerca del micrófono.'
+          'Sin voz detectada',
+          'No se detectó voz en la grabación'
         );
+        return;
       }
+
+      const transcript = rawText.trim();
+      const current = this.promptText().trim();
+      this.promptText.set(current ? `${current} ${transcript}` : transcript);
+      this.notificationService.success('Voz capturada', `"${transcript}"`);
     } catch (err: unknown) {
       const msg = parseTranscribeError(err);
       this.notificationService.error('Error al transcribir audio', msg);
